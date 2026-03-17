@@ -1,0 +1,62 @@
+spring:
+  cloud:
+    discovery:
+      enabled: false
+    loadbalancer:
+      enabled: false
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# Security configuration for tests
+security:
+  jwt:
+    secret: dGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS10aGF0LWlzLWxvbmctZW5vdWdoLWZvci1obWFjLTI1Ng==
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
+    service-token-expiration-ms: 300000
+  gateway:
+    source-value: api-gateway
+    strict-mode: false
+
+# Rate limiting for tests
+rate-limit:
+  enabled: true
+  default-requests-per-minute: 60
+  authenticated-requests-per-minute: 120
+  auth-endpoint-requests-per-minute: 10
+  burst-multiplier: 1.5
+
+# Audit logging for tests
+audit:
+  logging:
+    enabled: true
+    log-request-body: false
+    log-response-body: false
+    max-queue-size: 1000
+
+# Key rotation for tests
+jwt:
+  rsa:
+    public-key-path: config/keys/public_key.pem
+    private-key-path: config/keys/private_key.pem
+    auto-generate: true
+    key-rotation:
+      enabled: false
+      interval-days: 90
+      grace-period-hours: 24
+      backup-count: 3
+
+logging:
+  level:
+    com.propertize: DEBUG
+    org.springframework.cloud.gateway: DEBUG

@@ -1,0 +1,54 @@
+meta {
+  name: Auth Service - User Management
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{auth-service-url}}/api/v1/users
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Service-Api-Key: {{service-api-key}}
+  X-Service-Name: propertize
+}
+
+body:json {
+  {
+    "username": "newuser@example.com",
+    "email": "newuser@example.com",
+    "password": "SecurePassword123!",
+    "firstName": "New",
+    "lastName": "User",
+    "phoneNumber": "+1234567890",
+    "organizationId": "org-123",
+    "roles": ["PROPERTY_MANAGER"],
+    "enabled": true
+  }
+}
+
+docs {
+  # Create User
+  
+  Creates a new user in the auth-service.
+  
+  **Request Body:**
+  - `username` (required): Unique username
+  - `email` (required): Valid email address
+  - `password` (required): Strong password
+  - `firstName` (optional): User's first name
+  - `lastName` (optional): User's last name
+  - `phoneNumber` (optional): Contact phone number
+  - `organizationId` (required): Organization identifier
+  - `roles` (required): Array of user roles
+  - `enabled` (optional): Account enabled status (default: true)
+  
+  **Response:** 201 Created with user information
+  
+  **Errors:**
+  - 409 Conflict: Username or email already exists
+  - 400 Bad Request: Invalid request data
+}

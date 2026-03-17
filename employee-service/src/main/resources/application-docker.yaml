@@ -1,0 +1,90 @@
+# Docker Profile Configuration for Employee Service
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/propertize_db
+    username: dbuser
+    password: dbpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      pool-name: EmployecraftDockerHikariPool
+      auto-commit: false
+
+  cache:
+    type: caffeine
+    cache-names: employees,departments,attendance,organizationStaff,payroll,employeesByOrg
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:redis_secure_pass}
+
+# Propertize Integration
+propertize:
+  api:
+    url: ${PROPERTIZE_API_URL:http://propertize:8080}
+    timeout:
+      connect: 5000
+      read: 10000
+
+# Auth Service Integration
+services:
+  auth:
+    url: ${AUTH_SERVICE_URL:http://auth-service:9090}
+
+# Gateway Trust Configuration
+security:
+  gateway:
+    expected-value: ${GATEWAY_SOURCE:api-gateway}
+  jwt:
+    public-key-path: ${JWT_PUBLIC_KEY_PATH:config/keys/public_key.pem}
+
+# Eureka Client Configuration
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://service-registry:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 10
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.uuid}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Logging
+logging:
+  level:
+    com.propertize.platform.employecraft: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

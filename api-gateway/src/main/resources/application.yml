@@ -1,0 +1,357 @@
+server:
+  port: ${SERVER_PORT:8080}
+  # Graceful shutdown - wait for in-flight requests to complete
+  shutdown: graceful
+  # Netty settings for better performance and large headers
+  netty:
+    connection-timeout: ${NETTY_CONNECTION_TIMEOUT:30s}
+    # Increase max header size to 64KB to handle large JWT tokens
+    max-initial-line-length: 65536 # 64KB for request line
+    max-header-size: 65536 # 64KB for headers (default is 8KB)
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: api-gateway
+  config:
+    import: optional:classpath:rbac.yml
+  # Graceful shutdown timeout
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  cache:
+    type: caffeine
+    cache-names:
+      - tokenValidation
+      - serviceTokenValidation
+      - rbacPermissions
+      - userRoles
+      - blacklist
+      - rateLimitBuckets
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    refresh:
+      enabled: false
+    gateway:
+      # Enable discovery client for load balancing
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      # Default filters applied to all routes
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - AddResponseHeader=X-Gateway-Version, 1.0.0
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOriginPatterns:
+              - "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            exposedHeaders:
+              - Authorization
+              - X-Correlation-Id
+              - X-Request-Id
+              - X-Organization-Id
+              - X-RateLimit-Remaining
+              - X-RateLimit-Limit
+              - X-RateLimit-Reset
+            allowCredentials: true
+            maxAge: 3600
+      # Gateway Routes Configuration
+      routes:
+        # Auth Service Routes (delegate authentication)
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - StripPrefix=0
+        # Propertize Service Routes
+        - id: propertize-service
+          uri: lb://propertize-service
+          predicates:
+            - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/payments/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**
+          filters:
+            - StripPrefix=0
+        # Employecraft Service Routes
+        # Employee Service Routes
+        - id: employee-service
+          uri: lb://employee-service
+          predicates:
+            - Path=/api/v1/employees/**,/api/v1/departments/**,/api/v1/attendance/**
+          filters:
+            - StripPrefix=0
+        # Propertize catch-all (MUST be last - matches remaining /api/v1/** paths)
+        - id: propertize-catchall
+          uri: lb://propertize-service
+          predicates:
+            - Path=/api/v1/**
+          filters:
+            - StripPrefix=0
+
+# =============================================================================
+# JWT Security Configuration
+# =============================================================================
+# The API Gateway validates JWT tokens and propagates user context to downstream
+# services via HTTP headers. This eliminates the need for duplicate JWT validation
+# in each microservice.
+#
+# For RSA keys (recommended for production):
+#   - Place public_key.pem in config/keys/ directory
+#   - Or set jwt.rsa.public-key-path property
+#
+# For shared secret (development only):
+#   - Set JWT_SECRET environment variable (minimum 32 bytes)
+# =============================================================================
+
+jwt:
+  rsa:
+    # RSA key paths (production recommended)
+    public-key-path: ${JWT_RSA_PUBLIC_KEY_PATH:config/keys/public_key.pem}
+    private-key-path: ${JWT_RSA_PRIVATE_KEY_PATH:config/keys/private_key.pem}
+    # Auto-generate keys for development (NOT for production)
+    auto-generate: ${JWT_RSA_AUTO_GENERATE:false}
+    # Key rotation settings
+    key-rotation:
+      enabled: ${JWT_KEY_ROTATION_ENABLED:false}
+      interval-days: ${JWT_KEY_ROTATION_INTERVAL_DAYS:90}
+      grace-period-hours: ${JWT_KEY_ROTATION_GRACE_PERIOD_HOURS:24}
+      backup-count: ${JWT_KEY_ROTATION_BACKUP_COUNT:5}
+      backup-path: ${JWT_KEY_ROTATION_BACKUP_PATH:config/keys/backup}
+      key-size: ${JWT_KEY_ROTATION_KEY_SIZE:2048}
+      check-cron: ${JWT_KEY_ROTATION_CHECK_CRON:0 0 2 * * *}
+
+security:
+  jwt:
+    # Public key for RSA verification (production)
+    public-key-location: ${JWT_PUBLIC_KEY_LOCATION:}
+    # Shared secret fallback (development only - set JWT_SECRET env var in production)
+    secret: ${JWT_SECRET:}
+    # Token expiration settings
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+    service-token-expiration-ms: ${JWT_SERVICE_EXPIRATION_MS:300000}
+
+  rbac:
+    config-location: classpath:rbac.yml
+    cache-ttl: 3600
+    enabled: true
+
+  gateway:
+    source-header: X-Gateway-Source
+    source-value: ${GATEWAY_SOURCE:api-gateway}
+    strict-mode: false
+
+# =============================================================================
+# Actuator Management Endpoints
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, gateway, circuitbreakers, prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    prometheus:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+    diskspace:
+      enabled: true
+    redis:
+      enabled: false # Gateway doesn't use Redis
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: API Gateway - Routes and authenticates requests to backend services
+    version: 1.0.0
+    spring-boot-version: ${spring-boot.version}
+    spring-cloud-version: 2025.1.1
+
+# =============================================================================
+# Rate Limiting Configuration
+# =============================================================================
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  # Default requests per minute for anonymous users
+  default-requests-per-minute: ${RATE_LIMIT_DEFAULT:60}
+  # Requests per minute for authenticated users
+  authenticated-requests-per-minute: ${RATE_LIMIT_AUTHENTICATED:120}
+  # Requests per minute for auth endpoints (stricter)
+  auth-endpoint-requests-per-minute: ${RATE_LIMIT_AUTH:10}
+  # Burst multiplier (allows short bursts above limit)
+  burst-multiplier: ${RATE_LIMIT_BURST:1.5}
+
+# =============================================================================
+# Audit Logging Configuration
+# =============================================================================
+audit:
+  logging:
+    enabled: ${AUDIT_ENABLED:true}
+    log-request-body: ${AUDIT_LOG_REQUEST_BODY:false}
+    log-response-body: ${AUDIT_LOG_RESPONSE_BODY:false}
+    max-queue-size: ${AUDIT_MAX_QUEUE_SIZE:10000}
+
+# =============================================================================
+# Resilience4j Circuit Breaker & Retry Configuration
+# =============================================================================
+resilience4j:
+  circuitbreaker:
+    instances:
+      authService:
+        # Circuit breaker opens after 50% failures in 10 calls
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 70
+        slow-call-duration-threshold: 2s
+        minimum-number-of-calls: 10
+        sliding-window-size: 20
+        sliding-window-type: COUNT_BASED
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        record-exceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+          - org.springframework.web.client.ResourceAccessException
+      propertizeCircuitBreaker:
+        baseConfig: default
+      employecraftCircuitBreaker:
+        baseConfig: default
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+  retry:
+    instances:
+      authService:
+        # Retry up to 3 times with exponential backoff
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+        # ignore-exceptions:
+        #   - com.gateway.exception.InvalidTokenException  # Class not found - commented out
+
+  timelimiter:
+    instances:
+      authService:
+        timeout-duration: 3s
+        cancel-running-future: true
+      propertizeCircuitBreaker:
+        baseConfig: default
+      employecraftCircuitBreaker:
+        baseConfig: default
+    configs:
+      default:
+        timeoutDuration: 30s
+
+  bulkhead:
+    instances:
+      authService:
+        maxConcurrentCalls: 25
+        maxWaitDuration: 500ms
+      propertizeService:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 1s
+      employecraftService:
+        maxConcurrentCalls: 30
+        maxWaitDuration: 1s
+
+# =============================================================================
+# Spring Cache Configuration
+# =============================================================================
+# Multi-region cache configuration for performance optimization
+# =============================================================================
+cache:
+  token-validation:
+    ttl-minutes: ${CACHE_TOKEN_VALIDATION_TTL:4}
+    max-size: ${CACHE_TOKEN_VALIDATION_SIZE:10000}
+  rbac:
+    ttl-minutes: ${CACHE_RBAC_TTL:10}
+    max-size: ${CACHE_RBAC_SIZE:50000}
+  blacklist:
+    ttl-minutes: ${CACHE_BLACKLIST_TTL:15}
+    max-size: ${CACHE_BLACKLIST_SIZE:5000}
+  rate-limit:
+    ttl-seconds: ${CACHE_RATE_LIMIT_TTL:60}
+    max-size: ${CACHE_RATE_LIMIT_SIZE:20000}
+
+# =============================================================================
+# Eureka Client Configuration
+# =============================================================================
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_URL:http://admin:admin@localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.uuid}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+# =============================================================================
+# Service URLs for Internal Communication
+# =============================================================================
+services:
+  auth:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  propertize:
+    url: ${PROPERTIZE_SERVICE_URL:http://localhost:8082}
+  employecraft:
+    url: ${EMPLOYECRAFT_SERVICE_URL:http://localhost:8083}
+  wagecraft:
+    url: ${WAGECRAFT_SERVICE_URL:http://localhost:8084}
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    com.propertize.platform.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-no-correlation-id}] %-5level %logger{36} - %msg%n"

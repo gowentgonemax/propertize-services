@@ -1,0 +1,54 @@
+meta {
+  name: Auth Service - Update User
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{auth-service-url}}/api/v1/users/{{user-id}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Service-Api-Key: {{service-api-key}}
+  X-Service-Name: propertize
+}
+
+body:json {
+  {
+    "firstName": "Updated",
+    "lastName": "Name",
+    "phoneNumber": "+9876543210",
+    "email": "updated-email@example.com",
+    "organizationId": "org-456",
+    "roles": ["PROPERTY_MANAGER", "LANDLORD"],
+    "enabled": true
+  }
+}
+
+docs {
+  # Update User
+  
+  Updates user information. All fields are optional.
+  
+  **Path Parameters:**
+  - `user-id`: Numeric user identifier
+  
+  **Request Body (all optional):**
+  - `firstName`: Updated first name
+  - `lastName`: Updated last name
+  - `phoneNumber`: Updated phone number
+  - `email`: Updated email (must be unique)
+  - `organizationId`: Updated organization
+  - `roles`: Updated role set
+  - `enabled`: Updated enabled status
+  
+  **Response:** 200 OK with updated user information
+  
+  **Errors:**
+  - 404 Not Found: User does not exist
+  - 409 Conflict: Email already in use
+  - 403 Forbidden: Invalid service authentication
+}

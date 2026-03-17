@@ -1,0 +1,90 @@
+# ============================================
+# Employee Service - Local Configuration
+# ============================================
+
+server:
+  port: 8083
+
+spring:
+  application:
+    name: employee-service
+
+  # ============================================
+  # DATABASE CONFIGURATION - LOCAL POSTGRESQL
+  # ============================================
+  datasource:
+    url: jdbc:postgresql://localhost:5432/propertize_db
+    username: dbuser
+    password: dbpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  # ============================================
+  # REDIS CONFIGURATION - DOCKER
+  # ============================================
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: redis_secure_pass
+      timeout: 2000ms
+
+# ============================================
+# EUREKA CLIENT CONFIGURATION
+# ============================================
+eureka:
+  client:
+    service-url:
+      defaultZone: http://admin:admin@localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: false
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+
+# ============================================
+# SERVICE URLS
+# ============================================
+auth-service:
+  url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+propertize:
+  api:
+    url: ${PROPERTIZE_API_URL:http://localhost:8082}
+
+# ============================================
+# JWT CONFIGURATION
+# ============================================
+jwt:
+  rsa:
+    public-key-path: ${JWT_PUBLIC_KEY_PATH:../auth-service/keys/public_key.pem}
+
+# ============================================
+# ACTUATOR
+# ============================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ============================================
+# LOGGING
+# ============================================
+logging:
+  level:
+    root: INFO
+    com.propertize.employee: DEBUG

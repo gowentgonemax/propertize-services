@@ -1,0 +1,84 @@
+# Java build artifacts
+**/target/
+*.jar
+*.war
+*.ear
+*.class
+
+# Maven wrapper
+!**/mvnw
+!**/mvnw.cmd
+
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/out/
+**/.vercel/
+propertize-front-end/.env*.local
+propertize-front-end/npm-debug.log*
+propertize-front-end/yarn-debug.log*
+propertize-front-end/yarn-error.log*
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Environment files (keep templates, ignore secrets)
+.env
+!.env.example
+!**/.env.example
+auth-service/src/main/resources/config/keys/private_key.pem
+
+# Logs
+logs/*.log
+logs/*.log.gz
+*.log
+
+# PID files
+.pids/
+
+# Test / coverage
+**/surefire-reports/
+**/jacoco.exec
+**/*.exec
+
+# Keys (private keys MUST NOT be committed)
+**/keys/private_key.pem
+**/config/keys/private_key.pem
+private_key.pem
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Gradle (if any)
+.gradle/
+
+# Package lock (keep package-lock.json but ignore yarn.lock clashes)
+propertize-front-end/yarn.lock
+
+# Test / coverage outputs
+**/coverage/
+**/playwright-report/
+**/test-results/
+**/__mocks__/generated/
+
+# TypeScript incremental build cache
+**/*.tsbuildinfo
+
+# Build / analysis artifacts
+**/build-output.log
+**/*-analysis-results.json
+**/*.analysis.json
+
+# Editor backup / temp files
+**/*.backup
+**/*.tmp
+**/*.bak
+**/*.orig
+

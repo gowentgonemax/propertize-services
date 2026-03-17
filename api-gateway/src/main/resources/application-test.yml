@@ -1,0 +1,74 @@
+# ============================================================================
+# API Gateway - TEST Environment
+# ============================================================================
+# This profile is for automated testing (integration, E2E tests)
+# Uses test databases and mocked services where appropriate
+# ============================================================================
+
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+  # Redis Configuration - Embedded or test instance
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+
+# Eureka Client Configuration - Disabled or test instance
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:false}
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+# JWT Configuration - Test keys
+jwt:
+  secret: test-jwt-secret-key-for-testing-only-min-32-chars
+  public-key-path: classpath:keys/test_public_key.pem
+  access-token-validity: 900000
+  refresh-token-validity: 604800000
+
+# Rate Limiting - Disabled for tests
+gateway:
+  rate-limit:
+    enabled: false
+  timeout:
+    global: 60s
+    per-route: 120s
+
+# Logging - Verbose for debugging tests
+logging:
+  level:
+    root: INFO
+    com.propertize.platform.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.test: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management & Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

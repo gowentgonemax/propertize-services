@@ -1,0 +1,21 @@
+# 1. Stop everything
+docker-compose down -v
+
+# 2. Reset database
+./reset-database.sh
+
+# 3. Start services (tables auto-created)
+docker-compose up -d
+
+# 4. Wait for startup (30-60 seconds)
+sleep 60
+
+# 5. Create superadmin
+./init-superadmin.sh
+
+# 6. Login at http://localhost:3000
+# Username: admin, Password: password
+
+./docker-manage.sh rebuild-all
+
+docker-compose up -d --build propertize-frontend

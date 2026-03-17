@@ -1,0 +1,75 @@
+# ============================================================================
+# Employecraft Service - PROD Environment
+# ============================================================================
+
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  # Database Configuration
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 20
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION:900000}
+
+# Eureka Client
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URL}
+  instance:
+    hostname: ${HOSTNAME:employecraft}
+    prefer-ip-address: true
+    metadata-map:
+      environment: prod
+      region: ${AWS_REGION:us-east-1}
+
+# Propertize Integration
+propertize:
+  api:
+    url: ${PROPERTIZE_URL}
+    timeout:
+      connect: 3000
+      read: 8000
+
+# Wagecraft Integration
+wagecraft:
+  api:
+    url: ${WAGECRAFT_URL}
+
+# Logging
+logging:
+  level:
+    root: WARN
+    com.employecraft: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
+# Management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never

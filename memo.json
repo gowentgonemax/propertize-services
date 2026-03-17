@@ -1,0 +1,331 @@
+{
+  "global_context": "You are part of an advanced multi-agent system powered exclusively by GitHub Copilot. Every AI model, every agent, and every automated process in this environment comes from the GitHub ecosystem. You operate as a coordinated team of specialized Copilot agents that share a unified long-term memory file named memo.json. This memory file is the single source of truth for the entire AI system. SHARED MEMORY MODEL: All agents must load memo.json before performing any task. MEMORY USAGE RULES: Follow all requirements, decisions, and conventions stored in memory. Maintain consistency with the architecture and project_state. Never contradict existing memory unless the user explicitly changes a rule. Treat memory as the authoritative knowledge base for the entire system. Assume other Copilot agents will rely on your updates. Think like a long-term collaborator, not a stateless assistant. MEMORY WRITING RULES: After completing any task, extract and store new long-term information (requirements, architecture decisions, naming conventions, project rules, user preferences, TODO items, project_state updates, cross-agent coordination notes). Do NOT store temporary instructions, small talk, debugging noise, or anything irrelevant to long-term project continuity. When updating memory: append to the correct section, never overwrite existing memory unless explicitly changed by the user, keep the file clean and structured. MULTI-AGENT COLLABORATION: Produce output that aligns with shared memory. Ensure consistency across all agents. Leave clear signals in memory for other agents to follow. Maintain architectural integrity across the entire project. Support long-term development, not just the current request. GITHUB COPILOT ENVIRONMENT: All models are GitHub Copilot models. All collaboration happens through GitHub tools. All memory is stored locally in memo.json. All agents share the same environment, context, and constraints. PRIMARY OBJECTIVE: Maintain a stable, evolving, intelligent memory system that supports long-term, multi-agent development across the entire GitHub Copilot ecosystem.",
+
+  "project_state": "Propertize property management platform — full-stack microservices architecture. 6 services active: api-gateway (8080), auth-service (8081), propertize-core (dynamic port, PostgreSQL propertize DB), employee-service (employecraft app), service-registry (Eureka), propertize-front-end (Next.js). Claude CLI v2.1.71 installed locally at /Users/ravishah/.local/bin/claude (auth status: loggedOut). Multi-agent GitHub Copilot memory system initialized and fully enriched from codebase exploration on 2026-03-16.",
+
+  "requirements": [
+    "All agents must load memo.json before performing any task.",
+    "All agents must follow the shared memory model and never contradict existing memory unless the user explicitly changes it.",
+    "All agents must update memo.json after completing tasks with meaningful, persistent information.",
+    "All changes must maintain architectural integrity across all microservices.",
+    "Generated documents must go into designated documentation folders — NOT the root folder.",
+    "The root folder must remain clean and contain only essential project files.",
+    "Follow best coding practices: clarity, performance, maintainability, no duplication.",
+    "Respect naming conventions and established patterns from memory before writing any code."
+  ],
+
+  "decisions": [
+    {
+      "id": "require-load-memo",
+      "date": "2026-03-16T00:10:00Z",
+      "decision": "All agents MUST load /Users/ravishah/MySpace/ProperyManage/propertize-Services/memo.json before performing any task and treat it as the authoritative shared memory.",
+      "source": "user_instruction"
+    },
+    {
+      "id": "multi-agent-system-init",
+      "date": "2026-03-16T00:15:00Z",
+      "decision": "The global_context in memo.json encodes the full multi-agent system rules. All future agents must read and comply with this global_context on every session.",
+      "source": "user_instruction"
+    },
+    {
+      "id": "codebase-deep-scan-complete",
+      "date": "2026-03-16T01:00:00Z",
+      "decision": "Full codebase scan completed. Architecture, patterns, service ports, DB names, design patterns, and front-end stack have all been documented in memo.json. All agents must use this data as the canonical reference.",
+      "source": "agent_exploration"
+    }
+  ],
+
+  "architecture": [
+    {
+      "component": "api-gateway",
+      "technology": "Spring Boot / Java (Maven) — Spring Cloud Gateway (reactive, Netty)",
+      "port": 8080,
+      "package": "com.propertize.platform.gateway",
+      "role": "Single entry point — routes requests to all downstream microservices. Handles JWT auth via JwtAuthenticationFilter, RBAC enforcement via RbacAuthorizationFilter, rate limiting, correlation IDs, audit logging, circuit breaker (Resilience4J), token blacklist sync, public key caching (PublicKeyCache / KeyRotationManager). Uses Caffeine cache for tokenValidation, serviceTokenValidation, rbacPermissions, userRoles, blacklist, rateLimitBuckets.",
+      "key_classes": [
+        "JwtAuthenticationFilter", "RbacAuthorizationFilter", "GatewayRouteConfig",
+        "SecurityConfig", "EnhancedJwtTokenProvider", "RsaKeyProvider",
+        "PublicKeyCache", "KeyRotationManager", "AuthServiceCircuitBreaker",
+        "TokenBlacklistService", "RateLimitingFilter", "AuditLoggingFilter",
+        "CorrelationIdFilter", "SecurityHeadersFilter", "TokenController"
+      ]
+    },
+    {
+      "component": "auth-service",
+      "technology": "Spring Boot / Java (Maven)",
+      "port": 8081,
+      "database": "propertize_db (PostgreSQL localhost:5432)",
+      "package": "com.propertize.platform.auth",
+      "role": "Authentication & authorization hub. Issues/validates JWT tokens (RSA key-pair, keys/ dir). Full RBAC engine with PolicyEngine/DefaultPolicyEngine, custom roles, composite roles, temporal permissions, delegation, IP access rules, token blacklist (Redis), session management, rate limiting, Kafka event publishing, OpenTelemetry tracing.",
+      "key_classes": [
+        "AuthController", "RbacController", "UserManagementController",
+        "AuthenticationService", "AuthorizationService", "RbacService",
+        "JwtTokenProvider", "RsaKeyProvider", "TokenBlacklistService",
+        "PolicyEngine", "DefaultPolicyEngine", "ConditionEvaluator",
+        "CustomRoleService", "RoleCompositionService", "DelegationService",
+        "TemporalPermissionService", "IpAccessService", "SessionManagementService",
+        "ServiceAuthenticationService", "PermissionAuditService",
+        "UserManagementService", "FieldEncryptionService",
+        "PermissionConstants", "RoleConstants"
+      ],
+      "infrastructure": ["Redis (token blacklist, cache)", "Kafka (user events)", "PostgreSQL"]
+    },
+    {
+      "component": "employee-service",
+      "technology": "Spring Boot / Java (Maven) — app name: employecraft",
+      "package": "com.propertize.platform.employecraft",
+      "role": "Employee management with RBAC enforcement. Uses ACL (AuthServiceAntiCorruptionLayer) to translate auth-service concepts. Feign client to propertize core. Entities: Employee, Department, Position with embedded Address, Compensation, EmergencyContact. ZeroTrustJwtValidationFilter + TrustedGatewayHeaderFilter for security.",
+      "key_classes": [
+        "EmployeeController", "EmployeeService", "EmployeeNumberGenerator",
+        "AuthServiceAntiCorruptionLayer", "AuthServiceClient",
+        "PropertizeFeignClient", "FeignClientConfig",
+        "ZeroTrustJwtValidationFilter", "TrustedGatewayHeaderFilter",
+        "Employee", "Department", "Position"
+      ],
+      "infrastructure": ["Redis (cache)", "PostgreSQL", "Feign (inter-service HTTP)"]
+    },
+    {
+      "component": "service-registry",
+      "technology": "Spring Boot / Java (Eureka Server)",
+      "role": "Service discovery registry — all microservices register here for load-balanced discovery via Spring Cloud."
+    },
+    {
+      "component": "propertize",
+      "technology": "Spring Boot / Java (Maven) — core domain service",
+      "database": "propertize (PostgreSQL localhost:5432)",
+      "package": "com.propertize",
+      "role": "Core property management domain. Covers: Properties, Tenants, Leases, Payments (Stripe), Maintenance, Inspections, Documents, Notifications (email/SMS/push), Organizations, Rental Applications, Invoices, Expenses, Reports, Vendors, Scheduling, Audit, Analytics, GraphQL Dashboard. Uses CQRS (CqrsDispatcher), Event Sourcing (EventStoreService/StoredEvent), DDD (AggregateRoot, DomainEvent), Flyway migrations, Redis cache, Resilience4J, ShedLock, OpenTelemetry, GraphQL (Spring for GraphQL).",
+      "design_patterns": [
+        "CQRS (cqrs/ package — Command/Query/CommandHandler/QueryHandler/CqrsDispatcher)",
+        "Event Sourcing (eventsourcing/ — StoredEvent, EventStoreService)",
+        "Domain-Driven Design (domain/common — AggregateRoot, DomainEvent, AbstractDomainEvent)",
+        "Factory (factory/ — NotificationSenderFactory, PaymentGatewayFactory)",
+        "Anti-Corruption Layer (client/AuthServiceClient)",
+        "Feign clients (client/EmployecraftFeignClient)",
+        "Aspect-Oriented Programming (aspect/ — DatabaseConnectivityAspect, SecurityAuditAspect; logging/AuditLoggingAspect)",
+        "Observer/Events (event/ — ApplicationApprovedEvent, LeaseCreatedEvent, PaymentCompletedEvent etc.)",
+        "GraphQL (graphql/ — DashboardGraphQLController, PropertyGraphQLController, resolvers)"
+      ],
+      "key_domain_entities": [
+        "Property", "Tenant", "Lease", "Payment", "PaymentMethod", "Invoice", "InvoiceItem",
+        "MaintenanceRequests", "MaintenanceWorkOrder", "Inspection",
+        "RentalApplication", "RentalApplicantSnapshot",
+        "Organization", "OrganizationApplication", "OrganizationApplicationFee",
+        "Vendor", "Document", "Notification", "NotificationPreference",
+        "Task", "Milestone", "ScheduleEvent", "AuditLog",
+        "Expense", "LateFeePolicy", "LateFeeCharge", "SupportTicket",
+        "User", "PaymentPlan", "PaymentReminder", "Webhook"
+      ],
+      "infrastructure": [
+        "PostgreSQL (Flyway migrations at db/migration)",
+        "Redis (token blacklist, cache — CacheConfig, RedisConfig)",
+        "Stripe (payments — StripeConfig, StripePaymentController, StripeWebhookController)",
+        "OpenTelemetry (tracing)",
+        "ShedLock (distributed locking)",
+        "Kafka (optional)",
+        "GraphQL (Spring for GraphQL)",
+        "Feign (inter-service HTTP)"
+      ]
+    },
+    {
+      "component": "propertize-front-end",
+      "technology": "Next.js / React / TypeScript",
+      "package_name": "propertize-frontend",
+      "role": "Web front-end for the property management platform.",
+      "key_libraries": [
+        "@apollo/client (GraphQL)",
+        "@tanstack/react-query (server state)",
+        "@stripe/react-stripe-js + @stripe/stripe-js (payments)",
+        "@sentry/nextjs (error tracking)",
+        "@hookform/resolvers + react-hook-form (forms)",
+        "@vercel/speed-insights (perf)",
+        "@hello-pangea/dnd (drag-and-drop)",
+        "canvas-confetti"
+      ],
+      "src_structure": [
+        "app/ (Next.js App Router pages)",
+        "components/ (shared UI components)",
+        "features/ (feature-based modules)",
+        "hooks/ (custom React hooks)",
+        "services/ (API service layer)",
+        "stores/ (state management)",
+        "context/ (React context providers)",
+        "providers/ (root providers)",
+        "graphql/ (GraphQL queries/mutations)",
+        "schemas/ (Zod/validation schemas)",
+        "types/ (TypeScript types)",
+        "interfaces/ (TypeScript interfaces)",
+        "config/ (app configuration)",
+        "constants/ (app constants)",
+        "utils/ (utility functions)",
+        "validators/ (form validators)",
+        "actions/ (Next.js server actions)",
+        "auth.ts (NextAuth config)",
+        "__tests__/ (test files)"
+      ]
+    }
+  ],
+
+  "conventions": [
+    "Java microservices use Maven (pom.xml) and follow Spring Boot conventions.",
+    "JWT tokens are signed with RSA key pairs stored under each service's keys/ directory.",
+    "Docker infrastructure is separated from application compose files (docker-compose.infra.yml).",
+    "RBAC is enforced at the service level; roles and permissions are managed in auth-service.",
+    "memo.json is the single source of truth — always append, never overwrite existing entries.",
+    "Java package structure: com.propertize.platform.<service> for gateway/auth/employee; com.propertize for core service.",
+    "Employee service app name is 'employecraft' (package: com.propertize.platform.employecraft).",
+    "Core service uses CQRS, Event Sourcing, DDD — new domain logic must follow these patterns.",
+    "All DTOs follow request/response/dto sub-package structure under com.propertize.dto.<domain>.",
+    "Entities use embedded value objects (entity/embedded/) for complex sub-fields.",
+    "Base entities extend BaseEntity / AuditableEntity / OrganizationScopedEntity.",
+    "Enums are defined in enums/ package and follow XxxEnum naming convention.",
+    "API versioning is configured (ApiVersioningConfig) — respect version prefixes.",
+    "Correlation IDs are propagated across services via CorrelationIdFilter.",
+    "Front-end uses Next.js App Router, Apollo Client for GraphQL, TanStack Query for REST.",
+    "Front-end follows feature-based structure under src/features/.",
+    "Auth is handled via NextAuth (auth.ts) on the front-end.",
+    "Stripe is integrated both on front-end (@stripe/react-stripe-js) and back-end (StripeConfig).",
+    "Do NOT place generated documentation in the root folder — use docs/ subdirectories within each service.",
+    "SecurityConfig_NEW.java and GraphQLAuthenticationInterceptor_NEW.java are drafts — do not use as canonical; use non-_NEW versions.",
+    "TestStateMachine.java in propertize src/main/java root is a test artifact — should be moved to test/."
+  ],
+
+  "tasks": [
+    {
+      "id": "task-cleanup-draft-files",
+      "description": "Remove or properly integrate draft files: SecurityConfig_NEW.java, GraphQLAuthenticationInterceptor_NEW.java, TestStateMachine.java (move to test/). Root folder has many loose .md docs that should be in a /docs folder.",
+      "status": "completed — TestStateMachine.java moved to src/test/java; SecurityConfig_NEW.java and GraphQLAuthenticationInterceptor_NEW.java (both 0-byte) deleted on 2026-03-16.",
+      "priority": "low"
+    },
+    {
+      "id": "task-root-folder-cleanup",
+      "description": "Move all documentation .md files from root into a /docs directory to keep root clean per FILE_ORGANIZATION rule.",
+      "status": "identified",
+      "priority": "low"
+    }
+  ],
+
+  "notes": [
+    {
+      "type": "system_update",
+      "timestamp": "2026-03-16T01:00:00Z",
+      "note": "Full codebase deep-scan completed. memo.json now contains complete architecture, all 6 service details, design patterns, key classes, DB names, ports, infrastructure dependencies, front-end stack, and all conventions. This is the definitive shared brain for all GitHub Copilot agents on this project."
+    },
+    {
+      "type": "startup_config",
+      "timestamp": "2026-03-16T13:00:00Z",
+      "note": "Local startup commands verified and working. JAR startup order: 1) service-registry (8761), 2) auth-service with -Dspring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration, 3) propertize-core with -DPRIVATE_KEY_PATH=$BASE/propertize/config/keys/private_key.pem and -DPUBLIC_KEY_PATH, 4) employee-service, 5) api-gateway, 6) npm run dev for frontend. All use --spring.profiles.active=local. DB: propertize_auth (user ravishah), propertize_db (user dbuser/dbpassword). No Kafka, no MongoDB needed. PIDs in .pids/, logs in logs/."
+    },
+    {
+      "type": "inter_service_communication",
+      "note": "Services communicate via: (1) Feign HTTP clients (employee-service → propertize core, propertize core → auth-service via AuthServiceClient, propertize core → employee-service via EmployecraftFeignClient), (2) Kafka events (auth-service publishes UserEvent), (3) Spring Cloud Gateway routing (all external traffic through api-gateway:8080). Service discovery via Eureka (service-registry)."
+    },
+    {
+      "type": "security_model",
+      "note": "Zero-trust model: api-gateway validates JWT on every request (RSA public key from auth-service). Downstream services (employee-service) use TrustedGatewayHeaderFilter + ZeroTrustJwtValidationFilter. auth-service issues tokens signed with RSA private key (keys/ dir per service). Token blacklist stored in Redis, synced to api-gateway. IP access rules, rate limiting, and temporal permissions implemented in auth-service."
+    },
+    {
+      "type": "database_notes",
+      "note": "Two DB schemas in use: 'propertize' (core service — localhost:5432) and 'propertize_db' (auth-service — localhost:5432). Both PostgreSQL. Both use Flyway migrations. Core service Hikari pool: max 20 connections. Auth-service Hikari pool: max 10 connections."
+    },
+    {
+      "type": "known_issues",
+      "note": "Draft/experimental files exist: SecurityConfig_NEW.java and GraphQLAuthenticationInterceptor_NEW.java (propertize core), TestStateMachine.java in src/main/java root. These should be cleaned up. Multiple loose .md documentation files in root folder violate FILE_ORGANIZATION convention."
+    },
+    {
+      "type": "database_notes_updated",
+      "timestamp": "2026-03-16T18:00:00Z",
+      "note": "PostgreSQL actual databases confirmed: propertize_db (14MB, main auth-service DB), propertize_auth (9.8MB), auth_service (9MB), propertize_service (9MB), employecraft (8.6MB). All on localhost:5432, user: ravishah. Previous note about 'propertize' DB name was inaccurate — actual DBs listed above."
+    },
+    {
+      "type": "docker_infra_state",
+      "timestamp": "2026-03-16T18:00:00Z",
+      "note": "Docker infrastructure running via docker-compose.infra.yml. Containers: propertize-mongodb (27017, healthy), propertize-redis (6379, healthy), propertize-kafka (9092, healthy), propertize-zookeeper (2181), propertize-kafka-ui (8090), propertize-mongo-express (8089). Health checks fixed: MongoDB uses mongosh with 30s timeout + 30s start_period; Redis uses redis-cli ping; Kafka uses kafka:29092 internal port with 30s timeout + 60s start_period. Run with: docker compose -f docker-compose.infra.yml up -d"
+    },
+    {
+      "type": "validation_script",
+      "timestamp": "2026-03-16T18:00:00Z",
+      "note": "Full stack validation script created at: /Users/ravishah/MySpace/ProperyManage/propertize-Services/validate-infra.sh. Run with: bash validate-infra.sh. Validates: all Docker containers, all port connectivity (13 services), Spring Boot actuator health, Eureka registrations, Redis/MongoDB/Kafka/PostgreSQL connectivity, and Frontend HTTP status."
+    },
+    {
+      "type": "eureka_state",
+      "timestamp": "2026-03-16T18:35:00Z",
+      "note": "Eureka registry now shows ALL 4 services registered: API-GATEWAY, AUTH-SERVICE, EMPLOYEE-SERVICE, PROPERTIZE-SERVICE. Fix applied: added @Builder.Default to fields with initializers in PropertyMetrics, LeaseAmendment, TenantPaymentHistory, TenantPaymentHealth, OwnerPayoutRequest, VendorPaymentRequest, OrganizationApplicationCreateRequest. Removed duplicate @Builder.Default from VendorPaymentRequest. Moved TestStateMachine.java from src/main/java to src/test/java. Rebuilt JAR and restarted. Propertize-service PID stored in .pids/propertize.pid."
+    },
+    {
+      "type": "full_stack_validation",
+      "timestamp": "2026-03-16T18:35:00Z",
+      "note": "FULL STACK VALIDATED ON 2026-03-16 (Updated): All 4 Spring Boot microservices registered in Eureka. Propertize-Core health at http://localhost:8082/actuator/health shows status=UP, db=UP (PostgreSQL), eureka=UP, discoveryClient=UP. Compilation produces 0 errors, only deprecation warnings (BigDecimal.setScale, OpenAPI @Schema.required, GraphQL Coercing)."
+    },
+    {
+      "type": "bruno_collection_update",
+      "timestamp": "2026-03-16T20:00:00Z",
+      "note": "Bruno collection at propertize/bruno-collection/ fully updated on 2026-03-16. 268 request files across 40 folders covering ALL controllers. NEW folders added: 20-Inspections (9 requests), 21-Reports (10), 22-Analytics (2), 23-Tasks (9), 24-Milestones (9), 25-Messages (11), 26-Schedule-Events (7), 27-Support-Tickets (7), 28-Search (4), 29-Payment-Methods (7), 30-Payment-Reminders (5), 31-Late-Fees (7), 32-Contacts (7), 33-Audit-Log (6), 34-Metrics (5), 35-Notification-Preferences (5), 36-Application-Fees (8), 37-Approval-Workflow (9). UPDATED: 14-System (health checks), 19-Documents (CRUD), 05-Tenants (update/delete/patch), 09-Maintenance (update/delete/notes/tenant), 04-Rental-Applications (update/delete/background-check). Login credentials updated to admin/password in all auth requests."
+    },
+    {
+      "type": "docs_folder_migration",
+      "timestamp": "2026-03-16T20:00:00Z",
+      "note": "All .md files migrated from project root and propertize/bruno-collection/ to /Users/ravishah/MySpace/ProperyManage/propertize-Services/docs/ on 2026-03-16. 29 files total. Root is now clean — only Makefile, docker-compose.infra.yml, shell scripts, memo.json, and config files remain. ALL future .md files MUST go in docs/ subdirectory. This is a hard rule enforced by user."
+    },
+    {
+      "type": "code_fix",
+      "timestamp": "2026-03-16T20:10:00Z",
+      "note": "FIXED TokenController.java and EnhancedJwtTokenProvider.java in api-gateway on 2026-03-16. Bugs fixed: (1) COMPILATION FAILURE — 8 missing methods added to EnhancedJwtTokenProvider: isAccessToken, isRefreshToken, isServiceToken, validateRefreshToken, validateServiceToken, getServiceName, getTargetService, getServiceScopes. (2) 7-parse fan-out eliminated in /token/validate — now parses Claims ONCE via getClaims(), added extractRolesFromClaims(Claims) and getTokenType(Claims) helpers to provider. (3) isEmpty() replaced with isBlank() for whitespace-only token input. (4) Bearer prefix stripping added via stripBearer() helper in controller. (5) @lombok.Builder (fully-qualified) replaced with @Builder + proper import. (6) Request/failure logging added via @Slf4j. (7) validateRefreshToken now distinguishes 'wrong token type' (400) from 'expired/invalid signature' (200 valid=false). (8) Server exceptions now return 500 instead of 200 OK. (9) generateAccessToken now sets explicit type=access claim for backward compat. All tests pass: EnhancedJwtTokenProviderTest, CrossServiceAuthenticationIT."
+    },
+    {
+      "type": "code_fix",
+      "timestamp": "2026-03-16T21:30:00Z",
+      "note": "DEEP ANALYSIS AND BUG FIX SESSION 2026-03-16. All 6 services restored to full health. BUGS FIXED: (1) CRITICAL — api-gateway/application-local.yml ALL route ports were wrong: auth→8084(nothing), propertize→8081(auth port), employee→8082(propertize port). Fixed to auth→8081, propertize→8082, employee→8083, wagecraft→8084(placeholder). (2) CRITICAL — start-all-local.sh had bash syntax error: 'waitif' orphan in step 5 (missing wait_for_service 'Employee Service' 8083 + orphaned build block). Fixed and restored. (3) CRITICAL — start-all-local.sh step 6 used '$JAVA_HOME/bin/mvn' (Maven is NOT in JAVA_HOME). Fixed to use ./mvnw || mvn. (4) CRITICAL — start-all-local.sh did not source root .env before starting Java services, so REDIS_PASSWORD was never available to auth-service. Added 'set -a; source .env; set +a' block at top. (5) BUG — auth-service/application-local.yml Redis password was empty; Docker Redis requires 'redis_secure_pass'. Fixed to ${REDIS_PASSWORD:redis_secure_pass}. (6) BUG — propertize/application-local.yml Eureka URL missing credentials (http://localhost:8761/eureka/); fixed to http://admin:admin@localhost:8761/eureka/ for consistency. (7) BUG — api-gateway JAR was stale (Feb 15) — rebuilt after TokenController changes. SERVICE STATUS AFTER FIX: All UP — Service Registry:8761, Auth:8081, Propertize:8082, Employee:8083, API Gateway:8080, Frontend:3000. Login test via gateway PASSED."
+    },
+    {
+      "type": "system_notes",
+      "timestamp": "2026-03-16T21:30:00Z",
+      "note": "TWO REDIS INSTANCES observed: (1) Homebrew Redis v8.4.0 at localhost:6379 without password (config: /opt/homebrew/etc/redis.conf). (2) Docker Redis v7-alpine container (propertize-redis) also mapped to 0.0.0.0:6379. Java services connect to Homebrew Redis (wins the port binding). auth-service connects to local Redis without password — this works but is not ideal. Recommendation: either stop Homebrew Redis ('brew services stop redis') so Docker Redis is used, or set REDIS_PASSWORD='' in .env for local dev consistency. Python file: only file in project is node_modules/flatted/python/flatted.py — it's an npm dependency, not a project file. No project-specific Python scripts exist."
+    },
+    {
+      "type": "frontend_notes",
+      "timestamp": "2026-03-16T21:30:00Z",
+      "note": "Frontend (Next.js) was down because: (1) auth-service was down so no logins possible, (2) api-gateway was down so all API calls failed, (3) the process had died (PID in .pids/frontend.pid was dead). Frontend .env.development has VITE_ prefix variables — these are for Vite and are IGNORED by Next.js. Active env files in priority order: .env.local (overrides all, has API_URL=http://localhost:8080 — correct), .env.development (Vite vars, irrelevant), .env (Docker URLs - only used when .env.local absent). Frontend health check: use http://localhost:3000/ or http://localhost:3000/login (returns 200), NOT /actuator/health (returns 404 — Next.js doesn't have actuator)."
+    },
+    {
+      "type": "bruno_collection_status",
+      "timestamp": "2026-03-16T21:30:00Z",
+      "note": "Bruno collection at propertize/bruno-collection/ is UP TO DATE. Contains 37 folders (01-Authentication through 37-Approval-Workflow) + environments/ + bruno.json. Last updated per memo: 2026-03-16. Also contains a stray Edureka.bru file at root level — this appears to be a test file that should be removed or moved."
+    },
+    {
+      "type": "auth_credentials",
+      "timestamp": "2026-03-16T20:00:00Z",
+      "note": "Local dev auth credentials: username=admin, password=password (bcrypt hash confirmed). Login endpoint: POST http://localhost:8080/api/v1/auth/login via API Gateway, or POST http://localhost:8081/api/v1/auth/login direct. Response: { accessToken, refreshToken, tokenType='Bearer', expiresIn=900, username, roles }. accessToken expires in 15 min. Use 'Authorization: Bearer <accessToken>' header for all protected endpoints. Auth DB: propertize_auth (PostgreSQL, user: ravishah). Users table has 2 users: admin (admin@propertize.com) and ravishah (ravi@test.com)."
+    },
+    {
+      "type": "critical_fix",
+      "timestamp": "2026-03-17T00:00:00Z",
+      "note": "JWT KEY MISMATCH FIX (2026-03-17): Root cause of all 401 errors was 3 separate RSA key sets across services. CANONICAL key = auth-service/keys/ (Key Set A, fingerprint: abc47cc319a93d3b). FIXES APPLIED: (1) propertize/src/main/resources/application-local.yml — default key path was './propertize/config/keys/' (wrong: adds extra 'propertize/' prefix when WD=propertize/). Fixed to './config/keys/private_key.pem' and './config/keys/public_key.pem'. (2) employee-service/src/main/resources/application-local.yml — default key path was './auth-service/keys/public_key.pem' (wrong when WD=employee-service/). Fixed to '../auth-service/keys/public_key.pem'. (3) auth-service/src/main/resources/config/keys/ — was Key Set B. Replaced with Key Set A. security.rsa.* paths changed from classpath: to file paths. (4) api-gateway/src/main/resources/keys/public_key.pem — was Key Set C. Replaced with Key Set A. jwt.rsa.* added to application-local.yml. (5) employee-service/config/keys/public_key.pem — was Key Set B. Replaced with Key Set A. All 3 services rebuilt and restarted. JWT validation now works end-to-end."
+    },
+    {
+      "type": "critical_fix",
+      "timestamp": "2026-03-17T00:00:00Z",
+      "note": "PROPERTIZE DB USER SEED (2026-03-17): propertize_db.users table was empty — no users existed so all authenticated endpoints returned 404 'User not found'. The User entity in propertize is @Immutable read-mirror of auth-service users, but stored in separate DB (propertize_db, user: dbuser). Created init-propertize-users.sql to seed admin (PLATFORM_OVERSIGHT + PLATFORM_OPERATIONS) and ravishah (ORGANIZATION_OWNER) users. Run: psql -h localhost -U ravishah -d propertize_db -f init-propertize-users.sql"
+    },
+    {
+      "type": "critical_fix",
+      "timestamp": "2026-03-17T00:00:00Z",
+      "note": "EMPLOYEE-SERVICE JAR NAME FIX (2026-03-17): The employee-service builds as 'employecraft-0.0.1-SNAPSHOT.jar' (not 'employee-service-*.jar'). Fixed start-all-local.sh step 5 to use 'target/employecraft-*.jar'. Also fixed the check from 'target/employee-service*.jar' to 'target/employecraft*.jar'."
+    },
+    {
+      "type": "critical_fix",
+      "timestamp": "2026-03-17T00:00:00Z",
+      "note": "FLYWAY MIGRATION FIX (2026-03-17): V8__Create_Shedlock_Table.sql had stray 'resume' text prepended to the SQL comment block, which would cause Flyway parse error. Removed the stray text."
+    },
+    {
+      "type": "gateway_route_fix",
+      "timestamp": "2026-03-17T00:00:00Z",
+      "note": "API GATEWAY ROUTE FIX (2026-03-17): Added '/api/v1/admin/**' to the propertize-service-local route predicates in api-gateway/src/main/resources/application-local.yml. Previously admin endpoints (AdminOrganizationManagementController, AdminStatsController, AdminContactController) were only reachable via Eureka discovery. Now explicitly routed to http://localhost:8082."
+    },
+    {
+      "type": "full_stack_validation",
+      "timestamp": "2026-03-17T00:00:00Z",
+      "note": "FULL STACK VALIDATED 2026-03-17: All 6 services UP — Service Registry:8761, Auth:8081, Propertize:8082, Employee:8083, API Gateway:8080, Frontend:3000. All 4 Spring Boot services in Eureka. All endpoints tested with admin token. 200 OK: /organizations/my, /admin/organizations/applications, /admin/organizations, /admin/organizations/applications/pending, /properties, /tenants (via gateway). All 3 actuator health checks UP. JWT validation works end-to-end with RS256 tokens."
+    }
+  ]
+}

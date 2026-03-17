@@ -1,0 +1,146 @@
+# PLATFORM_OVERSIGHT Role - Industrial Grade Configuration
+# Platform users oversee the platform but DO NOT own organizations
+# They have READ access to monitor, but NO WRITE access to modify
+
+PLATFORM_OVERSIGHT:
+  description: "Platform-wide oversight and monitoring authority (read-only for organizations)"
+  level: 1000
+  category: "platform"
+  scope: "platform"
+
+  # Core Philosophy: Platform users OBSERVE and MONITOR, not MODIFY
+  # Organizations belong to organization owners, not platform staff
+
+  permissions:
+    # === ADMIN ACCESS ===
+    - "ADMIN_ACCESS" # Core admin dashboard access
+
+    # === USER MANAGEMENT (Full Access) ===
+    - "USER_CREATE"
+    - "USER_READ"
+    - "USER_UPDATE"
+    - "USER_DELETE"
+    - "USER_LIST"
+    - "USER_LIST_ALL"
+    - "USER_INVITE"
+
+    # === ORGANIZATION (READ-ONLY) ===
+    # Platform users can VIEW organizations but CANNOT modify them
+    - "ORGANIZATION_READ" # View organization details
+    - "ORGANIZATION_LIST" # List all organizations
+    - "ORGANIZATION_LIST_ALL" # List across all scopes
+    # EXPLICITLY DENIED:
+    # - ORGANIZATION_CREATE              # ❌ Cannot create orgs
+    # - ORGANIZATION_UPDATE              # ❌ Cannot update orgs
+    # - ORGANIZATION_DELETE              # ❌ Cannot delete orgs
+    # - ORGANIZATION_CONFIGURE           # ❌ Cannot configure orgs
+    # - ORGANIZATION_MANAGE              # ❌ Cannot manage orgs
+
+    # === PROPERTY (READ-ONLY) ===
+    - "PROPERTY_READ"
+    - "PROPERTY_LIST"
+    - "PROPERTY_LIST_ALL"
+    - "PROPERTY_VIEW_ALL"
+
+    # === LEASE (READ-ONLY) ===
+    - "LEASE_READ"
+    - "LEASE_LIST"
+    - "LEASE_LIST_ALL"
+
+    # === TENANT (READ-ONLY) ===
+    - "TENANT_READ"
+    - "TENANT_LIST"
+    - "TENANT_LIST_ALL"
+
+    # === PAYMENT (READ-ONLY) ===
+    - "PAYMENT_READ"
+    - "PAYMENT_LIST"
+    - "PAYMENT_LIST_ALL"
+
+    # === MAINTENANCE (READ-ONLY) ===
+    - "MAINTENANCE_READ"
+    - "MAINTENANCE_LIST"
+    - "MAINTENANCE_LIST_ALL"
+
+    # === INVOICE (READ-ONLY) ===
+    - "INVOICE_READ"
+    - "INVOICE_LIST"
+
+    # === REPORTING (Full Access) ===
+    - "REPORT_CREATE"
+    - "REPORT_READ"
+    - "REPORT_EXPORT"
+    - "REPORT_EXPORT_ALL"
+    - "REPORT_LIST"
+    - "REPORT_GENERATE"
+    - "REPORT_CUSTOMIZE"
+
+    # === ANALYTICS (Full Access) ===
+    - "ANALYTICS_READ"
+    - "ANALYTICS_EXPORT"
+    - "ANALYTICS_ANALYZE"
+
+    # === DASHBOARD (Read Access) ===
+    - "DASHBOARD_READ"
+    - "DASHBOARD_VIEW"
+    - "DASHBOARD_READ_PLATFORM_DASHBOARD"
+    - "DASHBOARD_READ_OVERSIGHT_DASHBOARD"
+
+    # === SESSION MANAGEMENT (Full Access) ===
+    - "SESSION_LIST"
+    - "SESSION_LIST_ALL"
+    - "SESSION_TERMINATE"
+    - "SESSION_TERMINATE_ALL"
+
+    # === SYSTEM (Full Access) ===
+    - "SYSTEM_CONFIGURE"
+    - "SYSTEM_MONITOR"
+    - "SYSTEM_BACKUP"
+    - "SYSTEM_RESTORE"
+    - "SYSTEM_UPDATE"
+    - "SYSTEM_TROUBLESHOOT"
+
+    # === AUDIT (Full Access) ===
+    - "AUDIT_LOG_READ"
+    - "AUDIT_LOG_EXPORT"
+
+    # === NOTIFICATIONS (Read + Send) ===
+    - "NOTIFICATION_READ"
+    - "NOTIFICATION_LIST"
+    - "NOTIFICATION_SEND"
+    - "NOTIFICATION_CONFIGURE"
+
+    # === RENTAL APPLICATIONS (Read-Only) ===
+    - "RENTAL_APPLICATION_READ"
+    - "RENTAL_APPLICATION_LIST"
+    - "RENTAL_APPLICATION_REVIEW"
+
+  # Explicit denials to ensure no write access to organizations
+  explicitDenials:
+    - "ORGANIZATION_CREATE"
+    - "ORGANIZATION_UPDATE"
+    - "ORGANIZATION_DELETE"
+    - "ORGANIZATION_CONFIGURE"
+    - "ORGANIZATION_MANAGE"
+    - "PROPERTY_CREATE"
+    - "PROPERTY_UPDATE"
+    - "PROPERTY_DELETE"
+    - "LEASE_CREATE"
+    - "LEASE_UPDATE"
+    - "LEASE_DELETE"
+    - "TENANT_CREATE"
+    - "TENANT_UPDATE"
+    - "TENANT_DELETE"
+
+  capabilities:
+    emergencyAccess: true
+    fullSystemAccess: false # ❌ Not full system access
+    bypassRestrictions: false # ❌ Must follow rules
+    immediateAction: false # ❌ No immediate actions
+    canManageOrganizations: false # ❌ Explicit flag
+
+  restrictions:
+    requireMFA: true
+    auditAllActions: true
+    cannotDeleteSelf: true
+    readOnlyOrganizations: true # ⭐ Key restriction

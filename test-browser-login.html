@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test - Browser vs Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            width: 200px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Login Authentication Test</h1>
+    <p>This page tests the login flow that your frontend uses</p>
+
+    <div class="test-section">
+        <h2>Test Credentials</h2>
+        <div>
+            <label>Username: <input type="text" id="username" value="ravishah"></label><br>
+            <label>Password: <input type="password" id="password" value="password"></label><br>
+            <button onclick="testLogin()">🚀 Test Login</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testLogin() {
+            clearResults();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            log(`Testing login for: ${username}`, 'info');
+            
+            try {
+                // Test 1: Check if API is reachable
+                log('Step 1: Checking API Gateway health...', 'info');
+                const healthResponse = await fetch(`${API_URL}/actuator/health`);
+                log(`Health check: ${healthResponse.status} ${healthResponse.statusText}`, 
+                    healthResponse.ok ? 'success' : 'error');
+
+                // Test 2: Attempt login with same method as frontend
+                log('Step 2: Attempting login (same as NextAuth)...', 'info');
+                
+                const loginUrl = `${API_URL}/api/v1/auth/login`;
+                log(`Login URL: ${loginUrl}`, 'info');
+                
+                const requestBody = {
+                    username: username,
+                    password: password
+                };
+                log(`Request Body: <pre>${JSON.stringify(requestBody, null, 2)}</pre>`, 'info');
+                
+                const loginResponse = await fetch(loginUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify(requestBody)
+                });
+
+                log(`Response Status: ${loginResponse.status} ${loginResponse.statusText}`, 
+                    loginResponse.ok ? 'success' : 'error');
+
+                // Log all response headers
+                const headers = {};
+                loginResponse.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+                log(`Response Headers: <pre>${JSON.stringify(headers, null, 2)}</pre>`, 'info');
+
+                if (!loginResponse.ok) {
+                    const errorText = await loginResponse.text();
+                    log(`Error Response: <pre>${errorText || 'Empty response body'}</pre>`, 'error');
+                    
+                    // Common error diagnostics
+                    if (loginResponse.status === 401) {
+                        log('❌ Authentication failed - Invalid credentials', 'error');
+                    } else if (loginResponse.status === 403) {
+                        log('❌ Forbidden - User may be locked or disabled', 'error');
+                    } else if (loginResponse.status === 429) {
+                        log('❌ Too many requests - Rate limit exceeded', 'error');
+                    } else if (loginResponse.status === 0) {
+                        log('❌ Network error - CORS or connectivity issue', 'error');
+                    }
+                    return;
+                }
+
+                // Success - Parse response
+                const data = await loginResponse.json();
+                log(`✅ Login successful!`, 'success');
+                log(`Response Data: <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                
+                // Decode JWT to show claims
+                if (data.accessToken) {
+                    try {
+                        const tokenParts = data.accessToken.split('.');
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        log(`JWT Payload: <pre>${JSON.stringify(payload, null, 2)}</pre>`, 'info');
+                    } catch (e) {
+                        log(`Could not decode JWT: ${e.message}`, 'error');
+                    }
+                }
+
+                // Test 3: Verify token works
+                if (data.accessToken) {
+                    log('Step 3: Testing token with /me endpoint...', 'info');
+                    const meResponse = await fetch(`${API_URL}/api/v1/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${data.accessToken}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (meResponse.ok) {
+                        const meData = await meResponse.json();
+                        log(`✅ Token verification successful!`, 'success');
+                        log(`User Data: <pre>${JSON.stringify(meData, null, 2)}</pre>`, 'success');
+                    } else {
+                        log(`⚠️ Token verification failed: ${meResponse.status}`, 'error');
+                    }
+                }
+
+            } catch (error) {
+                log(`❌ Exception caught: ${error.message}`, 'error');
+                log(`Error stack: <pre>${error.stack}</pre>`, 'error');
+                
+                // Network error diagnostics
+                if (error.message.includes('Failed to fetch')) {
+                    log('⚠️ Network error - Possible causes:', 'error');
+                    log('1. Backend not running', 'error');
+                    log('2. CORS configuration issue', 'error');
+                    log('3. URL incorrect', 'error');
+                    log('4. Browser blocking request', 'error');
+                }
+            }
+        }
+
+        // Auto-run on page load for quick testing
+        window.addEventListener('load', () => {
+            log('Page loaded. Click "Test Login" to begin.', 'info');
+        });
+    </script>
+</body>
+</html>

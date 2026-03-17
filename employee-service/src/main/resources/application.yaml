@@ -1,0 +1,179 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: employee-service
+  # Graceful shutdown timeout
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  port: ${SERVER_PORT:8083}
+  # Graceful shutdown - wait for in-flight requests to complete
+  shutdown: graceful
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: default
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/propertize_db
+    username: dbuser
+    password: dbpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      pool-name: EmployecraftHikariPool
+      auto-commit: false
+      connection-test-query: SELECT 1
+      validation-timeout: 3000
+      leak-detection-threshold: 60000
+
+  # Caffeine L1 Cache
+  cache:
+    type: caffeine
+    cache-names: employees,departments,attendance,organizationStaff,payroll,employeesByOrg
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+# Propertize Integration
+propertize:
+  api:
+    url: ${PROPERTIZE_URL:http://localhost:8082}
+    timeout:
+      connect: 5000
+      read: 10000
+
+# API Gateway URL
+api-gateway:
+  url: ${API_GATEWAY_URL:http://localhost:8080}
+
+# Auth Service Integration (ACL + Zero-Trust JWT Validation)
+services:
+  auth:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+
+# Gateway Trust & Zero-Trust JWT Configuration
+security:
+  gateway:
+    expected-value: ${GATEWAY_SOURCE:api-gateway}
+  jwt:
+    # RS256 public key for zero-trust token validation
+    public-key-path: ${JWT_PUBLIC_KEY_PATH:config/keys/public_key.pem}
+
+# Actuator Management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Application Info
+info:
+  app:
+    name: ${spring.application.name}
+    description: Employee Service - Employee and department management
+    version: 1.0.0
+
+# =============================================================================
+# Eureka Client Configuration (Service Discovery)
+# =============================================================================
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://admin:admin@localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.uuid}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+# Actuator
+# =============================================================================
+# Resilience4j Configuration
+# =============================================================================
+resilience4j:
+  circuitbreaker:
+    instances:
+      authService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 3s
+      propertizeService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+  retry:
+    instances:
+      authService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+          - java.io.IOException
+      propertizeService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+  bulkhead:
+    instances:
+      authService:
+        maxConcurrentCalls: 10
+        maxWaitDuration: 500ms
+      propertizeService:
+        maxConcurrentCalls: 15
+        maxWaitDuration: 1s
+
+# Logging
+logging:
+  level:
+    com.employecraft: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO

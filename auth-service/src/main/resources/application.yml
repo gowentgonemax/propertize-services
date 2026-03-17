@@ -1,0 +1,218 @@
+server:
+  port: ${SERVER_PORT:8081}
+  # Graceful shutdown - wait for in-flight requests to complete
+  shutdown: graceful
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: auth-service
+  config:
+    import: optional:classpath:rbac.yml
+  # Graceful shutdown timeout
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # Database Configuration - Shared propertize database
+  datasource:
+    url: jdbc:postgresql://localhost:5432/propertize_db
+    username: dbuser
+    password: dbpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # Flyway Configuration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+    properties:
+      spring.json.add.type.headers: false
+
+  # Redis Configuration for Token Blacklist
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+
+# Eureka Client Configuration
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_URL:http://admin:admin@localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.uuid}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+# Security Configuration
+security:
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION:900000}
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000}
+    service-token-expiration-ms: ${JWT_SERVICE_EXPIRATION:300000}
+    issuer: auth-service
+  rsa:
+    public-key-path: ${RSA_PUBLIC_KEY_PATH:config/keys/public_key.pem}
+    private-key-path: ${RSA_PRIVATE_KEY_PATH:config/keys/private_key.pem}
+    auto-generate: ${RSA_AUTO_GENERATE:false}
+    key-rotation:
+      enabled: ${KEY_ROTATION_ENABLED:false}
+      interval-days: ${KEY_ROTATION_INTERVAL:90}
+      grace-period-hours: ${KEY_ROTATION_GRACE:24}
+
+# RBAC Configuration
+rbac:
+  config-path: classpath:rbac.yml
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  login:
+    max-attempts-per-minute: ${RATE_LIMIT_LOGIN_MINUTE:5}
+    max-attempts-per-hour: ${RATE_LIMIT_LOGIN_HOUR:20}
+  password-reset:
+    max-attempts-per-hour: ${RATE_LIMIT_PASSWORD_RESET:3}
+  ip:
+    max-requests-per-minute: ${RATE_LIMIT_IP:100}
+  lockout:
+    max-failed-attempts: ${LOCKOUT_MAX_ATTEMPTS:5}
+    duration-minutes: ${LOCKOUT_DURATION:30}
+
+# Frontend Configuration
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+    reset-password-path: ${RESET_PASSWORD_PATH:/reset-password}
+
+# Field-Level Encryption (AES-256-GCM for PII: email, phone, etc.)
+encryption:
+  field:
+    key: ${ENCRYPTION_FIELD_KEY:} # 32-byte Base64 key. Generate: openssl rand -base64 32
+
+# Resilience4j Circuit Breaker for downstream calls
+resilience4j:
+  circuitbreaker:
+    instances:
+      propertizeService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+  retry:
+    instances:
+      propertizeService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Application Info
+info:
+  app:
+    name: ${spring.application.name}
+    description: Authentication Service - JWT token generation and validation
+    version: 1.0.0
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.propertize.platform.auth: DEBUG
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-no-correlation-id}] %-5level %logger{36} - %msg%n"
+
+# Services URLs (for user validation)
+services:
+  propertize:
+    url: ${PROPERTIZE_SERVICE_URL:http://propertize-service}
+  service-auth:
+    enabled: ${SERVICE_AUTH_ENABLED:true}
+    # Pre-configured service credentials
+    services:
+      - name: propertize-service
+        key: ${SERVICE_KEY_PROPERTIZE:propertize-secret-key-change-in-production}
+        allowed-scopes: ["read:auth", "write:auth", "validate:token"]
+      - name: employee-service
+        key: ${SERVICE_KEY_EMPLOYEE:employee-secret-key-change-in-production}
+        allowed-scopes: ["read:employees", "write:employees", "read:payroll"]
+
+# Service-to-Service Authentication Configuration
+service:
+  authentication:
+    enabled: true
+    api-key: ${AUTH_SERVICE_API_KEY:auth-service-secret-key-12345}
+    header-name: X-Service-Api-Key
+    service-identifier-header: X-Service-Name
+    trusted-services:
+      propertize: ${PROPERTIZE_SERVICE_API_KEY:propertize-secret-key-12345}
+      employee-service: ${EMPLOYEE_SERVICE_API_KEY:employee-service-secret-key-12345}
+
+# Distributed Tracing Configuration
+tracing:
+  enabled: ${TRACING_ENABLED:false}
+  otlp:
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}

@@ -1,0 +1,74 @@
+server:
+  port: ${SERVER_PORT:8761}
+  tomcat:
+    max-http-header-size: 65536 # 64KB to handle large headers
+    max-http-request-header-size: 65536
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: service-registry
+  security:
+    user:
+      name: ${EUREKA_USERNAME:admin}
+      password: ${EUREKA_PASSWORD:admin}
+  # Freemarker configuration for Eureka dashboard
+  freemarker:
+    prefer-file-system-access: false
+    template-loader-path: classpath:/templates/
+    cache: false
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+    prefer-ip-address: false
+  client:
+    # This is a standalone Eureka server, so it doesn't register with itself
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${spring.security.user.name}:${spring.security.user.password}@${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Disable self-preservation for development (enable for production)
+    enable-self-preservation: ${EUREKA_SELF_PRESERVATION:false}
+    # Response cache update interval (in ms)
+    response-cache-update-interval-ms: 5000
+    # How long to wait before removing expired instances
+    eviction-interval-timer-in-ms: 10000
+    # Wait time for peer synchronization
+    wait-time-in-ms-when-sync-empty: 0
+  dashboard:
+    enabled: true
+    path: /
+
+# Actuator endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, env
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+# Application info for Eureka dashboard
+info:
+  app:
+    name: Propertize Service Registry
+    description: Eureka Service Discovery Server
+    version: 1.0.0
+    platform: Propertize Microservices Platform
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
+    com.propertize.platform.registry: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

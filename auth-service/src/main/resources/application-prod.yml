@@ -1,0 +1,98 @@
+# ============================================================================
+# Auth Service - PRODUCTION Environment
+# ============================================================================
+
+server:
+  port: ${AUTH_SERVICE_PORT:8090}
+
+spring:
+  # Database Configuration - Production
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 20
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-test-query: SELECT 1
+      validation-timeout: 3000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+
+  # Redis Configuration - Production cluster
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 20
+          min-idle: 10
+        shutdown-timeout: 100ms
+
+# Eureka Client Configuration
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URL}
+    registry-fetch-interval-seconds: 30
+  instance:
+    hostname: ${HOSTNAME:auth-service}
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    metadata-map:
+      environment: prod
+      region: ${AWS_REGION:us-east-1}
+
+# JWT Configuration - Production keys from AWS Secrets Manager
+jwt:
+  secret: ${JWT_SECRET}
+  private-key-path: ${JWT_PRIVATE_KEY_PATH}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH}
+  access-token-validity: ${JWT_ACCESS_VALIDITY:900000}
+  refresh-token-validity: ${JWT_REFRESH_VALIDITY:604800000}
+  issuer: ${JWT_ISSUER:propertize-auth-prod}
+
+# Token Blacklist Configuration
+token:
+  blacklist:
+    enabled: true
+    cleanup-interval: 1800000 # 30 minutes
+    cache-ttl: 86400
+
+# Logging - Production minimal
+logging:
+  level:
+    root: WARN
+    com.propertize.platform.auth: INFO
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
+# Management & Actuator - Restricted
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never

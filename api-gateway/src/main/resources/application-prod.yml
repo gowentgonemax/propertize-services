@@ -1,0 +1,124 @@
+# ============================================================================
+# API Gateway - PRODUCTION Environment
+# ============================================================================
+# This profile is for production deployment
+# High security, performance optimization, strict monitoring
+# ============================================================================
+
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: ${ALLOWED_ORIGINS}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+  # Redis Configuration - Production cluster
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 20
+          min-idle: 10
+        shutdown-timeout: 100ms
+
+# Eureka Client Configuration
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URL}
+    registry-fetch-interval-seconds: 30
+  instance:
+    hostname: ${HOSTNAME:api-gateway}
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    metadata-map:
+      environment: prod
+      region: ${AWS_REGION:us-east-1}
+
+# JWT Configuration (must match auth-service)
+jwt:
+  secret: ${JWT_SECRET}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH}
+  access-token-validity: ${JWT_ACCESS_VALIDITY:900000}
+  refresh-token-validity: ${JWT_REFRESH_VALIDITY:604800000}
+
+# Rate Limiting - Strict limits for production
+gateway:
+  rate-limit:
+    enabled: true
+    default-replenish-rate: ${RATE_LIMIT_REPLENISH:50}
+    default-burst-capacity: ${RATE_LIMIT_BURST:100}
+  timeout:
+    global: 30s
+    per-route: 60s
+
+# Circuit Breaker - Production settings
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 20
+        permittedNumberOfCallsInHalfOpenState: 10
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 10s
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 60s
+
+# Logging - Production settings
+logging:
+  level:
+    root: WARN
+    com.propertize.platform.gateway: INFO
+    org.springframework.cloud.gateway: WARN
+    org.springframework.web.server: ERROR
+    reactor.netty: ERROR
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
+# Management & Actuator - Restricted access
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+

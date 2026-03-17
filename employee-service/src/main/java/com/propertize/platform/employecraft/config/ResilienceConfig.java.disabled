@@ -1,0 +1,106 @@
+package com.propertize.platform.employecraft.config;
+
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.retry.RetryConfig;
+import io.github.resilience4j.retry.RetryRegistry;
+import io.github.resilience4j.bulkhead.BulkheadConfig;
+import io.github.resilience4j.bulkhead.BulkheadRegistry;
+import io.github.resilience4j.core.IntervalFunction;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.time.Duration;
+
+/**
+ * Resilience4j Configuration for Employecraft
+ * 
+ * Provides Circuit Breaker, Retry, and Bulkhead patterns for:
+ * - Auth Service calls (user lookups, permission checks)
+ * - Propertize Service calls (property data integration)
+ * - Database operations (heavy queries)
+ */
+@Slf4j
+@Configuration
+public class ResilienceConfig {
+
+    // ========================
+    // CIRCUIT BREAKERS
+    // ========================
+
+    @Bean
+    public CircuitBreakerRegistry circuitBreakerRegistry() {
+        CircuitBreakerConfig authServiceConfig = CircuitBreakerConfig.custom()
+                .failureRateThreshold(50)
+                .slowCallRateThreshold(80)
+                .slowCallDurationThreshold(Duration.ofSeconds(3))
+                .waitDurationInOpenState(Duration.ofSeconds(30))
+                .permittedNumberOfCallsInHalfOpenState(5)
+                .slidingWindowSize(10)
+                .minimumNumberOfCalls(5)
+                .recordExceptions(ConnectException.class, SocketTimeoutException.class, IOException.class)
+                .build();
+
+        CircuitBreakerConfig propertizeServiceConfig = CircuitBreakerConfig.custom()
+                .failureRateThreshold(50)
+                .waitDurationInOpenState(Duration.ofSeconds(30))
+                .slidingWindowSize(10)
+                .minimumNumberOfCalls(5)
+                .build();
+
+        CircuitBreakerRegistry registry = CircuitBreakerRegistry.ofDefaults();
+        registry.circuitBreaker("authService", authServiceConfig);
+        registry.circuitBreaker("propertizeService", propertizeServiceConfig);
+        return registry;
+    }
+
+    // ========================
+    // RETRY
+    // ========================
+
+    @Bean
+    public RetryRegistry retryRegistry() {
+        RetryConfig authRetryConfig = RetryConfig.custom()
+                .maxAttempts(3)
+                .intervalFunction(IntervalFunction.ofExponentialBackoff(500, 2.0))
+                .retryExceptions(ConnectException.class, SocketTimeoutException.class, IOException.class)
+                .build();
+
+        RetryConfig propertizeRetryConfig = RetryConfig.custom()
+                .maxAttempts(3)
+                .intervalFunction(IntervalFunction.ofExponentialBackoff(1000, 2.0))
+                .retryExceptions(ConnectException.class, SocketTimeoutException.class)
+                .build();
+
+        RetryRegistry registry = RetryRegistry.ofDefaults();
+        registry.retry("authService", authRetryConfig);
+        registry.retry("propertizeService", propertizeRetryConfig);
+        return registry;
+    }
+
+    // ========================
+    // BULKHEAD (Thread Isolation)
+    // ========================
+
+    @Bean
+    public BulkheadRegistry bulkheadRegistry() {
+        BulkheadConfig authBulkheadConfig = BulkheadConfig.custom()
+                .maxConcurrentCalls(10)
+                .maxWaitDuration(Duration.ofMillis(500))
+                .build();
+
+        BulkheadConfig propertizeBulkheadConfig = BulkheadConfig.custom()
+                .maxConcurrentCalls(15)
+                .maxWaitDuration(Duration.ofSeconds(1))
+                .build();
+
+        BulkheadRegistry registry = BulkheadRegistry.ofDefaults();
+        registry.bulkhead("authService", authBulkheadConfig);
+        registry.bulkhead("propertizeService", propertizeBulkheadConfig);
+        return registry;
+    }
+}
