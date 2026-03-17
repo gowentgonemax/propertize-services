@@ -38,6 +38,23 @@ spring:
           filters:
             - StripPrefix=0
 
+        # Legacy /admin/** shortcut → forwards to propertize-service with /api/v1/ prefix
+        # Fixes: requests arriving without /api/v1/ prefix (e.g. direct curl, mobile clients)
+        - id: propertize-admin-shortcut
+          uri: http://localhost:8082
+          predicates:
+            - Path=/admin/**
+          filters:
+            - RewritePath=/admin/(?<segment>.*), /api/v1/admin/${segment}
+
+        # Legacy /v1/** shortcut → rewrites to /api/v1/**
+        - id: propertize-v1-shortcut
+          uri: http://localhost:8082
+          predicates:
+            - Path=/v1/**
+          filters:
+            - RewritePath=/v1/(?<segment>.*), /api/v1/${segment}
+
         # Propertize Service - Direct Route
         # BUG FIX: was pointing to 8081 (auth-service port); propertize-service runs on 8082
         - id: propertize-service-local
