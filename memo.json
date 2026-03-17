@@ -200,7 +200,43 @@
     {
       "id": "task-root-folder-cleanup",
       "description": "Move all documentation .md files from root into a /docs directory to keep root clean per FILE_ORGANIZATION rule.",
-      "status": "identified",
+      "status": "completed — all .md files moved to /docs/ on 2026-03-16.",
+      "priority": "low"
+    },
+    {
+      "id": "task-git-init",
+      "description": "Initialize git repository and create initial commit for the project.",
+      "status": "completed — git init + first commit a73a464 on 2026-03-16.",
+      "priority": "high"
+    },
+    {
+      "id": "task-fix-apply-check-500",
+      "description": "Fix GET /organizations/onboarding/apply-check returning HTTP 500.",
+      "status": "completed — 3 fixes: (1) Added @ExceptionHandler(HttpRequestMethodNotSupportedException.class) to GlobalExceptionHandler → returns 405 not 500. (2) Added @ExceptionHandler(HttpMediaTypeNotSupportedException.class) → returns 415. (3) Added GET /onboarding/apply-check endpoint to OrganizationController + checkApplyEligibility(email) to OnboardingService. (4) Added @ExceptionHandler imports for both new types.",
+      "priority": "critical"
+    },
+    {
+      "id": "task-frontend-logging",
+      "description": "Enhance frontend structured logging utility.",
+      "status": "completed — LoggerService in src/services/logger.service.ts enhanced with: logApiCall(method,url,status,durationMs), logAuthError(type,url,username), startTimer(label)→stop(), serverLog(level,category,message,data) for Next.js SSR. utils/logger.ts refactored to re-export from logger.service.ts (single source of truth).",
+      "priority": "medium"
+    },
+    {
+      "id": "task-unit-tests",
+      "description": "Write unit tests for the apply-check fix.",
+      "status": "completed — 16 tests ALL PASS: OnboardingServiceApplyCheckTest.java (10 tests: null/blank email, no active app, submitted/under-review/draft apps, response structure, email normalisation) + GlobalExceptionHandlerMethodNotAllowedTest.java (6 tests: 405 regression guards + 415 media type tests).",
+      "priority": "high"
+    },
+    {
+      "id": "task-org-endpoints-gateway",
+      "description": "Audit org endpoints and add missing gateway routes.",
+      "status": "completed — api-gateway/src/main/resources/application-local.yml updated to add 25 missing propertize-service path predicates: analytics, application-fees, approvals, assets, audit, contacts, expenses, late-fees, messages, metrics, milestones, notification-preferences, notifications, organization-application-fees, payment-methods, payment-reminders, reports, schedule-events, search, screening, stripe, support, tasks, transactions, util, utilities, vendors, webhooks, api/public, diagnostics.",
+      "priority": "high"
+    },
+    {
+      "id": "task-cleanup-2026-03-16",
+      "description": "Delete stale files and update .gitignore.",
+      "status": "completed — Deleted Payment.java.backup and Payment.java.tmp. Added to .gitignore: coverage/, playwright-report/, test-results/, *.tsbuildinfo, *.backup, *.tmp, *.bak, *.orig, build-output.log, *-analysis-results.json, *.analysis.json.",
       "priority": "low"
     }
   ],
@@ -326,6 +362,11 @@
       "type": "full_stack_validation",
       "timestamp": "2026-03-17T00:00:00Z",
       "note": "FULL STACK VALIDATED 2026-03-17: All 6 services UP — Service Registry:8761, Auth:8081, Propertize:8082, Employee:8083, API Gateway:8080, Frontend:3000. All 4 Spring Boot services in Eureka. All endpoints tested with admin token. 200 OK: /organizations/my, /admin/organizations/applications, /admin/organizations, /admin/organizations/applications/pending, /properties, /tenants (via gateway). All 3 actuator health checks UP. JWT validation works end-to-end with RS256 tokens."
+    },
+    {
+      "type": "six_task_session",
+      "timestamp": "2026-03-16T23:59:00Z",
+      "note": "SIX-TASK SESSION COMPLETED 2026-03-16 — Git:a73a464. TASK 1 (GIT INIT): repo already existed, initial commit a73a464 created with all tracked files. TASK 2 (BUG FIX — apply-check 500): Root cause = GET /api/v1/organizations/onboarding/apply-check matched @PatchMapping('/onboarding/{trackingId}') but wrong HTTP method → HttpRequestMethodNotSupportedException → fell to generic catch-all → 500. Fixed: (a) GlobalExceptionHandler.java — added handleMethodNotSupported() → 405 + handleMediaTypeNotSupported() → 415; imported HttpRequestMethodNotSupportedException + HttpMediaTypeNotSupportedException. (b) OrganizationController.java — added @GetMapping('/onboarding/apply-check') checkOnboardingEligibility(@RequestParam email). (c) OnboardingService.java — added checkApplyEligibility(email): validates non-blank, calls applicationRepository.findActiveByEmail(), returns Map<canApply,reason,[existingTrackingId,existingStatus]>. TASK 3 (FRONTEND LOGGING): src/services/logger.service.ts — added logApiCall(method,url,status,durationMs,error?), logAuthError('401'|'403',url,username?), startTimer(label)→():number, serverLog(level,category,message,data) for Next.js SSR, protected sendToErrorTracking() hook; fixed || operator in getStats(). src/utils/logger.ts replaced with re-export shim from logger.service.ts. TASK 4 (UNIT TESTS): 16 tests ALL PASS — OnboardingServiceApplyCheckTest.java (10 cases: null/blank/empty email, no apps, SUBMITTED/UNDER_REVIEW/DRAFT apps, email normalisation, response structure invariants) + GlobalExceptionHandlerMethodNotAllowedTest.java (6 cases: 405 regression guard, POST on GET endpoint, human-readable message, not-500 guard, 415 text/plain, 415 details). TASK 5 (GATEWAY ROUTES): api-gateway/application-local.yml predicates for propertize-service-local expanded from 11 paths to 36 paths — added: analytics, application-fees, approvals, assets, audit, contacts, expenses, late-fees, messages, metrics, milestones, notification-preferences, notifications, organization-application-fees, payment-methods, payment-reminders, reports, schedule-events, search, screening, stripe, support, tasks, transactions, util, utilities, vendors, webhooks, api/public, diagnostics. TASK 6 (CLEANUP): Deleted Payment.java.backup + Payment.java.tmp. .gitignore enhanced with coverage/, playwright-report/, test-results/, __mocks__/generated/, *.tsbuildinfo, build-output.log, *-analysis-results.json, *.analysis.json, *.backup, *.tmp, *.bak, *.orig."
     }
   ]
 }
