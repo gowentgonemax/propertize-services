@@ -8,6 +8,8 @@ import com.propertize.platform.auth.entity.User;
 import com.propertize.platform.auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +47,7 @@ public class UserManagementService {
                 .lastName(request.getLastName())
                 .phoneNumber(request.getPhoneNumber())
                 .organizationId(request.getOrganizationId())
+                .organizationCode(request.getOrganizationCode())
                 .roles(request.getRoles() != null ? request.getRoles() : new HashSet<>())
                 .enabled(request.getEnabled() != null ? request.getEnabled() : true)
                 .accountNonExpired(true)
@@ -125,6 +128,31 @@ public class UserManagementService {
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
         return mapToUserInfoResponse(user);
+    }
+
+    /**
+     * List users with pagination and optional organization filter.
+     * Organization members only see users in their own organization.
+     * Platform admins can see all users (pass null organizationId).
+     */
+    public Page<UserInfoResponse> getAllUsers(String organizationId, Pageable pageable) {
+        Page<User> users;
+        if (organizationId != null && !organizationId.isBlank()) {
+            users = userRepository.findByOrganizationId(organizationId, pageable);
+        } else {
+            users = userRepository.findAll(pageable);
+        }
+        return users.map(this::mapToUserInfoResponse);
+    }
+
+    @Transactional
+    public void updatePassword(Long userId, String newPassword) {
+        log.info("Updating password for user: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("✅ Password updated for user: {}", userId);
     }
 
     private UserInfoResponse mapToUserInfoResponse(User user) {

@@ -34,70 +34,72 @@ spring:
     refresh:
       enabled: false
     gateway:
-      # Enable discovery client for load balancing
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      # Default filters applied to all routes
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-        - AddResponseHeader=X-Gateway-Version, 1.0.0
-      # Global CORS configuration
-      globalcors:
-        cors-configurations:
-          "[/**]":
-            allowedOriginPatterns:
-              - "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - PATCH
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            exposedHeaders:
-              - Authorization
-              - X-Correlation-Id
-              - X-Request-Id
-              - X-Organization-Id
-              - X-RateLimit-Remaining
-              - X-RateLimit-Limit
-              - X-RateLimit-Reset
-            allowCredentials: true
-            maxAge: 3600
-      # Gateway Routes Configuration
-      routes:
-        # Auth Service Routes (delegate authentication)
-        - id: auth-service
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/v1/auth/**
-          filters:
-            - StripPrefix=0
-        # Propertize Service Routes
-        - id: propertize-service
-          uri: lb://propertize-service
-          predicates:
-            - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/payments/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**
-          filters:
-            - StripPrefix=0
-        # Employecraft Service Routes
-        # Employee Service Routes
-        - id: employee-service
-          uri: lb://employee-service
-          predicates:
-            - Path=/api/v1/employees/**,/api/v1/departments/**,/api/v1/attendance/**
-          filters:
-            - StripPrefix=0
-        # Propertize catch-all (MUST be last - matches remaining /api/v1/** paths)
-        - id: propertize-catchall
-          uri: lb://propertize-service
-          predicates:
-            - Path=/api/v1/**
-          filters:
-            - StripPrefix=0
+      server:
+        webflux:
+          # Enable discovery client for load balancing
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          # Default filters applied to all routes
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+            - AddResponseHeader=X-Gateway-Version, 1.0.0
+          # Global CORS configuration
+          globalcors:
+            cors-configurations:
+              "[/**]":
+                allowedOriginPatterns:
+                  - "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                exposedHeaders:
+                  - Authorization
+                  - X-Correlation-Id
+                  - X-Request-Id
+                  - X-Organization-Id
+                  - X-RateLimit-Remaining
+                  - X-RateLimit-Limit
+                  - X-RateLimit-Reset
+                allowCredentials: true
+                maxAge: 3600
+          # Gateway Routes Configuration
+          routes:
+            # Auth Service Routes (delegate authentication)
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**
+              filters:
+                - StripPrefix=0
+            # Propertize Service Routes
+            - id: propertize-service
+              uri: lb://propertize-service
+              predicates:
+                - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/payments/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**
+              filters:
+                - StripPrefix=0
+            # Employecraft Service Routes
+            # Employee Service Routes
+            - id: employee-service
+              uri: lb://employee-service
+              predicates:
+                - Path=/api/v1/employees/**,/api/v1/departments/**,/api/v1/attendance/**
+              filters:
+                - StripPrefix=0
+            # Propertize catch-all (MUST be last - matches remaining /api/v1/** paths)
+            - id: propertize-catchall
+              uri: lb://propertize-service
+              predicates:
+                - Path=/api/v1/**
+              filters:
+                - StripPrefix=0
 
 # =============================================================================
 # JWT Security Configuration
@@ -165,7 +167,7 @@ management:
       show-details: always
       show-components: always
     prometheus:
-      enabled: true
+      access: unrestricted
   info:
     env:
       enabled: true
@@ -183,8 +185,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
-    export:
-      prometheus:
+  prometheus:
+    metrics:
+      export:
         enabled: true
 
 info:

@@ -1,0 +1,10 @@
+[submodule "propertize"]
+	path = propertize
+	url = git@github.com:gowentgonemax/propertize.git
+	branch = master
+
+[submodule "propertize-front-end"]
+	path = propertize-front-end
+	url = git@github.com:gowentgonemax/propertize-react-front-end.git
+	branch = master
+

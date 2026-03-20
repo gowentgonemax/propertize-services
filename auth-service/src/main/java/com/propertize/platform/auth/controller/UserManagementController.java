@@ -5,8 +5,12 @@ import com.propertize.platform.auth.dto.UpdateUserRequest;
 import com.propertize.platform.auth.dto.UserInfoResponse;
 import com.propertize.platform.auth.service.UserManagementService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +39,39 @@ import org.springframework.web.bind.annotation.*;
 public class UserManagementController {
 
     private final UserManagementService userManagementService;
+
+    /**
+     * List all users with pagination.
+     * Filtered by organization when X-Organization-Id header is provided.
+     * Platform admins (no org header) see all users.
+     *
+     * GET /api/v1/users?page=0&size=20
+     */
+    @GetMapping
+    public ResponseEntity<java.util.Map<String, Object>> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestHeader(value = "X-Organization-Id", required = false) String organizationId) {
+        log.debug("API: Listing users - org={}, page={}, size={}", organizationId, page, size);
+
+        try {
+            PageRequest pageable = PageRequest.of(page, size, Sort.by("id").descending());
+            Page<UserInfoResponse> result = userManagementService.getAllUsers(organizationId, pageable);
+
+            java.util.Map<String, Object> response = new java.util.LinkedHashMap<>();
+            response.put("success", true);
+            response.put("data", result.getContent());
+            response.put("pagination", java.util.Map.of(
+                    "page", result.getNumber(),
+                    "size", result.getSize(),
+                    "total", result.getTotalElements(),
+                    "totalPages", result.getTotalPages()));
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error listing users: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 
     /**
      * Create a new user.
@@ -139,6 +176,36 @@ public class UserManagementController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
             log.error("Error updating user: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Update user password (service-to-service endpoint).
+     * Used by propertize-service to delegate password resets.
+     * Protected by ServiceAuthenticationFilter (requires X-Service-Api-Key).
+     *
+     * @param id          User ID
+     * @param requestBody Map containing "newPassword" field
+     * @return 204 on success
+     */
+    @PutMapping("/{id}/password")
+    public ResponseEntity<Void> updatePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody java.util.Map<String, @NotBlank String> requestBody) {
+        String newPassword = requestBody.get("newPassword");
+        if (newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        log.info("API: Updating password for user: {}", id);
+        try {
+            userManagementService.updatePassword(id, newPassword);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            log.error("User not found during password update: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            log.error("Error updating password for user {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

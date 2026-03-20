@@ -1,0 +1,158 @@
+version: "3.9"
+
+# Python microservices layer for Propertize
+# Run after docker-compose.infra.yml:
+#   docker compose -f docker-compose.infra.yml -f python-services/docker-compose.python.yml up -d
+
+networks:
+  propertize-net:
+    external: true   # shared with the Java services network
+
+volumes:
+  minio-data:
+
+services:
+
+  # ─── MinIO (S3-compatible object storage) ────────────────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    container_name: propertize-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console UI
+    volumes:
+      - minio-data:/data
+    environment:
+      MINIO_ROOT_USER: propertize
+      MINIO_ROOT_PASSWORD: propertize123
+    command: server /data --console-address ":9001"
+    networks:
+      - propertize-net
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      retries: 5
+
+  # ─── Analytics Worker (APScheduler pre-aggregator) ────────────────────────────
+  analytics-worker:
+    build:
+      context: analytics-worker
+      dockerfile: Dockerfile
+    container_name: propertize-analytics-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://propertize_user:propertize_password@postgres:5432/propertize_db
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - propertize-net
+    depends_on:
+      - minio
+
+  # ─── Report Service (FastAPI PDF/Excel) ───────────────────────────────────────
+  report-service:
+    build:
+      context: report-service
+      dockerfile: Dockerfile
+    container_name: propertize-report-service
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      DATABASE_URL: postgresql://propertize_user:propertize_password@postgres:5432/propertize_db
+      PORT: "8090"
+    networks:
+      - propertize-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 20s
+      retries: 5
+
+  # ─── Vendor Matching (SentenceTransformer semantic search) ───────────────────
+  vendor-matching:
+    build:
+      context: vendor-matching
+      dockerfile: Dockerfile
+    container_name: propertize-vendor-matching
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      DATABASE_URL: postgresql://propertize_user:propertize_password@postgres:5432/propertize_db
+      PORT: "8091"
+    networks:
+      - propertize-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/health"]
+      interval: 30s
+      retries: 5
+
+  # ─── Document Service (MinIO upload/download) ─────────────────────────────────
+  document-service:
+    build:
+      context: document-service
+      dockerfile: Dockerfile
+    container_name: propertize-document-service
+    restart: unless-stopped
+    ports:
+      - "8092:8092"
+    environment:
+      DATABASE_URL: postgresql://propertize_user:propertize_password@postgres:5432/propertize_db
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: propertize
+      MINIO_SECRET_KEY: propertize123
+      MINIO_BUCKET: propertize-documents
+      PORT: "8092"
+    networks:
+      - propertize-net
+    depends_on:
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 20s
+      retries: 5
+
+  # ─── Search Reranker (BM25) ───────────────────────────────────────────────────
+  search-reranker:
+    build:
+      context: search-reranker
+      dockerfile: Dockerfile
+    container_name: propertize-search-reranker
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    environment:
+      PORT: "8093"
+    networks:
+      - propertize-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8093/health"]
+      interval: 20s
+      retries: 5
+
+  # ─── Payment Worker (APScheduler rent generation + late fees) ────────────────
+  payment-worker:
+    build:
+      context: payment-worker
+      dockerfile: Dockerfile
+    container_name: propertize-payment-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://propertize_user:propertize_password@postgres:5432/propertize_db
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - propertize-net
+
+  # ─── Screening Worker (Kafka consumer, risk scoring) ─────────────────────────
+  screening-worker:
+    build:
+      context: screening-worker
+      dockerfile: Dockerfile
+    container_name: propertize-screening-worker
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://propertize_user:propertize_password@postgres:5432/propertize_db
+      KAFKA_BOOTSTRAP: kafka:9092
+    networks:
+      - propertize-net

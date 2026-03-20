@@ -103,7 +103,6 @@ public class DefaultUserInitializer implements ApplicationRunner {
         log.info("✅ Created default user: {}", username);
         log.info("   Username: {}", username);
         log.info("   Email: {}", email);
-        log.info("   Password: {} (CHANGE THIS IN PRODUCTION!)", password);
         log.info("   Roles: {}", roles);
     }
 }

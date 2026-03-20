@@ -22,7 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -60,8 +60,8 @@ eureka:
 
 # JWT Configuration
 jwt:
-  private-key-path: ${JWT_PRIVATE_KEY_PATH:keys/private_key.pem}
-  public-key-path: ${JWT_PUBLIC_KEY_PATH:keys/public_key.pem}
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:auth-service/keys/private_key.pem}
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:auth-service/keys/public_key.pem}
 
 security:
   jwt:
@@ -71,8 +71,8 @@ security:
     service-token-expiration-ms: 300000 # 5 minutes
     issuer: ${JWT_ISSUER:auth-service}
   rsa:
-    public-key-path: keys/public_key.pem
-    private-key-path: keys/private_key.pem
+    public-key-path: auth-service/keys/public_key.pem
+    private-key-path: auth-service/keys/private_key.pem
     auto-generate: false
 
 # Token Blacklist Configuration

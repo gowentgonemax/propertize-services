@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.security.MessageDigest;
 
 /**
  * Filter to validate service-to-service API keys for internal endpoints
@@ -64,7 +65,8 @@ public class ServiceAuthenticationFilter extends OncePerRequestFilter {
 
         // Verify API key matches trusted service
         String expectedApiKey = authConfig.getTrustedServices().get(serviceName);
-        if (expectedApiKey == null || !expectedApiKey.equals(apiKey)) {
+        if (expectedApiKey == null || !MessageDigest.isEqual(
+                expectedApiKey.getBytes(), apiKey.getBytes())) {
             log.warn("⚠️ Service authentication failed: Invalid API key for service '{}' from {} for path {}",
                     serviceName, request.getRemoteAddr(), path);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid service API key");

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -111,8 +112,10 @@ public class AuthController {
             // Get organization info from user's organizationIds
             String organizationId = (user.getOrganizationIds() != null && !user.getOrganizationIds().isEmpty())
                     ? user.getOrganizationIds().get(0)
-                    : null;
-            String organizationCode = organizationId; // Use organizationId as code for now
+                    : user.getOrganizationId();
+            String organizationCode = (user.getOrganizationCode() != null && !user.getOrganizationCode().isBlank())
+                    ? user.getOrganizationCode()
+                    : organizationId;
 
             // Create session
             String sessionId = null;
@@ -183,8 +186,10 @@ public class AuthController {
             // Get organization info from user's organizationIds
             String organizationId = (user.getOrganizationIds() != null && !user.getOrganizationIds().isEmpty())
                     ? user.getOrganizationIds().get(0)
-                    : null;
-            String organizationCode = organizationId; // Use organizationId as code for now
+                    : user.getOrganizationId();
+            String organizationCode = (user.getOrganizationCode() != null && !user.getOrganizationCode().isBlank())
+                    ? user.getOrganizationCode()
+                    : organizationId;
 
             Set<String> permissions = roles.stream()
                     .flatMap(role -> rbacService.getBasePermissionsForRole(role).stream())
@@ -358,6 +363,83 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "message", "Failed to change password",
                     "success", false));
+        }
+    }
+
+    /**
+     * Switch organization context — issues a new access token with the requested
+     * organizationId.
+     * The user must have the target organization in their organizationIds list.
+     *
+     * POST /api/v1/auth/switch-organization
+     * Body: { "refreshToken": "...", "organizationId": "..." }
+     */
+    @PostMapping("/switch-organization")
+    public ResponseEntity<AuthResponse> switchOrganization(
+            @RequestBody Map<String, String> request) {
+
+        String refreshToken = request.get("refreshToken");
+        String targetOrgId = request.get("organizationId");
+
+        if (refreshToken == null || refreshToken.isBlank() || targetOrgId == null || targetOrgId.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            if (!jwtTokenProvider.validateToken(refreshToken)) {
+                log.warn("❌ Invalid refresh token in switch-organization request");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
+            Optional<User> userOpt = userRepository.findByUsernameWithRoles(username);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            User user = userOpt.get();
+
+            // Verify the user has access to the requested organization
+            boolean hasAccess = (user.getOrganizationIds() != null && user.getOrganizationIds().contains(targetOrgId))
+                    || targetOrgId.equals(user.getOrganizationId());
+
+            if (!hasAccess) {
+                log.warn("⛔ User {} attempted to switch to unauthorized organization {}", username, targetOrgId);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+
+            Set<String> roles = user.getRoles().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toSet());
+
+            Set<String> permissions = roles.stream()
+                    .flatMap(role -> rbacService.getBasePermissionsForRole(role).stream())
+                    .collect(Collectors.toSet());
+
+            // Determine org code — use existing if same org, otherwise use orgId as
+            // fallback
+            String organizationCode = (user.getOrganizationCode() != null && !user.getOrganizationCode().isBlank())
+                    ? user.getOrganizationCode()
+                    : targetOrgId;
+
+            String newAccessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
+                    username, roles, targetOrgId, organizationCode, permissions);
+            String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
+
+            log.info("✅ Organization switched to {} for user: {}", targetOrgId, username);
+
+            return ResponseEntity.ok(AuthResponse.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(900L)
+                    .username(username)
+                    .roles(roles)
+                    .build());
+
+        } catch (Exception e) {
+            log.error("❌ Switch organization failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

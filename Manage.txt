@@ -1,21 +1,30 @@
-# 1. Stop everything
-docker-compose down -v
 
-# 2. Reset database
-./reset-database.sh
+# Start all infra containers (Postgres, Redis, Kafka, Zookeeper, MongoDB)
+docker compose -f docker-compose.infra.yml up -d
 
-# 3. Start services (tables auto-created)
-docker-compose up -d
+# Verify they're healthy before proceeding
+docker compose -f docker-compose.infra.yml ps
 
-# 4. Wait for startup (30-60 seconds)
-sleep 60
+1. service-registry     (Eureka — all others register here)
+2. auth-service         (port 8081 — propertize-service depends on it)
+3. propertize           (port 8082 — core service)
+4. employee-service     (port 8083)
+5. api-gateway          (port 8080 — must be last, routes to all above)
 
-# 5. Create superadmin
-./init-superadmin.sh
 
-# 6. Login at http://localhost:3000
-# Username: admin, Password: password
+# Terminal 1
+cd service-registry && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
-./docker-manage.sh rebuild-all
+# Terminal 2 (after registry is up)
+cd auth-service && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
-docker-compose up -d --build propertize-frontend
+# Terminal 3 (after auth-service is up)
+cd propertize && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+# Terminal 4
+cd employee-service && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+# Terminal 5 (last — after all services registered in Eureka)
+cd api-gateway && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+cd propertize-front-end && npm run dev

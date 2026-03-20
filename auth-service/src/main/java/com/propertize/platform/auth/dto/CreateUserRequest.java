@@ -37,6 +37,8 @@ public class CreateUserRequest {
     @NotNull(message = "Organization ID is required")
     private String organizationId;
 
+    private String organizationCode;
+
     @NotNull(message = "At least one role is required")
     private Set<UserRoleEnum> roles;
 
