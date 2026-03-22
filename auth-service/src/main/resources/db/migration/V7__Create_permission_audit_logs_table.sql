@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS permission_audit_logs (
 );
 
 -- Composite indexes for common audit queries
-CREATE INDEX idx_audit_user_created       ON permission_audit_logs (user_id, created_at);
-CREATE INDEX idx_audit_permission_created ON permission_audit_logs (permission, created_at);
-CREATE INDEX idx_audit_result_created     ON permission_audit_logs (result, created_at);
-CREATE INDEX idx_audit_org_created        ON permission_audit_logs (organization_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_user_created       ON permission_audit_logs (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_permission_created ON permission_audit_logs (permission, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_result_created     ON permission_audit_logs (result, created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_org_created        ON permission_audit_logs (organization_id, created_at);

@@ -1,10 +1,10 @@
 FROM python:3.11-slim
 WORKDIR /app
 
-COPY requirements.txt .
+COPY screening-worker/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ../shared ./shared
-COPY . .
+COPY shared ./shared
+COPY screening-worker/ .
 
 CMD ["python", "pipeline.py"]

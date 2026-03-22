@@ -23,28 +23,22 @@ CREATE TABLE IF NOT EXISTS temporal_permissions (
 );
 
 -- Index for looking up active permissions for a user (primary query path)
-CREATE INDEX idx_temporal_user_id ON temporal_permissions (user_id);
+CREATE INDEX IF NOT EXISTS idx_temporal_user_id ON temporal_permissions (user_id);
 
 -- Index for the scheduled expiration cleanup job
-CREATE INDEX idx_temporal_expires_at ON temporal_permissions (expires_at);
+CREATE INDEX IF NOT EXISTS idx_temporal_expires_at ON temporal_permissions (expires_at);
 
 -- Index for filtering by active status
-CREATE INDEX idx_temporal_is_active ON temporal_permissions (is_active);
+CREATE INDEX IF NOT EXISTS idx_temporal_is_active ON temporal_permissions (is_active);
 
 -- Composite index for the most common query: active, non-expired permissions for a user
-CREATE INDEX idx_temporal_user_active_expires ON temporal_permissions (user_id, is_active, expires_at);
+CREATE INDEX IF NOT EXISTS idx_temporal_user_active_expires ON temporal_permissions (user_id, is_active, expires_at);
 
 -- Index for finding permissions granted by a specific user (audit queries)
-CREATE INDEX idx_temporal_granted_by ON temporal_permissions (granted_by);
+CREATE INDEX IF NOT EXISTS idx_temporal_granted_by ON temporal_permissions (granted_by);
 
--- Add foreign key constraints referencing the users table
-ALTER TABLE temporal_permissions
-    ADD CONSTRAINT fk_temporal_user_id
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE;
-
-ALTER TABLE temporal_permissions
-    ADD CONSTRAINT fk_temporal_granted_by
-    FOREIGN KEY (granted_by) REFERENCES users (id) ON DELETE RESTRICT;
+-- Note: FK constraints to users table omitted here because the users table
+-- is managed by JPA/Hibernate and created after Flyway migrations run.
 
 -- Comment on table and key columns for documentation
 COMMENT ON TABLE temporal_permissions IS 'Time-bound permission grants that auto-expire after a configurable duration';

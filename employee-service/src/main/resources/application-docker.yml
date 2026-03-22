@@ -1,0 +1,73 @@
+# ============================================================================
+# Employee Service — DOCKER profile
+# Active when: SPRING_PROFILES_ACTIVE=docker   (set by docker-compose.yml)
+# Hosts:  postgres:5432  redis:6379  service-registry:8761
+# ============================================================================
+server:
+  port: 8083
+
+spring:
+  application:
+    name: employee-service
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/propertize_db
+    username: dbuser
+    password: dbpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ${REDIS_PASSWORD:redis_secure_pass}
+      timeout: 2000ms
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://admin:admin@service-registry:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    hostname: employee-service       # Docker container/service name
+    instance-id: ${spring.application.name}:${server.port}
+
+auth-service:
+  url: http://auth-service:8081
+
+propertize:
+  api:
+    url: http://propertize:8082
+
+jwt:
+  rsa:
+    public-key-path: /app/config/keys/public_key.pem
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.propertize.employee: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][employee] %-5level %logger{30} - %msg%n"
+

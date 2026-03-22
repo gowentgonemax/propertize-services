@@ -1,0 +1,45 @@
+# ============================================================================
+# Service Registry — DOCKER profile
+# Active when: SPRING_PROFILES_ACTIVE=docker   (set by docker-compose.yml)
+# Hosts:  service-registry:8761  (Docker network DNS)
+# ============================================================================
+server:
+  port: 8761
+
+spring:
+  security:
+    user:
+      name: admin
+      password: admin
+
+eureka:
+  instance:
+    hostname: service-registry       # Docker service name = DNS entry
+    prefer-ip-address: false
+  client:
+    register-with-eureka: false      # Standalone server — never self-registers
+    fetch-registry: false
+    service-url:
+      defaultZone: http://service-registry:8761/eureka/
+  server:
+    enable-self-preservation: false
+    response-cache-update-interval-ms: 3000
+    eviction-interval-timer-in-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][registry] %-5level %logger{30} - %msg%n"
+

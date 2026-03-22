@@ -1,6 +1,7 @@
 # Python Optimization & Backend Architecture Analysis
+
 **Propertize Platform — Performance & Scalability Report**  
-*Generated: 2026-03-20*
+_Generated: 2026-03-20_
 
 ---
 
@@ -24,8 +25,9 @@ List<Object[]> topEvents = analyticsEventRepository.countByEventNameSince(since)
 ```
 
 **Problem:**
+
 - No materialised aggregations — every dashboard load hits raw event rows
-- Java `@Async` only offloads the *write*, not the *aggregation*
+- Java `@Async` only offloads the _write_, not the _aggregation_
 - No trend analysis, no session stitching, no funnel computation
 
 **Python Solution — Async Aggregation Worker**
@@ -173,12 +175,12 @@ async def generate_delinquency_excel(org_id: str, as_of_date: str):
     df['aging_bucket'] = pd.cut(df['days_overdue'],
                                  bins=[0, 30, 60, 90, float('inf')],
                                  labels=['0-30', '31-60', '61-90', '90+'])
-    
+
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, sheet_name='Delinquency', index=False)
         df.groupby('aging_bucket')['amount_owed'].sum().to_excel(writer, sheet_name='Summary')
-    
+
     output.seek(0)
     return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 ```
@@ -186,10 +188,11 @@ async def generate_delinquency_excel(org_id: str, as_of_date: str):
 **Libraries:** `fastapi`, `pandas`, `reportlab`, `openpyxl`, `psycopg2-binary`, `uvicorn`  
 **Integration:** Java's `ReportController` proxies to `http://report-service:8090/reports/*`  
 **Performance Gain:**
+
 - PDF generation: 3–12 seconds in JVM → 0.5–2 seconds in Python (streaming)
 - Excel pivot/aging: ~50ms per report for <100,000 rows using pandas vectorized ops
 - JVM heap saved: No more iText 200–400MB spikes per concurrent report request  
-**Run As:** FastAPI microservice on port 8090
+  **Run As:** FastAPI microservice on port 8090
 
 ---
 
@@ -205,6 +208,7 @@ if (services.contains(issue.replace("repair", "maintenance"))) return 0.8;
 ```
 
 This means:
+
 - "HVAC failure" ≠ "heating and cooling" — scores 0.3 (partial) instead of 1.0
 - No semantic understanding of maintenance categories
 - Weights are hardcoded constants, not learned from historical match outcomes
@@ -266,7 +270,7 @@ def match_vendors(request: MatchRequest):
     for i, vendor in enumerate(vendors):
         rating_score = float(vendor['performance_rating'] or 3.0) / 5.0
         response_score = max(0, 1.0 - (float(vendor['avg_response_hours'] or 12) / 24.0))
-        
+
         combined = (
             similarities[i] * 0.5 +
             rating_score * 0.3 +
@@ -285,10 +289,11 @@ def match_vendors(request: MatchRequest):
 **Libraries:** `fastapi`, `sentence-transformers`, `scikit-learn`, `numpy`, `psycopg2-binary`  
 **Integration:** `VendorMatchingEngine.java` calls `http://vendor-matching-service:8091/match-vendors`  
 **Performance Gain:**
+
 - Matching accuracy: Keyword substring → Semantic similarity (estimated 40–60% improvement in match quality based on standard NLP benchmarks)
 - Speed: `all-MiniLM-L6-v2` encodes 1000 vendors in ~200ms vs. iterative Java stream
 - Feedback loop possible: Re-train re-ranker from `vendor_matching_history` table monthly  
-**Run As:** FastAPI microservice on port 8091 with model loaded at startup
+  **Run As:** FastAPI microservice on port 8091 with model loaded at startup
 
 ---
 
@@ -336,11 +341,11 @@ def score_applicant(raw_data: dict) -> dict:
     credit = raw_data.get('credit', {})
     employment = raw_data.get('employment', {})
     criminal = raw_data.get('criminal', {})
-    
+
     credit_score = credit.get('score', 650)
     monthly_income = employment.get('monthlyIncome', 0)
     monthly_rent = raw_data.get('monthlyRent', 1)
-    
+
     # Vectorized scoring with pandas
     factors = pd.DataFrame([{
         'credit_score': credit_score,
@@ -348,33 +353,33 @@ def score_applicant(raw_data: dict) -> dict:
         'has_criminal': bool(criminal.get('records', [])),
         'employment_verified': employment.get('verified', False),
     }])
-    
+
     # Apply rules
     credit_band = next(
         (v for k, v in RISK_RULES['credit_score'].items()
          if v[0] <= credit_score <= v[1]), (0, 0, 0.3)
     )
     credit_factor = credit_band[2]
-    
+
     income_ratio = factors['income_ratio'].iloc[0]
     income_factor = 1.0 if income_ratio >= 3 else (0.7 if income_ratio >= 2.5 else 0.3)
-    
+
     criminal_factor = 0.0 if factors['has_criminal'].iloc[0] else 1.0
     employment_factor = 1.0 if factors['employment_verified'].iloc[0] else 0.5
-    
+
     final_score = (
         credit_factor * 0.35 +
         income_factor * 0.30 +
         criminal_factor * 0.25 +
         employment_factor * 0.10
     )
-    
+
     recommendation = (
         'APPROVE' if final_score >= 0.75 else
         'CONDITIONAL' if final_score >= 0.50 else
         'DENY'
     )
-    
+
     return {
         'application_id': raw_data['applicationId'],
         'risk_score': round(final_score, 3),
@@ -509,11 +514,12 @@ def get_signed_url(object_name: str):
 **Libraries:** `fastapi`, `minio`, `pymupdf` (fitz), `uvicorn`, `python-multipart`  
 **Infrastructure:** Add MinIO container to `docker-compose.infra.yml`  
 **Integration:**
+
 - Java `DocumentService.uploadDocument()` → HTTP POST to Python document service
 - Returns real URL, stores in `document.file_url` column
 - Extracted text indexed in PostgreSQL `tsvector` column for full-text search  
-**Performance Gain:** Fills a complete feature gap; PDF text extraction ~100ms/page in PyMuPDF (3× faster than Apache PDFBox)  
-**Run As:** FastAPI microservice on port 8092 + MinIO on port 9000/9001
+  **Performance Gain:** Fills a complete feature gap; PDF text extraction ~100ms/page in PyMuPDF (3× faster than Apache PDFBox)  
+  **Run As:** FastAPI microservice on port 8092 + MinIO on port 9000/9001
 
 ---
 
@@ -634,11 +640,12 @@ def apply_late_fees(conn, producer):
 
 **Libraries:** `psycopg2-binary`, `pandas`, `kafka-python`, `apscheduler`  
 **Integration:**
+
 - Java `PaymentSchedulerService` is simplified to just checking health
 - This worker owns payment generation and late fee logic
 - Publishes to Kafka; Java `NotificationService` consumes and sends emails  
-**Performance Gain:** Unblocks the Java scheduler (was doing nothing); enables true recurring payment generation  
-**Run As:** Scheduled worker (APScheduler), runs at 02:00 daily in production
+  **Performance Gain:** Unblocks the Java scheduler (was doing nothing); enables true recurring payment generation  
+  **Run As:** Scheduled worker (APScheduler), runs at 02:00 daily in production
 
 ---
 
@@ -726,17 +733,17 @@ def rerank(request: RerankRequest):
 
 ## 2. Performance Bottlenecks Summary
 
-| Bottleneck | Location | Impact | Fix |
-|---|---|---|---|
-| Full table scans on analytics_events | `AnalyticsService.getSummary()` | High | Pre-aggregation worker (§1.1) |
-| Blocking PDF/Excel generation on JVM | `ReportService.java` | High | Python FastAPI report service (§1.2) |
-| Keyword-only vendor matching (O(n) per request) | `VendorMatchingEngine.java` | Medium | Sentence transformer matching (§1.3) |
-| No document storage (placeholder URLs) | `DocumentService.java` | Critical | Python + MinIO service (§1.5) |
-| Payment scheduler does nothing for late fees | `PaymentSchedulerService.java` | High | Python APScheduler worker (§1.6) |
-| LIKE `%query%` leading wildcard in search | `SearchService.java` | Medium | pg_trgm already added; reranker adds quality (§1.7) |
-| `dashboardOverview` runs 5+ SQL queries in series | `DashboardService.java` | Medium | Async Java `CompletableFuture` (already partially done); supplement with pre-computed views |
-| `collectionRate` hardcoded as 95.0 | `LandlordDashboardService.java` | Low | Compute from payment history |
-| `averageRating` hardcoded as 4.5 | `AgentDashboardService.java`, `TechnicianDashboardService.java` | Low | Compute from review/rating table once implemented |
+| Bottleneck                                        | Location                                                        | Impact   | Fix                                                                                         |
+| ------------------------------------------------- | --------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| Full table scans on analytics_events              | `AnalyticsService.getSummary()`                                 | High     | Pre-aggregation worker (§1.1)                                                               |
+| Blocking PDF/Excel generation on JVM              | `ReportService.java`                                            | High     | Python FastAPI report service (§1.2)                                                        |
+| Keyword-only vendor matching (O(n) per request)   | `VendorMatchingEngine.java`                                     | Medium   | Sentence transformer matching (§1.3)                                                        |
+| No document storage (placeholder URLs)            | `DocumentService.java`                                          | Critical | Python + MinIO service (§1.5)                                                               |
+| Payment scheduler does nothing for late fees      | `PaymentSchedulerService.java`                                  | High     | Python APScheduler worker (§1.6)                                                            |
+| LIKE `%query%` leading wildcard in search         | `SearchService.java`                                            | Medium   | pg_trgm already added; reranker adds quality (§1.7)                                         |
+| `dashboardOverview` runs 5+ SQL queries in series | `DashboardService.java`                                         | Medium   | Async Java `CompletableFuture` (already partially done); supplement with pre-computed views |
+| `collectionRate` hardcoded as 95.0                | `LandlordDashboardService.java`                                 | Low      | Compute from payment history                                                                |
+| `averageRating` hardcoded as 4.5                  | `AgentDashboardService.java`, `TechnicianDashboardService.java` | Low      | Compute from review/rating table once implemented                                           |
 
 ---
 
@@ -782,24 +789,27 @@ def rerank(request: RerankRequest):
 ## 4. Implementation Roadmap
 
 ### Phase 1 — Quick Wins (1–2 weeks)
-| # | Service | Effort | Impact |
-|---|---------|--------|--------|
-| 1 | `document-service` (Python + MinIO) | 3 days | Critical — fills complete feature gap |
-| 2 | `payment-worker` (APScheduler late fees) | 2 days | High — activates dead scheduler code |
-| 3 | `analytics-worker` (pre-aggregation) | 1 day | High — fixes dashboard query performance |
+
+| #   | Service                                  | Effort | Impact                                   |
+| --- | ---------------------------------------- | ------ | ---------------------------------------- |
+| 1   | `document-service` (Python + MinIO)      | 3 days | Critical — fills complete feature gap    |
+| 2   | `payment-worker` (APScheduler late fees) | 2 days | High — activates dead scheduler code     |
+| 3   | `analytics-worker` (pre-aggregation)     | 1 day  | High — fixes dashboard query performance |
 
 ### Phase 2 — Core Optimization (2–4 weeks)
-| # | Service | Effort | Impact |
-|---|---------|--------|--------|
-| 4 | `report-service` (FastAPI + pandas) | 5 days | High — eliminates JVM heap spikes |
-| 5 | `search-reranker` (BM25) | 2 days | Medium — improves search quality |
-| 6 | `screening-worker` (Kafka consumer) | 3 days | Medium — enables real screening flow |
+
+| #   | Service                             | Effort | Impact                               |
+| --- | ----------------------------------- | ------ | ------------------------------------ |
+| 4   | `report-service` (FastAPI + pandas) | 5 days | High — eliminates JVM heap spikes    |
+| 5   | `search-reranker` (BM25)            | 2 days | Medium — improves search quality     |
+| 6   | `screening-worker` (Kafka consumer) | 3 days | Medium — enables real screening flow |
 
 ### Phase 3 — ML Enhancement (4–8 weeks)
-| # | Service | Effort | Impact |
-|---|---------|--------|--------|
-| 7 | `vendor-matching` (SentenceTransformer) | 3 days initial + ongoing | High — replaces keyword matching |
-| 8 | Feedback loop for vendor re-ranking | 2 days | Medium — improves over time |
+
+| #   | Service                                 | Effort                   | Impact                           |
+| --- | --------------------------------------- | ------------------------ | -------------------------------- |
+| 7   | `vendor-matching` (SentenceTransformer) | 3 days initial + ongoing | High — replaces keyword matching |
+| 8   | Feedback loop for vendor re-ranking     | 2 days                   | Medium — improves over time      |
 
 ---
 
@@ -922,29 +932,29 @@ volumes:
 
 ## 7. Risk Analysis
 
-| Risk | Mitigation |
-|---|---|
-| Network latency between Java and Python FastAPI | Use internal Docker network; add HTTP connection pooling in Java (`RestTemplate` with HikariCP-like settings) |
-| Python service downtime breaks Java features | Wrap all Python calls in Resilience4J circuit breakers (already configured in `AuthServiceClient.java` — use same pattern) |
-| SentenceTransformer model memory (~500MB) | Load model once at startup; use `all-MiniLM-L6-v2` not the large model; or use PostgreSQL `pg_vector` extension as alternative |
-| MinIO data persistence | Mount Docker volume; configure S3 replication for production |
-| Breaking existing Java report endpoints | Python services are *additive* — Java routes proxy to Python; existing Java report DTOs are reused as-is |
-| Kafka consumer lag | analytics-worker and payment-worker use dedicated consumer groups with offset tracking |
+| Risk                                            | Mitigation                                                                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Network latency between Java and Python FastAPI | Use internal Docker network; add HTTP connection pooling in Java (`RestTemplate` with HikariCP-like settings)                  |
+| Python service downtime breaks Java features    | Wrap all Python calls in Resilience4J circuit breakers (already configured in `AuthServiceClient.java` — use same pattern)     |
+| SentenceTransformer model memory (~500MB)       | Load model once at startup; use `all-MiniLM-L6-v2` not the large model; or use PostgreSQL `pg_vector` extension as alternative |
+| MinIO data persistence                          | Mount Docker volume; configure S3 replication for production                                                                   |
+| Breaking existing Java report endpoints         | Python services are _additive_ — Java routes proxy to Python; existing Java report DTOs are reused as-is                       |
+| Kafka consumer lag                              | analytics-worker and payment-worker use dedicated consumer groups with offset tracking                                         |
 
 ---
 
 ## 8. Why Python (Not Java) for These Tasks
 
-| Task | Why Python Wins |
-|---|---|
-| PDF/Excel generation | `pandas` + `reportlab` + `openpyxl` are purpose-built for data I/O; 3–5× faster than Apache POI for large datasets; streaming output avoids heap spikes |
-| NLP/ML vendor matching | `sentence-transformers`, `scikit-learn`, `numpy` are the de facto ML ecosystem; no equivalent Java library has the model coverage or integration simplicity |
-| Analytics aggregation | `pandas` vectorized operations on DataFrames are 10–100× faster than Java `stream()` chaining for batch aggregation |
-| Background check scoring | Rule engines in Python are concise (~50 lines vs. 200+ in Java); easy to update rules without recompiling |
-| Document processing (PDF text extraction) | PyMuPDF (libmupdf) is the fastest cross-platform PDF extractor — 3× faster than Apache PDFBox |
-| Search reranking | `rank-bm25` is a 2-line BM25 implementation; equivalent Java would require Lucene (Elasticsearch dependency) |
-| Scheduled data pipelines | APScheduler + pandas covers 90% of ETL patterns with minimal boilerplate |
+| Task                                      | Why Python Wins                                                                                                                                             |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PDF/Excel generation                      | `pandas` + `reportlab` + `openpyxl` are purpose-built for data I/O; 3–5× faster than Apache POI for large datasets; streaming output avoids heap spikes     |
+| NLP/ML vendor matching                    | `sentence-transformers`, `scikit-learn`, `numpy` are the de facto ML ecosystem; no equivalent Java library has the model coverage or integration simplicity |
+| Analytics aggregation                     | `pandas` vectorized operations on DataFrames are 10–100× faster than Java `stream()` chaining for batch aggregation                                         |
+| Background check scoring                  | Rule engines in Python are concise (~50 lines vs. 200+ in Java); easy to update rules without recompiling                                                   |
+| Document processing (PDF text extraction) | PyMuPDF (libmupdf) is the fastest cross-platform PDF extractor — 3× faster than Apache PDFBox                                                               |
+| Search reranking                          | `rank-bm25` is a 2-line BM25 implementation; equivalent Java would require Lucene (Elasticsearch dependency)                                                |
+| Scheduled data pipelines                  | APScheduler + pandas covers 90% of ETL patterns with minimal boilerplate                                                                                    |
 
 ---
 
-*End of Analysis — Propertize Python Optimization Report*
+_End of Analysis — Propertize Python Optimization Report_

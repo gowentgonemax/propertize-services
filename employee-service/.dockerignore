@@ -1,0 +1,5 @@
+target/
+.git/
+*.md
+*.sh
+.DS_Store

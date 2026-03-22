@@ -28,3 +28,19 @@ cd employee-service && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 cd api-gateway && ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 
 cd propertize-front-end && npm run dev
+
+
+# First time (builds all ~20 images — 15-20 min)
+make build
+
+# Start everything
+make up
+
+# Stop everything (data preserved)
+make down
+
+# Check all service health
+make health
+
+# Local dev only (infra containers, run Java/npm yourself)
+make dev

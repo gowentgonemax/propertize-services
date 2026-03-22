@@ -1,104 +1,181 @@
 # ============================================
 # Propertize Platform - Makefile
-# Convenient commands for Docker operations
+# One-click Docker orchestration for all services
+# ============================================
+# QUICK START:
+#   make build   — build every image (first time, ~10–15 min)
+#   make up      — start the entire platform
+#   make down    — stop the entire platform
+#   make logs    — tail all logs
+#   make status  — see health of every container
 # ============================================
 
-.PHONY: help build up down restart logs clean rebuild ps health
+.PHONY: help build build-nc up up-infra up-java up-python up-all \
+        down down-v stop start restart rebuild \
+        logs logs-auth logs-propertize logs-gateway logs-registry \
+        logs-frontend logs-python ps health stats \
+        db-shell mongo-shell redis-cli \
+        dev dev-down profiles shell-auth shell-propertize shell-gateway \
+        clean clean-all clean-build setup install run status tail open-ui
+
+COMPOSE = docker compose
 
 # Default target
 .DEFAULT_GOAL := help
 
 help: ## Show this help message
-	@echo "Propertize Platform - Docker Commands"
-	@echo "====================================="
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "  Propertize Platform — Docker Commands"
+	@echo "  ======================================"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
+	@echo ""
 
 # ============================================
 # Build Commands
 # ============================================
 
-build: ## Build all services
-	docker-compose build
+build: ## Build ALL service images (infra pulled, app images built)
+	$(COMPOSE) build --parallel
+	@echo "✅ All images built successfully"
 
-build-nc: ## Build all services (no cache)
-	docker-compose build --no-cache
+build-nc: ## Build all images with no cache
+	$(COMPOSE) build --no-cache --parallel
+	@echo "✅ All images rebuilt (no cache)"
 
-rebuild: down build up ## Rebuild and restart all services
+build-java: ## Build only Java service images
+	$(COMPOSE) build service-registry auth-service propertize employee-service api-gateway
 
-# ============================================
-# Lifecycle Commands
-# ============================================
+build-python: ## Build only Python service images
+	$(COMPOSE) build report-service vendor-matching document-service search-reranker analytics-worker payment-worker screening-worker
 
-up: ## Start all services
-	docker-compose up -d
-	@echo "⏳ Waiting for services to be healthy..."
-	@sleep 10
-	@make ps
+build-frontend: ## Build only frontend image
+	$(COMPOSE) build frontend
 
-down: ## Stop all services
-	docker-compose down
-
-down-v: ## Stop all services and remove volumes (⚠️  deletes data)
-	docker-compose down -v
-
-restart: ## Restart all services
-	docker-compose restart
-
-stop: ## Stop all services without removing
-	docker-compose stop
-
-start: ## Start previously stopped services
-	docker-compose start
+rebuild: down build up ## Full rebuild: stop → build → start
 
 # ============================================
-# Individual Service Commands
+# Lifecycle Commands  (ONE-CLICK)
 # ============================================
+
+up: ## ▶️  Start ALL services (full platform)
+	$(COMPOSE) up -d
+	@echo ""
+	@echo "⏳ Starting platform... (Java services take ~60-90s to become healthy)"
+	@echo ""
+	@echo "  Access points:"
+	@echo "    Frontend     →  http://localhost:3000"
+	@echo "    API Gateway  →  http://localhost:8080"
+	@echo "    Eureka       →  http://localhost:8761  (admin/admin)"
+	@echo "    Kafka UI     →  http://localhost:8086"
+	@echo "    Adminer      →  http://localhost:8088"
+	@echo "    Mongo Expr.  →  http://localhost:8089"
+	@echo "    MinIO        →  http://localhost:9001  (propertize/propertize123)"
+	@echo ""
+
+down: ## ⏹️  Stop ALL services (keep volumes/data)
+	$(COMPOSE) down
+	@echo "✅ All services stopped"
+
+down-v: ## 🗑️  Stop ALL services and DELETE all data volumes
+	$(COMPOSE) down -v
+	@echo "⚠️  All services stopped and data volumes removed"
+
+stop: ## Pause all running containers (preserves state)
+	$(COMPOSE) stop
+
+start: ## Resume paused containers
+	$(COMPOSE) start
+
+restart: ## Restart all containers
+	$(COMPOSE) restart
+	@echo "✅ All services restarted"
+
+# ============================================
+# Selective Start Commands
+# ============================================
+
+up-infra: ## Start infrastructure only (DB, Kafka, Redis, MinIO)
+	$(COMPOSE) up -d postgres mongodb redis zookeeper kafka minio
+	@echo "✅ Infrastructure started"
+
+up-java: ## Start Java microservices (needs infra running)
+	$(COMPOSE) up -d service-registry
+	@sleep 5
+	$(COMPOSE) up -d auth-service propertize employee-service
+	@sleep 5
+	$(COMPOSE) up -d api-gateway
+	@echo "✅ Java services started"
+
+up-python: ## Start Python microservices (needs infra running)
+	$(COMPOSE) up -d report-service vendor-matching document-service search-reranker analytics-worker payment-worker screening-worker
+	@echo "✅ Python services started"
+
+up-frontend: ## Start frontend only (needs gateway running)
+	$(COMPOSE) up -d frontend
 
 up-registry: ## Start service registry
-	docker-compose up -d service-registry
+	$(COMPOSE) up -d service-registry
 
 up-auth: ## Start auth service
-	docker-compose up -d auth-service
+	$(COMPOSE) up -d auth-service
 
-up-propertize: ## Start propertize service
-	docker-compose up -d propertize
+up-propertize: ## Start propertize main service
+	$(COMPOSE) up -d propertize
 
 up-employee: ## Start employee service
-	docker-compose up -d employee-service
+	$(COMPOSE) up -d employee-service
 
 up-gateway: ## Start API gateway
-	docker-compose up -d api-gateway
-
-up-frontend: ## Start frontend app
-	docker-compose up -d wagecraft-frontend
+	$(COMPOSE) up -d api-gateway
 
 # ============================================
 # Monitoring Commands
 # ============================================
 
-logs: ## Show logs for all services
-	docker-compose logs -f
+logs: ## Tail logs for all services
+	$(COMPOSE) logs -f
 
 logs-auth: ## Show auth service logs
-	docker-compose logs -f auth-service
+	$(COMPOSE) logs -f auth-service
 
-logs-propertize: ## Show propertize service logs
-	docker-compose logs -f propertize
+logs-propertize: ## Show propertize main service logs
+	$(COMPOSE) logs -f propertize
 
 logs-gateway: ## Show API gateway logs
-	docker-compose logs -f api-gateway
+	$(COMPOSE) logs -f api-gateway
 
 logs-registry: ## Show service registry logs
-	docker-compose logs -f service-registry
+	$(COMPOSE) logs -f service-registry
 
-ps: ## Show status of all services
-	docker-compose ps
+logs-frontend: ## Show frontend logs
+	$(COMPOSE) logs -f frontend
 
-health: ## Check health of all services
-	@echo "Service Health Status:"
-	@docker-compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+logs-python: ## Show all Python service logs
+	$(COMPOSE) logs -f report-service vendor-matching document-service search-reranker analytics-worker payment-worker screening-worker
 
-stats: ## Show resource usage statistics
+logs-infra: ## Show infrastructure logs (DB, Kafka, Redis)
+	$(COMPOSE) logs -f postgres mongodb redis kafka
+
+ps: ## Show status of all containers
+	$(COMPOSE) ps
+
+health: ## Check health of all application endpoints
+	@echo ""
+	@echo "  Service Health Status:"
+	@echo "  ──────────────────────────────────────────"
+	@curl -sf http://localhost:8761/actuator/health > /dev/null && echo "  ✅  Service Registry  :8761" || echo "  ❌  Service Registry  :8761"
+	@curl -sf http://localhost:8081/actuator/health > /dev/null && echo "  ✅  Auth Service      :8081" || echo "  ❌  Auth Service      :8081"
+	@curl -sf http://localhost:8082/actuator/health > /dev/null && echo "  ✅  Propertize Svc    :8082" || echo "  ❌  Propertize Svc    :8082"
+	@curl -sf http://localhost:8083/actuator/health > /dev/null && echo "  ✅  Employee Service  :8083" || echo "  ❌  Employee Service  :8083"
+	@curl -sf http://localhost:8080/actuator/health > /dev/null && echo "  ✅  API Gateway       :8080" || echo "  ❌  API Gateway       :8080"
+	@curl -sf http://localhost:8090/health          > /dev/null && echo "  ✅  Report Service    :8090" || echo "  ❌  Report Service    :8090"
+	@curl -sf http://localhost:8091/health          > /dev/null && echo "  ✅  Vendor Matching   :8091" || echo "  ❌  Vendor Matching   :8091"
+	@curl -sf http://localhost:8092/health          > /dev/null && echo "  ✅  Document Service  :8092" || echo "  ❌  Document Service  :8092"
+	@curl -sf http://localhost:8093/health          > /dev/null && echo "  ✅  Search Reranker   :8093" || echo "  ❌  Search Reranker   :8093"
+	@curl -sf http://localhost:3000                 > /dev/null && echo "  ✅  Frontend          :3000" || echo "  ❌  Frontend          :3000"
+	@echo ""
+
+stats: ## Show real-time resource usage per container
 	docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
 
 # ============================================
@@ -106,91 +183,112 @@ stats: ## Show resource usage statistics
 # ============================================
 
 db-shell: ## Connect to PostgreSQL shell
-	docker exec -it propertize-postgres psql -U propertize_user -d propertize_db
+	$(COMPOSE) exec postgres psql -U dbuser -d propertize_db
 
 mongo-shell: ## Connect to MongoDB shell
-	docker exec -it propertize-mongodb mongosh -u admin -p mongo_secure_pass
+	$(COMPOSE) exec mongodb mongosh -u admin -p mongo_secure_pass
 
 redis-cli: ## Connect to Redis CLI
-	docker exec -it propertize-redis redis-cli -a redis_secure_pass
+	$(COMPOSE) exec redis redis-cli -a redis_secure_pass
 
 # ============================================
 # Development Commands
 # ============================================
 
-dev: ## Start infrastructure only (for local development)
-	docker-compose up -d postgres mongodb redis kafka zookeeper
+dev: ## Start infrastructure only — for local Java/npm dev (profile=local)
+	$(COMPOSE) -f docker-compose.infra.yml up -d
+	@echo ""
+	@echo "  ✅  Infrastructure ready — use profile=local for your JVM services"
+	@echo "    PostgreSQL  → localhost:5432  (dbuser/dbpassword)"
+	@echo "    MongoDB     → localhost:27017 (admin/mongo_secure_pass)"
+	@echo "    Redis       → localhost:6379  (redis_secure_pass)"
+	@echo "    Kafka       → localhost:9092"
+	@echo "    Eureka      → localhost:8761"
+	@echo "    MinIO       → localhost:9000  (propertize/propertize123)"
+	@echo ""
+	@echo "  Then in each service directory:"
+	@echo "    ./mvnw spring-boot:run -Dspring-boot.run.profiles=local"
+	@echo ""
 
-dev-down: ## Stop infrastructure
-	docker-compose stop postgres mongodb redis kafka zookeeper
+dev-down: ## Stop infrastructure services
+	$(COMPOSE) -f docker-compose.infra.yml down
 
-shell-auth: ## Access auth service container shell
-	docker exec -it propertize-auth-service sh
+profiles: ## Show the 3-profile rule for this project
+	@echo ""
+	@echo "  Propertize — Spring Profile Strategy"
+	@echo "  ======================================="
+	@echo "  local   → YOU run the JVM, Docker infra on localhost:*"
+	@echo "            How: make dev  then  ./mvnw spring-boot:run -Dspring-boot.run.profiles=local"
+	@echo ""
+	@echo "  docker  → docker-compose.yml, services talk via container DNS"
+	@echo "            How: docker compose up --build"
+	@echo ""
+	@echo "  prod    → CI/Kubernetes, everything from env vars, no defaults"
+	@echo "            How: set SPRING_PROFILES_ACTIVE=prod in deploy pipeline"
+	@echo ""
+	@echo "  test    → Maven test runner, H2 in-memory DB"
+	@echo "            How: ./mvnw test  (automatic)"
+	@echo ""
+	@echo "  See docs/PROFILE_GUIDE.md for the full guide"
+	@echo ""
 
-shell-propertize: ## Access propertize service container shell
-	docker exec -it propertize-main-service sh
+shell-auth: ## Shell into auth service container
+	$(COMPOSE) exec auth-service sh
 
-shell-gateway: ## Access gateway container shell
-	docker exec -it propertize-api-gateway sh
+shell-propertize: ## Shell into propertize main service container
+	$(COMPOSE) exec propertize sh
+
+shell-gateway: ## Shell into API gateway container
+	$(COMPOSE) exec api-gateway sh
 
 # ============================================
 # Cleanup Commands
 # ============================================
 
-clean: ## Remove stopped containers and unused images
-	docker-compose down
+clean: ## Remove stopped containers and dangling images
+	$(COMPOSE) down
 	docker system prune -f
+	@echo "✅ Cleaned stopped containers and dangling images"
 
-clean-all: ## Remove everything including volumes (⚠️  deletes data)
-	docker-compose down -v --rmi all
+clean-all: ## Remove EVERYTHING including volumes — ⚠️ destroys all data
+	$(COMPOSE) down -v --rmi all
 	docker system prune -af --volumes
+	@echo "⚠️  Full clean complete — all containers, images, and volumes removed"
 
-clean-build: ## Clean and rebuild everything
+clean-build: ## clean-all then rebuild from scratch
 	@make clean-all
 	@make build
 	@make up
 
 # ============================================
-# Testing Commands
-# ============================================
-
-test-health: ## Test all service health endpoints
-	@echo "Testing Service Health Endpoints..."
-	@curl -sf http://localhost:8761/actuator/health && echo "✅ Service Registry" || echo "❌ Service Registry"
-	@curl -sf http://localhost:8081/actuator/health && echo "✅ Auth Service" || echo "❌ Auth Service"
-	@curl -sf http://localhost:8082/actuator/health && echo "✅ Propertize Service" || echo "❌ Propertize Service"
-	@curl -sf http://localhost:8083/actuator/health && echo "✅ Employee Service" || echo "❌ Employee Service"
-	@curl -sf http://localhost:8080/actuator/health && echo "✅ API Gateway" || echo "❌ API Gateway"
-
-open-ui: ## Open all management UIs in browser
-	@echo "Opening management UIs..."
-	@open http://localhost:8761 || true  # Eureka
-	@open http://localhost:8090 || true  # Kafka UI
-	@open http://localhost:8088 || true  # Adminer
-	@open http://localhost:8089 || true  # Mongo Express
-	@open http://localhost:3000 || true  # Frontend
-
-# ============================================
 # Environment Setup
 # ============================================
 
-setup: ## Initial setup - create .env file
+setup: ## Initial setup — copy .env.example to .env
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
 		echo "✅ Created .env file from template"; \
-		echo "⚠️  Please edit .env and update passwords/secrets"; \
+		echo "⚠️  Review .env and update secrets before running in production"; \
 	else \
-		echo "ℹ️  .env file already exists"; \
+		echo "ℹ️  .env already exists — skipping"; \
 	fi
 
 # ============================================
-# Quick Commands
+# Shortcuts
 # ============================================
 
-install: setup build ## Complete installation (setup + build)
-
+install: setup build ## setup + build all images (first-time install)
 run: up ## Alias for 'up'
-
 status: ps ## Alias for 'ps'
-
 tail: logs ## Alias for 'logs'
+test-health: health ## Alias for 'health'
+
+open-ui: ## Open all management UIs in browser
+	@echo "Opening management UIs..."
+	@open http://localhost:8761 || true  # Eureka Service Registry
+	@open http://localhost:8086 || true  # Kafka UI
+	@open http://localhost:8088 || true  # Adminer (PostgreSQL)
+	@open http://localhost:8089 || true  # Mongo Express
+	@open http://localhost:9001 || true  # MinIO Console
+	@open http://localhost:3000 || true  # Frontend
+

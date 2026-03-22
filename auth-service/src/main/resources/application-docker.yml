@@ -1,0 +1,118 @@
+# ============================================================================
+# Auth Service — DOCKER profile
+# Active when: SPRING_PROFILES_ACTIVE=docker   (set by docker-compose.yml)
+# Hosts:  postgres:5432  redis:6379  kafka:29092  service-registry:8761
+# ============================================================================
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/propertize_db
+    username: dbuser
+    password: dbpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  kafka:
+    bootstrap-servers: kafka:29092
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+      password: ${REDIS_PASSWORD:redis_secure_pass}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: http://admin:admin@service-registry:8761/eureka/
+    registry-fetch-interval-seconds: 5
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    hostname: auth-service           # Docker container/service name
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+# RSA keys — Dockerfile copies keys/ → /app/keys/
+security:
+  rsa:
+    public-key-path: /app/keys/public_key.pem
+    private-key-path: /app/keys/private_key.pem
+    auto-generate: false
+  jwt:
+    secret: ${JWT_SECRET:dev-jwt-secret-key-change-in-production-min-32-chars-propertize}
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
+    service-token-expiration-ms: 300000
+    issuer: auth-service
+
+jwt:
+  private-key-path: /app/keys/private_key.pem
+  public-key-path: /app/keys/public_key.pem
+  rsa:
+    private-key-path: /app/keys/private_key.pem
+    public-key-path: /app/keys/public_key.pem
+
+services:
+  propertize:
+    url: http://propertize:8082
+  service-auth:
+    enabled: true
+    services:
+      - name: api-gateway
+        key: ${GATEWAY_SERVICE_KEY:gateway-dev-secret-key}
+        allowedScopes: [auth:validate, auth:refresh]
+      - name: propertize-service
+        key: ${PROPERTIZE_SERVICE_KEY:propertize-dev-secret-key}
+        allowedScopes: [user:read, organization:read]
+      - name: employecraft
+        key: ${EMPLOYECRAFT_SERVICE_KEY:employecraft-dev-secret-key}
+        allowedScopes: [employee:read, payroll:read]
+
+token:
+  blacklist:
+    enabled: true
+    cleanup-interval: 3600000
+    cache-ttl: 86400
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.propertize.platform.auth: INFO
+    org.springframework.security: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][auth] [%X{correlationId}] %-5level %logger{30} - %msg%n"
+

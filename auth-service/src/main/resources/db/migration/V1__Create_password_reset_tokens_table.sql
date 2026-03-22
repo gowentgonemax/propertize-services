@@ -5,8 +5,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     user_id BIGINT NOT NULL,
     expiry_date TIMESTAMP NOT NULL,
     used BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for performance

@@ -1,0 +1,545 @@
+# ============================================================
+# Propertize Platform — Unified Docker Compose
+# One command to start everything: docker compose up -d
+# ============================================================
+# Ports quick-reference:
+#   3000  → Frontend (Next.js)
+#   8080  → API Gateway (entry point for all API calls)
+#   8081  → Auth Service
+#   8082  → Propertize Main Service
+#   8083  → Employee Service
+#   8086  → Kafka UI (management console)
+#   8088  → Adminer (PostgreSQL UI)
+#   8089  → Mongo Express (MongoDB UI)
+#   8090  → Report Service (Python)
+#   8091  → Vendor Matching (Python)
+#   8092  → Document Service (Python)
+#   8093  → Search Reranker (Python)
+#   8761  → Eureka Service Registry
+#   9000  → MinIO S3 API
+#   9001  → MinIO Console
+#   9092  → Kafka
+# ============================================================
+
+services:
+
+  # ══════════════════════════════════════════════════════════
+  # INFRASTRUCTURE LAYER
+  # ══════════════════════════════════════════════════════════
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: propertize-postgres
+    environment:
+      POSTGRES_DB: propertize_db
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: dbpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/db/init-propertize-users.sql:/docker-entrypoint-initdb.d/01-init-users.sql
+      - ./scripts/db/init-superadmin.sql:/docker-entrypoint-initdb.d/02-superadmin.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dbuser -d propertize_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7-jammy
+    container_name: propertize-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_secure_pass
+      MONGO_INITDB_DATABASE: propertize_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: propertize-redis
+    command: redis-server --requirepass redis_secure_pass
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis_secure_pass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: propertize-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181 | grep -q 'Zookeeper version'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: propertize-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # PLAINTEXT://kafka:29092   — used by containers inside Docker network
+      # PLAINTEXT_HOST://localhost:9092 — used by host machine tools
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:29092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: propertize-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: propertize
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    ports:
+      - "8086:8080"
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: propertize-adminer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8088:8080"
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: propertize-mongo-express
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: mongo_secure_pass
+      ME_CONFIG_MONGODB_URL: mongodb://admin:mongo_secure_pass@mongodb:27017/
+      ME_CONFIG_BASICAUTH: "false"
+    ports:
+      - "8089:8081"
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: propertize-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: propertize
+      MINIO_ROOT_PASSWORD: propertize123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  # ══════════════════════════════════════════════════════════
+  # JAVA MICROSERVICES LAYER
+  # ══════════════════════════════════════════════════════════
+
+  service-registry:
+    build:
+      context: ./service-registry
+    container_name: propertize-service-registry
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: propertize-auth-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Only secrets here — all infra config lives in application-docker.yml
+      REDIS_PASSWORD: redis_secure_pass
+      GATEWAY_SERVICE_KEY: gateway-dev-secret-key
+      PROPERTIZE_SERVICE_KEY: propertize-dev-secret-key
+      EMPLOYECRAFT_SERVICE_KEY: employecraft-dev-secret-key
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  propertize:
+    build:
+      context: ./propertize
+    container_name: propertize-main-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Only secrets here — all infra config lives in application-docker.yml
+      REDIS_PASSWORD: redis_secure_pass
+      SERVICE_API_KEY: propertize-secret-key-12345
+      AUTH_SERVICE_API_KEY: auth-service-secret-key-12345
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      start_period: 90s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  employee-service:
+    build:
+      context: ./employee-service
+    container_name: propertize-employee-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Only secrets here — all infra config lives in application-docker.yml
+      REDIS_PASSWORD: redis_secure_pass
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: propertize-api-gateway
+    depends_on:
+      service-registry:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      propertize:
+        condition: service_healthy
+      employee-service:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # Only secrets here — all infra config lives in application-docker.yml
+      REDIS_PASSWORD: redis_secure_pass
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 60s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  # ══════════════════════════════════════════════════════════
+  # PYTHON SERVICES LAYER
+  # ══════════════════════════════════════════════════════════
+
+  report-service:
+    build:
+      context: ./python-services
+      dockerfile: report-service/Dockerfile
+    container_name: propertize-report-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      PORT: 8090
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  vendor-matching:
+    build:
+      context: ./python-services
+      dockerfile: vendor-matching/Dockerfile
+    container_name: propertize-vendor-matching
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8091:8091"
+    environment:
+      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      PORT: 8091
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8091/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  document-service:
+    build:
+      context: ./python-services
+      dockerfile: document-service/Dockerfile
+    container_name: propertize-document-service
+    depends_on:
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8092:8092"
+    environment:
+      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: propertize
+      MINIO_SECRET_KEY: propertize123
+      MINIO_SECURE: "false"
+      PORT: 8092
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8092/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  search-reranker:
+    build:
+      context: ./python-services
+      dockerfile: search-reranker/Dockerfile
+    container_name: propertize-search-reranker
+    ports:
+      - "8093:8093"
+    environment:
+      SEARCH_RERANKER_PORT: 8093
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8093/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  analytics-worker:
+    build:
+      context: ./python-services
+      dockerfile: analytics-worker/Dockerfile
+    container_name: propertize-analytics-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP: kafka:29092
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  payment-worker:
+    build:
+      context: ./python-services
+      dockerfile: payment-worker/Dockerfile
+    container_name: propertize-payment-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP: kafka:29092
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  screening-worker:
+    build:
+      context: ./python-services
+      dockerfile: screening-worker/Dockerfile
+    container_name: propertize-screening-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP: kafka:29092
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  # ══════════════════════════════════════════════════════════
+  # FRONTEND LAYER
+  # ══════════════════════════════════════════════════════════
+
+  frontend:
+    build:
+      context: ./propertize-front-end
+      args:
+        # Browser-facing URL — points to the host-exposed API Gateway
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+    container_name: propertize-frontend
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: "--max-http-header-size=32768"
+      HOSTNAME: "0.0.0.0"
+      # Server-side URL (container-to-container) — used by Next.js API routes
+      API_URL: http://api-gateway:8080
+      # Browser-side URL — used by client components
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+# ══════════════════════════════════════════════════════════
+# NETWORKS & VOLUMES
+# ══════════════════════════════════════════════════════════
+
+networks:
+  propertize-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  mongodb-data:
+  redis-data:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  minio-data:
