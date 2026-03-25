@@ -508,7 +508,7 @@ services:
       api-gateway:
         condition: service_healthy
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
       NODE_ENV: production
       NODE_OPTIONS: "--max-http-header-size=32768"

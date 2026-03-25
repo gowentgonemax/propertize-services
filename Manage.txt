@@ -44,3 +44,23 @@ make health
 
 # Local dev only (infra containers, run Java/npm yourself)
 make dev
+
+# Rebuild a single service image
+docker compose build <service-name>
+
+# Start/restart a single service (uses existing image)
+docker compose up -d <service-name>
+
+# Rebuild AND restart in one command
+docker compose up -d --build <service-name>
+
+# Stop a single service
+docker compose stop <service-name>
+
+# View logs for a single service  
+docker compose logs -f <service-name>
+
+# Restart without rebuilding
+docker compose restart <service-name>
+
+docker compose up -d --build propertize

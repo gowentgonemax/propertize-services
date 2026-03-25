@@ -124,7 +124,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       DYNAMIC_CONFIG_ENABLED: "true"
     ports:
-      - "8090:8080"
+      - "9091:8080"
     networks:
       - propertize-network
     restart: unless-stopped

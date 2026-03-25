@@ -54,8 +54,25 @@ build-frontend: ## Build only frontend image
 rebuild: down build up ## Full rebuild: stop → build → start
 
 # ============================================
-# Lifecycle Commands  (ONE-CLICK)
+# Start / Stop (all services run in Docker)
 # ============================================
+
+local-start: ## ▶️  Build all images + start entire platform in Docker
+	@bash scripts/start-all.sh
+
+local-start-fast: ## ⚡ Start platform in Docker (skip image rebuild)
+	@bash scripts/start-all.sh --skip-build
+
+local-stop: ## ■  Stop all Docker services (volumes preserved)
+	@bash scripts/stop-all.sh
+
+local-stop-purge: ## ■  Stop all Docker services AND remove volumes
+	@bash scripts/stop-all.sh --purge
+
+local-restart: ## 🔄 Stop → rebuild images → start everything in Docker
+	@bash scripts/stop-all.sh && bash scripts/start-all.sh
+
+
 
 up: ## ▶️  Start ALL services (full platform)
 	$(COMPOSE) up -d
