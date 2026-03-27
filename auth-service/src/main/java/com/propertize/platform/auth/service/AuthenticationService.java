@@ -21,7 +21,6 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final TokenBlacklistService tokenBlacklistService;
 
     @Transactional
     public AuthResponse login(LoginRequest request) {

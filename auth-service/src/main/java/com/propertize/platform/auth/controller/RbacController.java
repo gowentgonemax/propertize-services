@@ -15,7 +15,6 @@ import com.propertize.platform.auth.rbac.engine.evaluators.TimeBasedConditionEva
 import com.propertize.platform.auth.service.AuthorizationService;
 import com.propertize.platform.auth.service.CustomRoleService;
 import com.propertize.platform.auth.service.DelegationService;
-import com.propertize.platform.auth.service.DynamicRoleComposer;
 import com.propertize.platform.auth.service.FieldLevelPermissionService;
 import com.propertize.platform.auth.service.IpAccessService;
 import com.propertize.platform.auth.service.PermissionAuditService;
@@ -70,7 +69,6 @@ public class RbacController {
     private final PermissionAuditService permissionAuditService;
     private final IpAccessService ipAccessService;
     private final FieldLevelPermissionService fieldLevelPermissionService;
-    private final DynamicRoleComposer dynamicRoleComposer;
     private final TimeBasedConditionEvaluator timeBasedConditionEvaluator;
     private final DataScopeConditionEvaluator dataScopeConditionEvaluator;
     private final ConditionalPermissionEvaluator conditionalPermissionEvaluator;

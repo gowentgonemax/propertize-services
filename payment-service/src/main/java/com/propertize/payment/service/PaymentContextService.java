@@ -3,7 +3,6 @@ package com.propertize.payment.service;
 import com.propertize.payment.dto.payment.request.*;
 import com.propertize.payment.entity.Payment;
 import com.propertize.payment.enums.*;
-import com.propertize.payment.exception.BadRequestException;
 import com.propertize.payment.repository.PaymentRepository;
 import com.propertize.payment.service.payment.StripePaymentService;
 import lombok.RequiredArgsConstructor;

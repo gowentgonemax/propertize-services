@@ -1,6 +1,5 @@
 package com.propertize.platform.auth.service;
 
-import com.propertize.enums.UserRoleEnum;
 import com.propertize.platform.auth.dto.CreateUserRequest;
 import com.propertize.platform.auth.dto.UpdateUserRequest;
 import com.propertize.platform.auth.dto.UserInfoResponse;
