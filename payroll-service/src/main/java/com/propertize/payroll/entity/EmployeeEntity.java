@@ -43,10 +43,11 @@ public class EmployeeEntity extends BaseEntity {
     private Client client;
 
     /**
-     * External ID from Employee Microservice for cross-reference
+     * External ID from Employee Microservice for cross-reference (UUID for
+     * type-safe FK)
      */
-    @Column(name = "external_employee_id", length = 100)
-    private String externalEmployeeId;
+    @Column(name = "external_employee_id")
+    private UUID externalEmployeeId;
 
     @Column(nullable = false, unique = true, length = 50)
     private String employeeNumber;

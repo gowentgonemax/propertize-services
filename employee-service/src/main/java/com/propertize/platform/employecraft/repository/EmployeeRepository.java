@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,35 +18,48 @@ import java.util.UUID;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
 
-    @EntityGraph(attributePaths = { "department", "manager" })
-    Page<Employee> findByOrganizationId(UUID organizationId, Pageable pageable);
+        @EntityGraph(attributePaths = { "department", "manager" })
+        Page<Employee> findByOrganizationId(UUID organizationId, Pageable pageable);
 
-    List<Employee> findByOrganizationIdAndStatus(UUID organizationId, EmployeeStatusEnum status);
+        List<Employee> findByOrganizationIdAndStatus(UUID organizationId, EmployeeStatusEnum status);
 
-    @EntityGraph(attributePaths = { "department", "manager" })
-    Optional<Employee> findByIdAndOrganizationId(UUID id, UUID organizationId);
+        @EntityGraph(attributePaths = { "department", "manager" })
+        Optional<Employee> findByIdAndOrganizationId(UUID id, UUID organizationId);
 
-    Optional<Employee> findByEmployeeNumberAndOrganizationId(String employeeNumber, UUID organizationId);
+        Optional<Employee> findByEmployeeNumberAndOrganizationId(String employeeNumber, UUID organizationId);
 
-    Optional<Employee> findByEmailAndOrganizationId(String email, UUID organizationId);
+        Optional<Employee> findByEmailAndOrganizationId(String email, UUID organizationId);
 
-    Optional<Employee> findByUserId(Long userId);
+        Optional<Employee> findByUserId(Long userId);
 
-    Optional<Employee> findByUserIdAndOrganizationId(Long userId, UUID organizationId);
+        Optional<Employee> findByUserIdAndOrganizationId(Long userId, UUID organizationId);
 
-    boolean existsByEmployeeNumberAndOrganizationId(String employeeNumber, UUID organizationId);
+        boolean existsByEmployeeNumberAndOrganizationId(String employeeNumber, UUID organizationId);
 
-    boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
+        boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
 
-    @Query("SELECT COUNT(e) FROM Employee e WHERE e.organizationId = :orgId AND e.status = :status")
-    long countByOrganizationIdAndStatus(@Param("orgId") UUID organizationId,
-            @Param("status") EmployeeStatusEnum status);
+        @Query("SELECT COUNT(e) FROM Employee e WHERE e.organizationId = :orgId AND e.status = :status")
+        long countByOrganizationIdAndStatus(@Param("orgId") UUID organizationId,
+                        @Param("status") EmployeeStatusEnum status);
 
-    @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.department.id = :deptId")
-    List<Employee> findByOrganizationIdAndDepartmentId(@Param("orgId") UUID organizationId,
-            @Param("deptId") UUID departmentId);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.department.id = :deptId")
+        List<Employee> findByOrganizationIdAndDepartmentId(@Param("orgId") UUID organizationId,
+                        @Param("deptId") UUID departmentId);
 
-    @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.manager.id = :managerId")
-    List<Employee> findByOrganizationIdAndManagerId(@Param("orgId") UUID organizationId,
-            @Param("managerId") UUID managerId);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.manager.id = :managerId")
+        List<Employee> findByOrganizationIdAndManagerId(@Param("orgId") UUID organizationId,
+                        @Param("managerId") UUID managerId);
+
+        /**
+         * Find employees modified after a given timestamp (for incremental sync).
+         */
+        Page<Employee> findByOrganizationIdAndUpdatedAtAfter(UUID organizationId, LocalDateTime since,
+                        Pageable pageable);
+
+        /**
+         * Find all active employees for payroll summary.
+         */
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.status IN :statuses")
+        List<Employee> findByOrganizationIdAndStatusIn(@Param("orgId") UUID organizationId,
+                        @Param("statuses") List<EmployeeStatusEnum> statuses);
 }

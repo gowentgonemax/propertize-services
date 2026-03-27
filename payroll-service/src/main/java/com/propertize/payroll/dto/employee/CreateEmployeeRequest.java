@@ -20,7 +20,7 @@ public class CreateEmployeeRequest {
     @NotNull(message = "Client ID is required")
     private UUID clientId;
 
-    private String externalEmployeeId;
+    private UUID externalEmployeeId;
 
     @NotBlank(message = "Employee number is required")
     private String employeeNumber;

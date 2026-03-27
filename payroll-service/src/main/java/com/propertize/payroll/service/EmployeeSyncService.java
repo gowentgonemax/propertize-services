@@ -54,9 +54,8 @@ public class EmployeeSyncService {
 
         try {
             ResponseEntity<EmployeeDto> response = employecraftClient.getEmployee(
-                employeeId,
-                "Bearer " + authToken
-            );
+                    employeeId,
+                    "Bearer " + authToken);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 return updateLocalEmployee(response.getBody(), clientId);
@@ -86,12 +85,11 @@ public class EmployeeSyncService {
         try {
             while (hasMore) {
                 var response = employecraftClient.listEmployees(
-                    organizationId,
-                    page,
-                    pageSize,
-                    null,
-                    "Bearer " + authToken
-                );
+                        organizationId,
+                        page,
+                        pageSize,
+                        null,
+                        "Bearer " + authToken);
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     var employeePage = response.getBody();
@@ -122,16 +120,16 @@ public class EmployeeSyncService {
     @Transactional
     protected EmployeeEntity updateLocalEmployee(EmployeeDto dto, UUID clientId) {
         Client client = clientRepository.findById(clientId)
-            .orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
+                .orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
 
         // Find existing or create new
         EmployeeEntity employee = employeeRepository
-            .findByExternalEmployeeId(dto.getId().toString())
-            .orElse(new EmployeeEntity());
+                .findByExternalEmployeeId(dto.getId())
+                .orElse(new EmployeeEntity());
 
         // Map from DTO to Entity
         employee.setClient(client);
-        employee.setExternalEmployeeId(dto.getId().toString());
+        employee.setExternalEmployeeId(dto.getId());
         employee.setEmployeeNumber(dto.getEmployeeNumber());
         employee.setFirstName(dto.getFirstName());
         employee.setMiddleName(dto.getMiddleName());
@@ -194,7 +192,7 @@ public class EmployeeSyncService {
      * Get employee with fallback to Employecraft if not in cache
      */
     @Cacheable(value = "employees", key = "#externalEmployeeId")
-    public Optional<EmployeeEntity> getEmployeeByExternalId(String externalEmployeeId) {
+    public Optional<EmployeeEntity> getEmployeeByExternalId(UUID externalEmployeeId) {
         return employeeRepository.findByExternalEmployeeId(externalEmployeeId);
     }
 
@@ -211,10 +209,9 @@ public class EmployeeSyncService {
         for (Client client : clients) {
             if (client.getOrganizationId() != null && client.getServiceAccountToken() != null) {
                 syncAllEmployees(
-                    client.getId(),
-                    client.getOrganizationId(),
-                    client.getServiceAccountToken()
-                );
+                        client.getId(),
+                        client.getOrganizationId(),
+                        client.getServiceAccountToken());
             }
         }
     }
@@ -225,9 +222,8 @@ public class EmployeeSyncService {
     public boolean validateEmployee(UUID employeeId, String authToken) {
         try {
             ResponseEntity<Boolean> response = employecraftClient.employeeExists(
-                employeeId,
-                "Bearer " + authToken
-            );
+                    employeeId,
+                    "Bearer " + authToken);
             return Boolean.TRUE.equals(response.getBody());
         } catch (Exception e) {
             log.error("Error validating employee {}: {}", employeeId, e.getMessage());

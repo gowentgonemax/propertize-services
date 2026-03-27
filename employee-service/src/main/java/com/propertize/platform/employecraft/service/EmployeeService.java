@@ -4,6 +4,7 @@ import com.propertize.platform.employecraft.context.OrganizationContext;
 import com.propertize.platform.employecraft.client.PropertizeFeignClient;
 import com.propertize.platform.employecraft.dto.*;
 import com.propertize.platform.employecraft.dto.employee.request.EmployeeCreateRequest;
+import com.propertize.platform.employecraft.dto.employee.response.EmployeePayrollSummary;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeeResponse;
 import com.propertize.platform.employecraft.dto.propertize.UserCreateRequest;
 import com.propertize.platform.employecraft.dto.propertize.UserDto;
@@ -16,6 +17,8 @@ import com.propertize.platform.employecraft.entity.embedded.EmergencyContact;
 import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
 import com.propertize.platform.employecraft.enums.PayFrequencyEnum;
 import com.propertize.platform.employecraft.enums.PayTypeEnum;
+import com.propertize.platform.employecraft.event.EmployeeEvent;
+import com.propertize.platform.employecraft.event.EmployeeEventPublisher;
 import com.propertize.platform.employecraft.exception.EmployeeNotFoundException;
 import com.propertize.platform.employecraft.exception.PropertizeIntegrationException;
 import com.propertize.platform.employecraft.repository.DepartmentRepository;
@@ -33,7 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -51,6 +56,7 @@ public class EmployeeService {
     private final PositionRepository positionRepository;
     private final PropertizeFeignClient propertizeFeignClient;
     private final EmployeeNumberGenerator employeeNumberGenerator;
+    private final EmployeeEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<EmployeeResponse> getAllEmployees(Pageable pageable) {
@@ -131,6 +137,7 @@ public class EmployeeService {
 
         Employee saved = employeeRepository.save(employee);
         logger.info("Created employee: {} for organization: {}", saved.getEmployeeNumber(), organizationId);
+        eventPublisher.publish(saved, EmployeeEvent.EventType.CREATED);
 
         return toResponse(saved);
     }
@@ -145,7 +152,36 @@ public class EmployeeService {
         Employee saved = employeeRepository.save(employee);
 
         logger.info("Activated employee: {}", saved.getEmployeeNumber());
+        eventPublisher.publish(saved, EmployeeEvent.EventType.ACTIVATED);
         return toResponse(saved);
+    }
+
+    /**
+     * Return employees modified after a given timestamp (incremental sync for
+     * payroll-service).
+     */
+    @Transactional(readOnly = true)
+    public Page<EmployeeResponse> getChangedSince(LocalDateTime since, Pageable pageable) {
+        UUID organizationId = OrganizationContext.requireOrganizationId();
+        return employeeRepository
+                .findByOrganizationIdAndUpdatedAtAfter(organizationId, since, pageable)
+                .map(this::toResponse);
+    }
+
+    /**
+     * Return a minimal payroll-ready summary for all active/onleave employees.
+     */
+    @Transactional(readOnly = true)
+    public List<EmployeePayrollSummary> getPayrollSummaries() {
+        UUID organizationId = OrganizationContext.requireOrganizationId();
+        List<EmployeeStatusEnum> payrollStatuses = List.of(
+                EmployeeStatusEnum.ACTIVE,
+                EmployeeStatusEnum.ON_LEAVE);
+        return employeeRepository
+                .findByOrganizationIdAndStatusIn(organizationId, payrollStatuses)
+                .stream()
+                .map(this::toPayrollSummary)
+                .toList();
     }
 
     @Transactional
@@ -171,6 +207,7 @@ public class EmployeeService {
 
         Employee saved = employeeRepository.save(employee);
         logger.info("Terminated employee: {}", saved.getEmployeeNumber());
+        eventPublisher.publish(saved, EmployeeEvent.EventType.TERMINATED);
 
         return toResponse(saved);
     }
@@ -329,5 +366,28 @@ public class EmployeeService {
         }
 
         return builder.build();
+    }
+
+    private EmployeePayrollSummary toPayrollSummary(Employee employee) {
+        EmployeePayrollSummary.EmployeePayrollSummaryBuilder b = EmployeePayrollSummary.builder()
+                .id(employee.getId())
+                .employeeNumber(employee.getEmployeeNumber())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .email(employee.getEmail())
+                .status(employee.getStatus().name())
+                .employmentType(employee.getEmploymentType().name())
+                .hireDate(employee.getHireDate())
+                .terminationDate(employee.getTerminationDate())
+                .updatedAt(employee.getUpdatedAt());
+
+        if (employee.getCompensation() != null) {
+            Compensation comp = employee.getCompensation();
+            b.payType(comp.getPayType() != null ? comp.getPayType().name() : null)
+                    .payRate(comp.getPayRate())
+                    .payFrequency(comp.getPayFrequency() != null ? comp.getPayFrequency().name() : null);
+        }
+
+        return b.build();
     }
 }

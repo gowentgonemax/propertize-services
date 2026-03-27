@@ -79,6 +79,21 @@ spring:
             log: false
         # Enable lazy loading optimization
         enable_lazy_load_no_trans: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: payroll-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.propertize.*
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_secure_pass}
+      timeout: 2000ms
   refresh-token:
     expiration: ${JWT_REFRESH_EXPIRATION:86400}
 # =============================================================================

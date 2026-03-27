@@ -28,7 +28,7 @@ public class EmployeeDTO {
     @NotNull(message = "Client ID is required")
     private UUID clientId;
 
-    private String externalEmployeeId;
+    private UUID externalEmployeeId;
 
     @NotBlank(message = "Employee number is required")
     @Size(max = 50, message = "Employee number cannot exceed 50 characters")

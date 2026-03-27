@@ -14,6 +14,8 @@ import java.util.UUID;
 public interface ClientRepository extends JpaRepository<Client, UUID> {
     Page<Client> findByStatus(ClientStatusEnum status, Pageable pageable);
 
+    Optional<Client> findByOrganizationId(UUID organizationId);
+
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM Client c WHERE c.taxId = :taxId")
     boolean existsByTaxId(@Param("taxId") String taxId);
 

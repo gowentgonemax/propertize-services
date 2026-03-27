@@ -18,7 +18,7 @@ public interface EmployeeEntityRepository extends JpaRepository<EmployeeEntity, 
 
     Optional<EmployeeEntity> findByEmployeeNumber(String employeeNumber);
 
-    Optional<EmployeeEntity> findByExternalEmployeeId(String externalEmployeeId);
+    Optional<EmployeeEntity> findByExternalEmployeeId(UUID externalEmployeeId);
 
     List<EmployeeEntity> findByClientId(UUID clientId);
 
@@ -27,13 +27,15 @@ public interface EmployeeEntityRepository extends JpaRepository<EmployeeEntity, 
     List<EmployeeEntity> findByClientIdAndStatus(UUID clientId, EmployeeStatusEnum status);
 
     @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.departmentId = :departmentId")
-    List<EmployeeEntity> findByClientIdAndDepartmentId(@Param("clientId") UUID clientId, @Param("departmentId") String departmentId);
+    List<EmployeeEntity> findByClientIdAndDepartmentId(@Param("clientId") UUID clientId,
+            @Param("departmentId") String departmentId);
 
     @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND " +
-           "(LOWER(e.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(e.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<EmployeeEntity> searchByClientId(@Param("clientId") UUID clientId, @Param("search") String search, Pageable pageable);
+            "(LOWER(e.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(e.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<EmployeeEntity> searchByClientId(@Param("clientId") UUID clientId, @Param("search") String search,
+            Pageable pageable);
 
     @Query("SELECT COUNT(e) FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.status = :status")
     long countByClientIdAndStatus(@Param("clientId") UUID clientId, @Param("status") EmployeeStatusEnum status);

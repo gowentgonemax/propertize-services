@@ -17,11 +17,12 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "employees", indexes = {
-    @Index(name = "idx_employee_org", columnList = "organization_id"),
-    @Index(name = "idx_employee_number", columnList = "employee_number, organization_id", unique = true),
-    @Index(name = "idx_employee_email", columnList = "email, organization_id", unique = true),
-    @Index(name = "idx_employee_user", columnList = "user_id"),
-    @Index(name = "idx_employee_status", columnList = "status")
+        @Index(name = "idx_employee_org", columnList = "organization_id"),
+        @Index(name = "idx_employee_number", columnList = "employee_number, organization_id", unique = true),
+        @Index(name = "idx_employee_email", columnList = "email, organization_id", unique = true),
+        @Index(name = "idx_employee_user", columnList = "user_id"),
+        @Index(name = "idx_employee_status", columnList = "status"),
+        @Index(name = "idx_employee_updated", columnList = "updated_at")
 })
 @Getter
 @Setter
@@ -118,11 +119,11 @@ public class Employee extends AuditableEntity {
     // ===== EMBEDDED =====
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name = "streetAddress", column = @Column(name = "home_street")),
-        @AttributeOverride(name = "city", column = @Column(name = "home_city")),
-        @AttributeOverride(name = "state", column = @Column(name = "home_state")),
-        @AttributeOverride(name = "zipCode", column = @Column(name = "home_zip")),
-        @AttributeOverride(name = "country", column = @Column(name = "home_country"))
+            @AttributeOverride(name = "streetAddress", column = @Column(name = "home_street")),
+            @AttributeOverride(name = "city", column = @Column(name = "home_city")),
+            @AttributeOverride(name = "state", column = @Column(name = "home_state")),
+            @AttributeOverride(name = "zipCode", column = @Column(name = "home_zip")),
+            @AttributeOverride(name = "country", column = @Column(name = "home_country"))
     })
     private Address homeAddress;
 
