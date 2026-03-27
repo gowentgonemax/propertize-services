@@ -1,0 +1,271 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: payroll-service
+  session:
+    store-type: none
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-single-value-as-array: true
+  main:
+    banner-mode: off
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=3600s
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 32
+        queue-capacity: 100
+        keep-alive: 60s
+    scheduling:
+      pool:
+        size: 4
+  datasource:
+    hikari:
+      auto-commit: false
+      pool-name: payroll-pool
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      connection-timeout: 20000
+      validation-timeout: 5000
+      max-lifetime: 1200000
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/propertize_db}
+    username: ${POSTGRES_USER:propertize}
+    password: ${POSTGRES_PASSWORD:propertize123}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: ${HIBERNATE_STATISTICS:false}
+        # Batch operations to reduce round trips
+        jdbc:
+          batch_size: 50
+          fetch_size: 50
+          batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
+        # Enable batch fetching to reduce N+1 queries
+        default_batch_fetch_size: 50
+        # Cache configuration
+        cache:
+          use_second_level_cache: false
+        # Enable query plan cache
+        query:
+          plan_cache_max_size: 2048
+          plan_parameter_metadata_max_size: 128
+        # Connection release mode
+        connection:
+          provider_disables_autocommit: true
+        session:
+          events:
+            log: false
+        # Enable lazy loading optimization
+        enable_lazy_load_no_trans: false
+  refresh-token:
+    expiration: ${JWT_REFRESH_EXPIRATION:86400}
+# =============================================================================
+# JWT Configuration
+# =============================================================================
+# When running behind API Gateway, JWT validation is optional since the gateway
+# handles authentication. However, for direct API access or service-to-service
+# calls, the JWT secret MUST match Propertize's secret.
+#
+# IMPORTANT: Use the same JWT_SECRET environment variable as Propertize!
+# =============================================================================
+jwt:
+  secret: ${JWT_SECRET:dev-jwt-secret-key-change-in-production-min-32-chars}
+  expiration: 86400 # 24 hours in seconds
+  refresh-expiration: 604800 # 7 days in seconds
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+security:
+  gateway:
+    # Expected value of X-Gateway-Source header
+    expected-value: api-gateway
+  # Set to 'trusted-gateway' for production, 'hybrid' for development
+  mode: ${SECURITY_MODE:hybrid}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,caches,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: diskSpace,ping
+        readiness:
+          include: db
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    enable:
+      jvm: true
+      process: true
+      system: true
+  info:
+    git:
+      mode: full
+    env:
+      enabled: true
+    java:
+      enabled: true
+
+resilience4j:
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+        registerHealthIndicator: true
+  retry:
+    instances:
+      default:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+
+server:
+  port: ${SERVER_PORT:8085}
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
+  http2:
+    enabled: true
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 5000
+    max-swallow-size: 2MB
+    max-http-form-post-size: 2MB
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+
+# =============================================================================
+# Eureka Client Configuration (Service Discovery)
+# =============================================================================
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://admin:admin@localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.uuid}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 15
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+  api-docs:
+    path: /v3/api-docs
+    enabled: ${SWAGGER_ENABLED:true}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+  allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+  allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+  max-age: 3600
+
+async:
+  core-pool-size: 8
+  max-pool-size: 32
+  queue-capacity: 100
+  thread-name-prefix: async-exec-
+
+cache:
+  caffeine:
+    users:
+      maximum-size: 1000
+      expire-after-write: 1h
+    clients:
+      maximum-size: 500
+      expire-after-write: 30m
+    employees:
+      maximum-size: 1000
+      expire-after-write: 1h
+
+# Microservice Integration Configuration
+employecraft:
+  api:
+    url: ${EMPLOYECRAFT_API_URL:http://localhost:8082}
+    timeout:
+      connect: 5000
+      read: 30000
+
+propertize:
+  api:
+    url: ${PROPERTIZE_API_URL:http://localhost:8081}
+    timeout:
+      connect: 5000
+      read: 30000
+
+# Feign Client Configuration
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 30000
+        loggerLevel: BASIC
+  circuitbreaker:
+    enabled: true
+
+# Employee Sync Configuration
+employee-sync:
+  enabled: ${EMPLOYEE_SYNC_ENABLED:true}
+  cron: "0 0 */6 * * *" # Every 6 hours
+  batch-size: 100

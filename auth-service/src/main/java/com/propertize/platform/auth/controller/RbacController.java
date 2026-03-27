@@ -9,9 +9,14 @@ import com.propertize.platform.auth.entity.IpRuleScope;
 import com.propertize.platform.auth.entity.TemporalPermission;
 import com.propertize.platform.auth.entity.CustomRole;
 import com.propertize.platform.auth.entity.PermissionAuditLog;
+import com.propertize.platform.auth.rbac.engine.evaluators.ConditionalPermissionEvaluator;
+import com.propertize.platform.auth.rbac.engine.evaluators.DataScopeConditionEvaluator;
+import com.propertize.platform.auth.rbac.engine.evaluators.TimeBasedConditionEvaluator;
 import com.propertize.platform.auth.service.AuthorizationService;
 import com.propertize.platform.auth.service.CustomRoleService;
 import com.propertize.platform.auth.service.DelegationService;
+import com.propertize.platform.auth.service.DynamicRoleComposer;
+import com.propertize.platform.auth.service.FieldLevelPermissionService;
 import com.propertize.platform.auth.service.IpAccessService;
 import com.propertize.platform.auth.service.PermissionAuditService;
 import com.propertize.platform.auth.service.RbacConfigService;
@@ -46,7 +51,8 @@ import java.util.stream.Collectors;
  * - GET /api/v1/auth/rbac/endpoints → Get endpoint permission mappings
  * - POST /api/v1/auth/cache/invalidate → Invalidate permission caches
  *
- * @version 2.0 - Centralized RBAC
+ * @version 3.0 - Enhanced RBAC with ABAC, field-level, time-based, data scope,
+ *          conditional permissions
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -63,6 +69,11 @@ public class RbacController {
     private final CustomRoleService customRoleService;
     private final PermissionAuditService permissionAuditService;
     private final IpAccessService ipAccessService;
+    private final FieldLevelPermissionService fieldLevelPermissionService;
+    private final DynamicRoleComposer dynamicRoleComposer;
+    private final TimeBasedConditionEvaluator timeBasedConditionEvaluator;
+    private final DataScopeConditionEvaluator dataScopeConditionEvaluator;
+    private final ConditionalPermissionEvaluator conditionalPermissionEvaluator;
 
     /**
      * Authorize a request — the main authorization endpoint.
@@ -1164,5 +1175,154 @@ public class RbacController {
                 .createdAt(entity.getCreatedAt())
                 .expiresAt(entity.getExpiresAt())
                 .build();
+    }
+
+    // ========================================================================
+    // Field-Level Permission Endpoints (Phase 1: Field-Level Security)
+    // ========================================================================
+
+    /**
+     * Get field-level permissions for a resource and role.
+     * Returns visible and hidden fields.
+     */
+    @GetMapping("/fields/{resource}/{role}")
+    public ResponseEntity<Map<String, Object>> getFieldPermissions(
+            @PathVariable String resource, @PathVariable String role) {
+        Set<String> visible = fieldLevelPermissionService.getVisibleFields(resource, role);
+        Set<String> hidden = fieldLevelPermissionService.getHiddenFields(resource, role);
+
+        if (visible == null && hidden.isEmpty()) {
+            return ResponseEntity.ok(Map.of(
+                    "resource", resource, "role", role,
+                    "unrestricted", true,
+                    "message", "No field-level restrictions defined"));
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("resource", resource);
+        response.put("role", role);
+        response.put("unrestricted", false);
+        response.put("visibleFields", visible != null ? visible : Collections.emptySet());
+        response.put("hiddenFields", hidden);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get field access for a resource given multiple roles.
+     * Uses most-permissive union of visible / intersection of hidden.
+     */
+    @PostMapping("/fields/resolve")
+    public ResponseEntity<Map<String, Object>> resolveFieldAccess(
+            @RequestBody Map<String, Object> request) {
+        String resource = (String) request.get("resource");
+        @SuppressWarnings("unchecked")
+        List<String> roles = (List<String>) request.get("roles");
+
+        if (resource == null || roles == null || roles.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "resource and roles are required"));
+        }
+
+        FieldLevelPermissionService.FieldAccessResult result = fieldLevelPermissionService.getFieldAccess(resource,
+                roles);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("resource", resource);
+        response.put("roles", roles);
+        response.put("unrestricted", result.unrestricted());
+        response.put("visibleFields", result.visibleFields());
+        response.put("hiddenFields", result.hiddenFields());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all resources that have field-level permissions configured.
+     */
+    @GetMapping("/fields/resources")
+    public ResponseEntity<Map<String, Object>> getFieldPermissionResources() {
+        Set<String> resources = fieldLevelPermissionService.getConfiguredResources();
+        return ResponseEntity.ok(Map.of("resources", resources, "count", resources.size()));
+    }
+
+    // ========================================================================
+    // Data Scope Resolution Endpoints (Phase 2: Row-Level Security)
+    // ========================================================================
+
+    /**
+     * Resolve the effective data scope for a role and resource type.
+     * Returns the scope rule for the requested role/resource combination.
+     */
+    @PostMapping("/scope/resolve")
+    public ResponseEntity<Map<String, Object>> resolveDataScope(
+            @RequestBody Map<String, Object> request) {
+        String role = (String) request.get("role");
+        String resourceType = (String) request.get("resourceType");
+
+        if (role == null || resourceType == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "role and resourceType are required"));
+        }
+
+        String scopeRule = dataScopeConditionEvaluator.resolveScope(role, resourceType);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("role", role);
+        response.put("resourceType", resourceType);
+        response.put("scopeRule", scopeRule != null ? scopeRule : "unrestricted");
+        response.put("restricted", scopeRule != null);
+        return ResponseEntity.ok(response);
+    }
+
+    // ========================================================================
+    // Conditional Permission Endpoints (Phase 2: Amount/Value Limits)
+    // ========================================================================
+
+    /**
+     * Get conditional permission limits for a role and permission.
+     */
+    @GetMapping("/conditions/{role}/{permission}")
+    public ResponseEntity<Map<String, Object>> getConditionalPermissions(
+            @PathVariable String role, @PathVariable String permission) {
+        Map<String, Object> conditions = conditionalPermissionEvaluator.getConditions(role, permission);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("role", role);
+        response.put("permission", permission);
+        if (conditions != null) {
+            response.put("conditions", conditions);
+            response.put("hasConditions", true);
+        } else {
+            response.put("hasConditions", false);
+            response.put("message", "No conditional restrictions defined");
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    // ========================================================================
+    // Time Restriction Endpoints (Phase 1: Time-Based Access Control)
+    // ========================================================================
+
+    /**
+     * Check if access is currently allowed for a set of roles based on time
+     * restrictions.
+     */
+    @PostMapping("/time/check")
+    public ResponseEntity<Map<String, Object>> checkTimeAccess(
+            @RequestBody Map<String, Object> request) {
+        @SuppressWarnings("unchecked")
+        List<String> roles = (List<String>) request.get("roles");
+
+        if (roles == null || roles.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "roles are required"));
+        }
+
+        boolean allowed = timeBasedConditionEvaluator.isAccessAllowed(new LinkedHashSet<>(roles));
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("roles", roles);
+        response.put("allowed", allowed);
+        response.put("checkedAt", java.time.Instant.now().toString());
+        if (!allowed) {
+            response.put("reason", "Access denied: outside allowed time window for one or more roles");
+        }
+        return ResponseEntity.ok(response);
     }
 }

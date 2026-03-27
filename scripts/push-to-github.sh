@@ -5,8 +5,7 @@
 # Usage: ./push-to-github.sh <GITHUB_PAT>
 # ============================================================
 
-set -e
-
+set -euo pipefail
 GITHUB_USER="gowentgonemax"
 PAT="${1}"
 BASE_DIR="/Users/ravishah/MySpace/ProperyManage/propertize-Services"

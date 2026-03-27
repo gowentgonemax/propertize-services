@@ -7,7 +7,7 @@ spring:
   security:
     user:
       name: ${REGISTRY_USERNAME:admin}
-      password: ${REGISTRY_PASSWORD:PropertizeRegistry2026!}
+      password: ${REGISTRY_PASSWORD}
 
 eureka:
   instance:

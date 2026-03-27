@@ -1,0 +1,121 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/wagecraft_dev?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DEV_DB_USER:root}
+    password: ${DEV_DB_PASSWORD:Rocky90-}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 3
+      connection-timeout: 20000
+      idle-timeout: 300000
+      pool-name: WageCraft-Dev-Pool
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 25
+          fetch_size: 25
+        cache:
+          use_second_level_cache: false
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=600s
+  devtools:
+    restart:
+          enabled: true
+
+
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 50
+      min-spare: 5
+    max-connections: 200
+    connection-timeout: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+jwt:
+  secret: wagecraft-super-secret-key-change-this-in-production-minimum-256-bits-required
+  expiration: 3600
+  endpoint:
+    health:
+      show-details: always
+    shutdown:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.wagecraft: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.cache: TRACE
+    org.springframework.transaction: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+resilience4j:
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 1000
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+  retry:
+    instances:
+      default:
+        maxAttempts: 5
+        waitDuration: 100ms
+        enableExponentialBackoff: false
+  circuitbreaker:
+    instances:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 60
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+
+
+async:
+  core-pool-size: 4
+  max-pool-size: 8
+  queue-capacity: 50
+  thread-name-prefix: dev-async-
+
+cache:
+  caffeine:
+    users:
+      maximum-size: 100
+      expire-after-write: 30m
+    clients:
+      maximum-size: 50
+      expire-after-write: 15m
+    employees:
+      maximum-size: 100
+      expire-after-write: 30m

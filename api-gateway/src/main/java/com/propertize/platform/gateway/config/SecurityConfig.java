@@ -34,75 +34,77 @@ import java.util.List;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeExchange(exchanges -> exchanges
-                        // OPTIONS requests for CORS preflight
-                        .pathMatchers(HttpMethod.OPTIONS).permitAll()
+        @Bean
+        public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+                return http
+                                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .authorizeExchange(exchanges -> exchanges
+                                                // OPTIONS requests for CORS preflight
+                                                .pathMatchers(HttpMethod.OPTIONS).permitAll()
 
-                        // Health and actuator endpoints
-                        .pathMatchers("/actuator/**").permitAll()
-                        .pathMatchers("/health/**").permitAll()
+                                                // Health and actuator endpoints
+                                                .pathMatchers("/actuator/**").permitAll()
+                                                .pathMatchers("/health/**").permitAll()
 
-                        // Fallback endpoints
-                        .pathMatchers("/fallback/**").permitAll()
+                                                // Fallback endpoints
+                                                .pathMatchers("/fallback/**").permitAll()
 
-                        // Gateway internal endpoints
-                        .pathMatchers("/api/v1/gateway/**").permitAll()
+                                                // Gateway internal endpoints
+                                                .pathMatchers("/api/v1/gateway/**").permitAll()
 
-                        // Authentication endpoints (handled by gateway AuthController)
-                        .pathMatchers("/api/v1/auth/**").permitAll()
+                                                // Authentication endpoints (handled by gateway AuthController)
+                                                .pathMatchers("/api/v1/auth/**").permitAll()
 
-                        // Public onboarding endpoints
-                        .pathMatchers("/api/v1/organizations/onboarding/**").permitAll()
+                                                // Public onboarding endpoints
+                                                .pathMatchers("/api/v1/organizations/onboarding/**").permitAll()
+                                                .pathMatchers("/api/v1/organizations/apply").permitAll()
 
-                        // Public property listings
-                        .pathMatchers("/api/v1/properties/public/**").permitAll()
+                                                // Public property listings
+                                                .pathMatchers("/api/v1/properties/public/**").permitAll()
 
-                        // Public rental application submission
-                        .pathMatchers("/api/v1/rental-applications/submit").permitAll()
-                        .pathMatchers("/api/v1/rental-applications/track/**").permitAll()
+                                                // Public rental application submission
+                                                .pathMatchers("/api/v1/rental-applications/submit").permitAll()
+                                                .pathMatchers("/api/v1/rental-applications/track/**").permitAll()
 
-                        // API Documentation
-                        .pathMatchers("/swagger-ui/**").permitAll()
-                        .pathMatchers("/v3/api-docs/**").permitAll()
-                        .pathMatchers("/api-docs/**").permitAll()
+                                                // API Documentation
+                                                .pathMatchers("/swagger-ui/**").permitAll()
+                                                .pathMatchers("/v3/api-docs/**").permitAll()
+                                                .pathMatchers("/api-docs/**").permitAll()
 
-                        // GraphQL (has internal auth check)
-                        .pathMatchers("/graphql").permitAll()
-                        .pathMatchers("/graphiql").permitAll()
+                                                // GraphQL (has internal auth check)
+                                                .pathMatchers("/graphql").permitAll()
+                                                .pathMatchers("/graphiql").permitAll()
 
-                        // All other requests - JWT validation handled by JwtAuthenticationFilter
-                        // permitAll here because auth is handled by the GlobalFilter
-                        .anyExchange().permitAll())
-                .build();
-    }
+                                                // All other requests - JWT validation handled by
+                                                // JwtAuthenticationFilter
+                                                // permitAll here because auth is handled by the GlobalFilter
+                                                .anyExchange().permitAll())
+                                .build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        // Allow all origins for development - restrict in production
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(Arrays.asList(
-                "Authorization",
-                "X-Correlation-Id",
-                "X-Request-Id",
-                "X-Organization-Id",
-                "X-RateLimit-Remaining",
-                "X-RateLimit-Limit",
-                "X-RateLimit-Reset",
-                "Content-Disposition"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
+                // Allow all origins for development - restrict in production
+                configuration.setAllowedOriginPatterns(List.of("*"));
+                configuration.setAllowedMethods(Arrays.asList(
+                                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
+                configuration.setAllowedHeaders(List.of("*"));
+                configuration.setExposedHeaders(Arrays.asList(
+                                "Authorization",
+                                "X-Correlation-Id",
+                                "X-Request-Id",
+                                "X-Organization-Id",
+                                "X-RateLimit-Remaining",
+                                "X-RateLimit-Limit",
+                                "X-RateLimit-Reset",
+                                "Content-Disposition"));
+                configuration.setAllowCredentials(true);
+                configuration.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 }

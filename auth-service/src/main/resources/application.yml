@@ -16,9 +16,9 @@ spring:
 
   # Database Configuration - Shared propertize database
   datasource:
-    url: jdbc:postgresql://localhost:5432/propertize_db
-    username: dbuser
-    password: dbpassword
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/propertize_db}
+    username: ${DB_USERNAME:dbuser}
+    password: ${DB_PASSWORD:propertize_secure_pass}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 25
@@ -154,13 +154,22 @@ management:
   endpoints:
     web:
       exposure:
+        # Expose only what monitoring infra needs. Never expose env, beans, mappings, or heapdump.
         include: health,info,prometheus,metrics
+      # Prefix is /actuator by default — keep it to match SecurityConfig allow-list
+      base-path: /actuator
   endpoint:
     health:
+      # Health details only shown to authenticated users; unauthenticated callers get UP/DOWN only
       show-details: when_authorized
+      show-components: when_authorized
+    # Prometheus scrape endpoint is internal — restrict via network policy in production
+    prometheus:
+      enabled: true
   info:
     env:
-      enabled: true
+      # Do NOT expose env variables (could leak secrets). Set to false.
+      enabled: false
     java:
       enabled: true
     os:

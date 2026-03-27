@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/propertize_db
     username: dbuser
-    password: dbpassword
+    password: ${DB_PASSWORD:${POSTGRES_PASSWORD:dbpassword}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 15

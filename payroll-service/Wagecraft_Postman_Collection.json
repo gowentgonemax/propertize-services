@@ -1,0 +1,806 @@
+{
+	"info": {
+		"name": "Wagecraft API",
+		"description": "Complete API collection for Wagecraft - Payroll Management System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"version": "1.0.0"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "client_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "employee_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "payroll_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.token) {",
+									"        pm.collectionVariables.set('jwt_token', jsonData.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"New\",\n  \"lastName\": \"User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/auth/register",
+						"description": "Register a new user account"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.token) {",
+									"        pm.collectionVariables.set('jwt_token', jsonData.token);",
+									"        console.log('JWT Token saved:', jsonData.token);",
+									"    }",
+									"    if (jsonData.refreshToken) {",
+									"        pm.collectionVariables.set('refresh_token', jsonData.refreshToken);",
+									"        console.log('Refresh Token saved');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@wagecraft.com\",\n  \"password\": \"Password123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/auth/login",
+						"description": "Login with email and password to get JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.token) {",
+									"        pm.collectionVariables.set('jwt_token', jsonData.token);",
+									"        console.log('New JWT Token saved:', jsonData.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/token/refresh",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"token",
+								"refresh"
+							]
+						},
+						"description": "Refresh an expired access token using a valid refresh token"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{jwt_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/token/validate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"token",
+								"validate"
+							]
+						},
+						"description": "Validate a JWT token and get its expiration info"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/token/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"token",
+								"me"
+							]
+						},
+						"description": "Get current authenticated user information from token"
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Token (Logout)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/token/revoke",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"token",
+								"revoke"
+							]
+						},
+						"description": "Revoke/logout the current token"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for registration, login, and token management"
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "Get All Clients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients?page=0&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Items per page"
+								},
+								{
+									"key": "status",
+									"value": "ACTIVE",
+									"description": "Filter by status: ACTIVE, INACTIVE, SUSPENDED",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of all clients with optional status filter"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Client by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}"
+							]
+						},
+						"description": "Get a specific client by UUID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Client",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('client_id', jsonData.id);",
+									"        console.log('Client ID saved:', jsonData.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyName\": \"Acme Corporation\",\n  \"taxId\": \"12-3456789\",\n  \"address\": {\n    \"street\": \"123 Business Ave\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"zipCode\": \"10001\",\n    \"country\": \"USA\"\n  },\n  \"contactPerson\": \"Jane Smith\",\n  \"email\": \"contact@acmecorp.com\",\n  \"phone\": \"+1-555-0123\",\n  \"status\": \"ACTIVE\",\n  \"payrollSchedule\": \"BIWEEKLY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients"
+							]
+						},
+						"description": "Create a new client"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Client",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyName\": \"Acme Corporation Updated\",\n  \"taxId\": \"12-3456789\",\n  \"address\": {\n    \"street\": \"456 Updated Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"zipCode\": \"10001\",\n    \"country\": \"USA\"\n  },\n  \"contactPerson\": \"Jane Smith\",\n  \"email\": \"contact@acmecorp.com\",\n  \"phone\": \"+1-555-0123\",\n  \"status\": \"ACTIVE\",\n  \"payrollSchedule\": \"BIWEEKLY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}"
+							]
+						},
+						"description": "Update an existing client"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Client",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}"
+							]
+						},
+						"description": "Delete a client (soft delete)"
+					},
+					"response": []
+				}
+			],
+			"description": "Client management endpoints"
+		},
+		{
+			"name": "Employees",
+			"item": [
+				{
+					"name": "Get Employees by Client",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/employees?page=0&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"employees"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Items per page"
+								},
+								{
+									"key": "status",
+									"value": "ACTIVE",
+									"description": "Filter by status: ACTIVE, INACTIVE, TERMINATED, ON_LEAVE",
+									"disabled": true
+								},
+								{
+									"key": "department",
+									"value": "Engineering",
+									"description": "Filter by department",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all employees for a specific client with optional filters"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Employee by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/employees/{{employee_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"employees",
+								"{{employee_id}}"
+							]
+						},
+						"description": "Get a specific employee by UUID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Employee",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('employee_id', jsonData.id);",
+									"        console.log('Employee ID saved:', jsonData.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeNumber\": \"EMP001\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acmecorp.com\",\n  \"phone\": \"+1-555-0199\",\n  \"address\": {\n    \"street\": \"789 Employee Lane\",\n    \"city\": \"Brooklyn\",\n    \"state\": \"NY\",\n    \"zipCode\": \"11201\",\n    \"country\": \"USA\"\n  },\n  \"ssn\": \"123-45-6789\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"hireDate\": \"2024-01-15\",\n  \"department\": \"Engineering\",\n  \"position\": \"Software Engineer\",\n  \"employmentType\": \"FULL_TIME\",\n  \"payType\": \"SALARY\",\n  \"payRate\": 85000.00,\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/employees",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"employees"
+							]
+						},
+						"description": "Create a new employee for a client"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Employee",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeNumber\": \"EMP001\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@acmecorp.com\",\n  \"phone\": \"+1-555-0199\",\n  \"address\": {\n    \"street\": \"789 Employee Lane\",\n    \"city\": \"Brooklyn\",\n    \"state\": \"NY\",\n    \"zipCode\": \"11201\",\n    \"country\": \"USA\"\n  },\n  \"ssn\": \"123-45-6789\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"hireDate\": \"2024-01-15\",\n  \"department\": \"Engineering\",\n  \"position\": \"Senior Software Engineer\",\n  \"employmentType\": \"FULL_TIME\",\n  \"payType\": \"SALARY\",\n  \"payRate\": 95000.00,\n  \"status\": \"ACTIVE\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/employees/{{employee_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"employees",
+								"{{employee_id}}"
+							]
+						},
+						"description": "Update an existing employee"
+					},
+					"response": []
+				},
+				{
+					"name": "Terminate Employee",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/employees/{{employee_id}}/terminate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"employees",
+								"{{employee_id}}",
+								"terminate"
+							]
+						},
+						"description": "Terminate an employee (sets status to TERMINATED)"
+					},
+					"response": []
+				}
+			],
+			"description": "Employee management endpoints"
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get Current User Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/users/me",
+						"description": "Get the authenticated user's complete profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/users/{{user_id}}",
+						"description": "Get a specific user's profile by ID (Admin only or own profile)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Current User Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Updated First Name\",\n  \"lastName\": \"Updated Last Name\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/users/me",
+						"description": "Update the authenticated user's profile (firstName, lastName)"
+					},
+					"response": []
+				}
+			],
+			"description": "User profile management endpoints"
+		},
+		{
+			"name": "Payroll",
+			"item": [
+				{
+					"name": "Get Payroll Runs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/payroll?page=0&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"payroll"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Items per page"
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01",
+									"description": "Filter by start date (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-12-31",
+									"description": "Filter by end date (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "PROCESSED",
+									"description": "Filter by status: DRAFT, PROCESSING, PROCESSED, APPROVED, PAID, CANCELLED",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all payroll runs for a specific client"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payroll Run by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/payroll/{{payroll_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"payroll",
+								"{{payroll_id}}"
+							]
+						},
+						"description": "Get a specific payroll run by UUID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Payroll Run",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.id) {",
+									"        pm.collectionVariables.set('payroll_id', jsonData.id);",
+									"        console.log('Payroll ID saved:', jsonData.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"periodStartDate\": \"2025-01-01\",\n  \"periodEndDate\": \"2025-01-15\",\n  \"payDate\": \"2025-01-20\",\n  \"status\": \"DRAFT\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/payroll",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"payroll"
+							]
+						},
+						"description": "Create a new payroll run for a client"
+					},
+					"response": []
+				},
+				{
+					"name": "Process Payroll Run",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/payroll/{{payroll_id}}/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"payroll",
+								"{{payroll_id}}",
+								"process"
+							]
+						},
+						"description": "Process a payroll run (calculates all employee payments)"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Payroll Run",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/clients/{{client_id}}/payroll/{{payroll_id}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"clients",
+								"{{client_id}}",
+								"payroll",
+								"{{payroll_id}}",
+								"approve"
+							]
+						},
+						"description": "Approve a processed payroll run"
+					},
+					"response": []
+				}
+			],
+			"description": "Payroll management endpoints"
+		}
+	]
+}
+

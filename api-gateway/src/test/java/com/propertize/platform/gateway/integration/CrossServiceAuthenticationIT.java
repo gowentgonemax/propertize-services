@@ -3,7 +3,6 @@ package com.propertize.platform.gateway.integration;
 import com.propertize.platform.gateway.security.EnhancedJwtTokenProvider;
 import com.propertize.platform.gateway.security.RsaKeyProvider;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +14,7 @@ import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.*;
+import javax.crypto.SecretKey;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -34,7 +34,7 @@ class CrossServiceAuthenticationIT {
 
     private EnhancedJwtTokenProvider jwtTokenProvider;
     private KeyPair rsaKeyPair;
-    private Key hmacKey;
+    private SecretKey hmacKey;
 
     private static final String TEST_SECRET = "dGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS10aGF0LWlzLWxvbmctZW5vdWdoLWZvci1obWFjLTI1Ng==";
 
@@ -117,11 +117,10 @@ class CrossServiceAuthenticationIT {
 
             // Step 3: Generate new access token (simulated)
             String newAccessToken = createUserAccessToken(
-                username,
-                "user-123",
-                "org-456",
-                Set.of("USER")
-            );
+                    username,
+                    "user-123",
+                    "org-456",
+                    Set.of("USER"));
 
             // Step 4: Validate new access token
             assertThat(jwtTokenProvider.validateToken(newAccessToken)).isTrue();
@@ -141,7 +140,8 @@ class CrossServiceAuthenticationIT {
             assertThat(jwtTokenProvider.validateServiceToken(gatewayToPropertize.get(), "propertize")).isTrue();
 
             // Step 3: Propertize generates token for EmployeCraft
-            Optional<String> propertizeToEmployeCraft = jwtTokenProvider.generateServiceToken("propertize", "employecraft");
+            Optional<String> propertizeToEmployeCraft = jwtTokenProvider.generateServiceToken("propertize",
+                    "employecraft");
             assertThat(propertizeToEmployeCraft).isPresent();
 
             // Step 4: EmployeCraft validates incoming service token
@@ -157,18 +157,16 @@ class CrossServiceAuthenticationIT {
         void shouldCompleteMultiTenantAuthFlow() {
             // Two users from different organizations
             String user1Token = createUserAccessToken(
-                "admin@company1.com",
-                "user-1",
-                "org-company1",
-                Set.of("ORGANIZATION_OWNER")
-            );
+                    "admin@company1.com",
+                    "user-1",
+                    "org-company1",
+                    Set.of("ORGANIZATION_OWNER"));
 
             String user2Token = createUserAccessToken(
-                "admin@company2.com",
-                "user-2",
-                "org-company2",
-                Set.of("ORGANIZATION_OWNER")
-            );
+                    "admin@company2.com",
+                    "user-2",
+                    "org-company2",
+                    Set.of("ORGANIZATION_OWNER"));
 
             // Validate both tokens
             assertThat(jwtTokenProvider.validateToken(user1Token)).isTrue();
@@ -203,11 +201,10 @@ class CrossServiceAuthenticationIT {
         @DisplayName("Should reject access token used as refresh token")
         void shouldRejectAccessTokenAsRefresh() {
             String accessToken = createUserAccessToken(
-                "test@example.com",
-                "user-1",
-                "org-1",
-                Set.of("USER")
-            );
+                    "test@example.com",
+                    "user-1",
+                    "org-1",
+                    Set.of("USER"));
 
             assertThat(jwtTokenProvider.validateRefreshToken(accessToken)).isFalse();
         }
@@ -226,17 +223,15 @@ class CrossServiceAuthenticationIT {
         @DisplayName("Should reject tampered tokens")
         void shouldRejectTamperedToken() {
             String validToken = createUserAccessToken(
-                "test@example.com",
-                "user-1",
-                "org-1",
-                Set.of("USER")
-            );
+                    "test@example.com",
+                    "user-1",
+                    "org-1",
+                    Set.of("USER"));
 
             // Tamper with the payload
             String[] parts = validToken.split("\\.");
             String tamperedPayload = Base64.getEncoder().encodeToString(
-                "{\"sub\":\"hacked\",\"exp\":9999999999}".getBytes()
-            );
+                    "{\"sub\":\"hacked\",\"exp\":9999999999}".getBytes());
             String tamperedToken = parts[0] + "." + tamperedPayload + "." + parts[2];
 
             assertThat(jwtTokenProvider.validateToken(tamperedToken)).isFalse();
@@ -251,12 +246,12 @@ class CrossServiceAuthenticationIT {
             KeyPair differentKeyPair = generator.generateKeyPair();
 
             String tokenWithDifferentKey = Jwts.builder()
-                .setSubject("test@example.com")
-                .claim("type", "access")
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000))
-                .signWith(differentKeyPair.getPrivate(), SignatureAlgorithm.RS256)
-                .compact();
+                    .subject("test@example.com")
+                    .claim("type", "access")
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + 3600000))
+                    .signWith(differentKeyPair.getPrivate(), Jwts.SIG.RS256)
+                    .compact();
 
             assertThat(jwtTokenProvider.validateToken(tokenWithDifferentKey)).isFalse();
         }
@@ -273,14 +268,14 @@ class CrossServiceAuthenticationIT {
             jwtTokenProvider.init();
 
             String hmacToken = Jwts.builder()
-                .setSubject("test@example.com")
-                .claim("type", "access")
-                .claim("organizationId", "org-123")
-                .claim("roles", Arrays.asList("USER"))
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 3600000))
-                .signWith(hmacKey, SignatureAlgorithm.HS256)
-                .compact();
+                    .subject("test@example.com")
+                    .claim("type", "access")
+                    .claim("organizationId", "org-123")
+                    .claim("roles", Arrays.asList("USER"))
+                    .issuedAt(new Date())
+                    .expiration(new Date(System.currentTimeMillis() + 3600000))
+                    .signWith(hmacKey, Jwts.SIG.HS256)
+                    .compact();
 
             assertThat(jwtTokenProvider.validateToken(hmacToken)).isTrue();
             assertThat(jwtTokenProvider.getUsername(hmacToken)).isPresent().contains("test@example.com");
@@ -290,24 +285,24 @@ class CrossServiceAuthenticationIT {
     // Helper methods
     private String createUserAccessToken(String username, String userId, String organizationId, Set<String> roles) {
         return Jwts.builder()
-            .setSubject(username)
-            .claim("type", "access")
-            .claim("userId", userId)
-            .claim("organizationId", organizationId)
-            .claim("roles", new ArrayList<>(roles))
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + 900000))
-            .signWith(rsaKeyPair.getPrivate(), SignatureAlgorithm.RS256)
-            .compact();
+                .subject(username)
+                .claim("type", "access")
+                .claim("userId", userId)
+                .claim("organizationId", organizationId)
+                .claim("roles", new ArrayList<>(roles))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 900000))
+                .signWith(rsaKeyPair.getPrivate(), Jwts.SIG.RS256)
+                .compact();
     }
 
     private String createRefreshToken(String username) {
         return Jwts.builder()
-            .setSubject(username)
-            .claim("type", "refresh")
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + 604800000))
-            .signWith(rsaKeyPair.getPrivate(), SignatureAlgorithm.RS256)
-            .compact();
+                .subject(username)
+                .claim("type", "refresh")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 604800000))
+                .signWith(rsaKeyPair.getPrivate(), Jwts.SIG.RS256)
+                .compact();
     }
 }

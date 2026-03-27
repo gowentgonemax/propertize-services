@@ -19,7 +19,8 @@ import java.util.Map;
  * This is the SINGLE SOURCE OF TRUTH for all RBAC configuration.
  * All other services must call auth-service APIs for permission checks.
  *
- * @version 5.0 - Centralized RBAC
+ * @version 6.0 - Enhanced RBAC with ABAC evaluators, field-level, time-based,
+ *          data scope, conditional permissions
  */
 @Configuration
 @ConfigurationProperties(prefix = "rbac")
@@ -40,6 +41,21 @@ public class RbacConfig {
     private Map<String, ScopeDefinition> scopes;
     private Map<String, Map<String, String>> endpoints;
 
+    // Phase 1: Time-Based Access Control
+    private Map<String, TimeRestriction> timeRestrictions;
+
+    // Phase 1: Field-Level Permissions
+    private Map<String, Map<String, FieldPermission>> fieldLevelPermissions;
+
+    // Phase 2: Data Scope Constraints (Row-Level Security)
+    private Map<String, Map<String, String>> dataScopes;
+
+    // Phase 2: Conditional Permissions (Amount/Value Limits)
+    private Map<String, Map<String, Map<String, Object>>> conditionalPermissions;
+
+    // Phase 3: Dynamic Role Composition
+    private Map<String, DynamicRoleComposition> dynamicRoleComposition;
+
     @PostConstruct
     public void verifyConfiguration() {
         if (roles == null || roles.isEmpty()) {
@@ -59,6 +75,22 @@ public class RbacConfig {
 
         if (endpoints != null && !endpoints.isEmpty()) {
             log.info("✅ RBAC endpoints mapping loaded: {} entries", endpoints.size());
+        }
+
+        if (timeRestrictions != null && !timeRestrictions.isEmpty()) {
+            log.info("✅ Time restrictions loaded: {} roles", timeRestrictions.size());
+        }
+        if (fieldLevelPermissions != null && !fieldLevelPermissions.isEmpty()) {
+            log.info("✅ Field-level permissions loaded: {} resources", fieldLevelPermissions.size());
+        }
+        if (dataScopes != null && !dataScopes.isEmpty()) {
+            log.info("✅ Data scopes loaded: {} roles", dataScopes.size());
+        }
+        if (conditionalPermissions != null && !conditionalPermissions.isEmpty()) {
+            log.info("✅ Conditional permissions loaded: {} roles", conditionalPermissions.size());
+        }
+        if (dynamicRoleComposition != null && !dynamicRoleComposition.isEmpty()) {
+            log.info("✅ Dynamic role composition loaded: {} roles", dynamicRoleComposition.size());
         }
     }
 
@@ -118,5 +150,25 @@ public class RbacConfig {
     public static class PermissionTemplate {
         private List<String> permissions;
         private String description;
+    }
+
+    @Data
+    public static class TimeRestriction {
+        private String activeHours; // e.g., "08:00-18:00"
+        private List<String> activeDays; // e.g., ["MON","TUE","WED","THU","FRI"]
+        private String timezone; // e.g., "America/New_York"
+    }
+
+    @Data
+    public static class FieldPermission {
+        private List<String> visible;
+        private List<String> hidden;
+    }
+
+    @Data
+    public static class DynamicRoleComposition {
+        private Map<String, Object> activateWhen;
+        private List<String> additionalRoles;
+        private Map<String, Object> conditions;
     }
 }

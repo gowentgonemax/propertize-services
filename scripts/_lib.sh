@@ -5,6 +5,8 @@
 # =============================================================================
 
 # ─── Paths ───────────────────────────────────────────────────────────────────
+set -euo pipefail
+
 SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(dirname "$SCRIPTS_DIR")"
 PID_DIR="$BASE_DIR/.pids"

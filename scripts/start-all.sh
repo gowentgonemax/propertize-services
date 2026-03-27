@@ -6,8 +6,7 @@
 #   ./scripts/start-all.sh               # build images then start everything
 #   ./scripts/start-all.sh --skip-build  # start using existing Docker images
 # =============================================================================
-set -e
-
+set -euo pipefail
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$BASE_DIR"
 

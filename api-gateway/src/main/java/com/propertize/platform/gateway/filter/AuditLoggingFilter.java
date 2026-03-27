@@ -60,21 +60,19 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
 
     // Endpoints to audit
     private static final Set<String> AUTH_ENDPOINTS = Set.of(
-        "/api/v1/auth/login",
-        "/api/v1/auth/logout",
-        "/api/v1/auth/refresh",
-        "/api/v1/auth/register",
-        "/api/v1/auth/forgot-password",
-        "/api/v1/auth/reset-password",
-        "/api/v1/auth/change-password"
-    );
+            "/api/v1/auth/login",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/register",
+            "/api/v1/auth/forgot-password",
+            "/api/v1/auth/reset-password",
+            "/api/v1/auth/change-password");
 
     private static final Set<String> SENSITIVE_ENDPOINTS = Set.of(
-        "/api/v1/admin/",
-        "/api/v1/payments/",
-        "/api/v1/users/",
-        "/api/v1/organizations/"
-    );
+            "/api/v1/admin/",
+            "/api/v1/payments/",
+            "/api/v1/users/",
+            "/api/v1/organizations/");
 
     // Audit event queue for async processing
     private final ConcurrentLinkedQueue<AuditEvent> auditQueue = new ConcurrentLinkedQueue<>();
@@ -103,12 +101,12 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
         String correlationId = getOrCreateCorrelationId(request);
 
         return chain.filter(exchange)
-            .doOnSuccess(v -> {
-                logAuditEvent(exchange, startTime, correlationId, null);
-            })
-            .doOnError(error -> {
-                logAuditEvent(exchange, startTime, correlationId, error.getMessage());
-            });
+                .doOnSuccess(v -> {
+                    logAuditEvent(exchange, startTime, correlationId, null);
+                })
+                .doOnError(error -> {
+                    logAuditEvent(exchange, startTime, correlationId, error.getMessage());
+                });
     }
 
     private boolean isAuthEndpoint(String path) {
@@ -125,7 +123,7 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
     }
 
     private void logAuditEvent(ServerWebExchange exchange, long startTime,
-                               String correlationId, String error) {
+            String correlationId, String error) {
         ServerHttpRequest request = exchange.getRequest();
         ServerHttpResponse response = exchange.getResponse();
 
@@ -138,7 +136,8 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
         String userAgent = request.getHeaders().getFirst("User-Agent");
 
         int statusCode = response.getStatusCode() != null
-            ? response.getStatusCode().value() : 0;
+                ? response.getStatusCode().value()
+                : 0;
         long duration = System.currentTimeMillis() - startTime;
 
         // Determine event type
@@ -146,22 +145,22 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
 
         // Create audit event
         AuditEvent event = AuditEvent.builder()
-            .id(UUID.randomUUID().toString())
-            .timestamp(LocalDateTime.now())
-            .correlationId(correlationId)
-            .eventType(eventType)
-            .userId(maskIfNull(userId))
-            .organizationId(maskIfNull(organizationId))
-            .roles(roles)
-            .httpMethod(method)
-            .path(path)
-            .statusCode(statusCode)
-            .durationMs(duration)
-            .clientIp(clientIp)
-            .userAgent(truncate(userAgent, 200))
-            .success(statusCode >= 200 && statusCode < 400)
-            .error(error)
-            .build();
+                .id(UUID.randomUUID().toString())
+                .timestamp(LocalDateTime.now())
+                .correlationId(correlationId)
+                .eventType(eventType)
+                .userId(maskIfNull(userId))
+                .organizationId(maskIfNull(organizationId))
+                .roles(roles)
+                .httpMethod(method)
+                .path(path)
+                .statusCode(statusCode)
+                .durationMs(duration)
+                .clientIp(clientIp)
+                .userAgent(truncate(userAgent, 200))
+                .success(statusCode >= 200 && statusCode < 400)
+                .error(error)
+                .build();
 
         // Log the event
         logEvent(event);
@@ -276,7 +275,7 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
             return realIp;
         }
 
-        if (request.getRemoteAddress() != null) {
+        if (request.getRemoteAddress() != null && request.getRemoteAddress().getAddress() != null) {
             return request.getRemoteAddress().getAddress().getHostAddress();
         }
 
@@ -288,7 +287,8 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
     }
 
     private String truncate(String value, int maxLength) {
-        if (value == null) return null;
+        if (value == null)
+            return null;
         return value.length() > maxLength ? value.substring(0, maxLength) + "..." : value;
     }
 

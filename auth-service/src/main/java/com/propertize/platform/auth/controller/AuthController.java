@@ -14,6 +14,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.AccountExpiredException;
+import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -157,8 +161,24 @@ public class AuthController {
 
         } catch (BadCredentialsException e) {
             rateLimitService.recordFailedLogin(username);
-            log.warn("❌ Login failed for: {}", username);
+            log.warn("❌ Login failed for: {} (bad credentials)", username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (DisabledException e) {
+            log.warn("❌ Login failed for: {} (account disabled)", username);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.builder().build());
+        } catch (LockedException e) {
+            log.warn("❌ Login failed for: {} (account locked)", username);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.builder().build());
+        } catch (AccountExpiredException e) {
+            log.warn("❌ Login failed for: {} (account expired)", username);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.builder().build());
+        } catch (CredentialsExpiredException e) {
+            log.warn("❌ Login failed for: {} (credentials expired)", username);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponse.builder().build());
         }
     }
 
@@ -374,6 +394,141 @@ public class AuthController {
      * POST /api/v1/auth/switch-organization
      * Body: { "refreshToken": "...", "organizationId": "..." }
      */
+    /**
+     * Get current authenticated user's own profile.
+     * No special permission required — any authenticated user can read their own
+     * data.
+     * The API Gateway injects X-Username from the validated JWT.
+     *
+     * GET /api/v1/auth/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getMyProfile(
+            @RequestHeader(value = "X-Username", required = false) String xUsername,
+            @RequestHeader(value = "X-Email", required = false) String xEmail,
+            Authentication authentication) {
+
+        // Resolve username: prefer gateway-injected header, fall back to Spring
+        // Security principal
+        String username = (xUsername != null && !xUsername.isBlank()) ? xUsername
+                : (authentication != null && authentication.isAuthenticated() ? authentication.getName() : null);
+
+        if (username == null || username.isBlank() || "anonymous".equalsIgnoreCase(username)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Not authenticated", "success", false));
+        }
+
+        log.debug("GET /api/v1/auth/me — resolving profile for user: {}", username);
+
+        try {
+            var userOpt = userRepository.findByUsernameWithRoles(username);
+            if (userOpt.isEmpty()) {
+                log.warn("Profile requested for unknown user: {}", username);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "User not found", "success", false));
+            }
+
+            User user = userOpt.get();
+            Set<String> roles = user.getRoles().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toSet());
+
+            Map<String, Object> profile = new HashMap<>();
+            profile.put("id", user.getId());
+            profile.put("username", user.getUsername());
+            profile.put("email", user.getEmail() != null ? user.getEmail() : (xEmail != null ? xEmail : ""));
+            profile.put("firstName", user.getFirstName() != null ? user.getFirstName() : "");
+            profile.put("lastName", user.getLastName() != null ? user.getLastName() : "");
+            profile.put("phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+            profile.put("organizationId", user.getOrganizationId());
+            profile.put("organizationCode", user.getOrganizationCode());
+            profile.put("roles", roles);
+            profile.put("enabled", user.isEnabled());
+            profile.put("accountNonLocked", user.isAccountNonLocked());
+            profile.put("accountNonExpired", user.isAccountNonExpired());
+            profile.put("credentialsNonExpired", user.isCredentialsNonExpired());
+
+            log.info("✅ GET /api/v1/auth/me — returned profile for user: {}", username);
+            return ResponseEntity.ok(profile);
+
+        } catch (Exception e) {
+            log.error("❌ GET /api/v1/auth/me failed for user {}: {}", username, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to load profile", "success", false));
+        }
+    }
+
+    /**
+     * Update the current authenticated user's own profile.
+     * Allows updating firstName, lastName, phoneNumber, email.
+     * PUT /api/v1/auth/me
+     */
+    @PutMapping("/me")
+    public ResponseEntity<Map<String, Object>> updateMyProfile(
+            @RequestHeader(value = "X-Username", required = false) String xUsername,
+            Authentication authentication,
+            @RequestBody Map<String, String> updates) {
+
+        String username = (xUsername != null && !xUsername.isBlank()) ? xUsername
+                : (authentication != null && authentication.isAuthenticated() ? authentication.getName() : null);
+
+        if (username == null || username.isBlank() || "anonymous".equalsIgnoreCase(username)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Not authenticated", "success", false));
+        }
+
+        try {
+            var userOpt = userRepository.findByUsernameWithRoles(username);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "User not found", "success", false));
+            }
+
+            User user = userOpt.get();
+
+            if (updates.containsKey("firstName"))
+                user.setFirstName(updates.get("firstName"));
+            if (updates.containsKey("lastName"))
+                user.setLastName(updates.get("lastName"));
+            if (updates.containsKey("phoneNumber"))
+                user.setPhoneNumber(updates.get("phoneNumber"));
+            if (updates.containsKey("email")) {
+                String newEmail = updates.get("email");
+                if (newEmail != null && !newEmail.isBlank() && !newEmail.equals(user.getEmail())) {
+                    var existing = userRepository.findByEmail(newEmail);
+                    if (existing.isPresent() && !existing.get().getId().equals(user.getId())) {
+                        return ResponseEntity.status(HttpStatus.CONFLICT)
+                                .body(Map.of("message", "Email already in use", "success", false));
+                    }
+                    user.setEmail(newEmail);
+                }
+            }
+
+            userRepository.save(user);
+            log.info("✅ PUT /api/v1/auth/me — updated profile for user: {}", username);
+
+            // Return updated profile
+            Set<String> roles = user.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+            Map<String, Object> profile = new HashMap<>();
+            profile.put("id", user.getId());
+            profile.put("username", user.getUsername());
+            profile.put("email", user.getEmail() != null ? user.getEmail() : "");
+            profile.put("firstName", user.getFirstName() != null ? user.getFirstName() : "");
+            profile.put("lastName", user.getLastName() != null ? user.getLastName() : "");
+            profile.put("phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+            profile.put("organizationId", user.getOrganizationId());
+            profile.put("organizationCode", user.getOrganizationCode());
+            profile.put("roles", roles);
+            profile.put("enabled", user.isEnabled());
+            return ResponseEntity.ok(profile);
+
+        } catch (Exception e) {
+            log.error("❌ PUT /api/v1/auth/me failed for user {}: {}", username, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to update profile", "success", false));
+        }
+    }
+
     @PostMapping("/switch-organization")
     public ResponseEntity<AuthResponse> switchOrganization(
             @RequestBody Map<String, String> request) {

@@ -10,7 +10,7 @@ spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/propertize_db
     username: dbuser
-    password: dbpassword
+    password: ${DB_PASSWORD:${POSTGRES_PASSWORD:dbpassword}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -51,7 +51,7 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    hostname: auth-service           # Docker container/service name
+    hostname: auth-service # Docker container/service name
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
     lease-renewal-interval-in-seconds: 10
@@ -116,3 +116,13 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][auth] [%X{correlationId}] %-5level %logger{30} - %msg%n"
 
+# Service-to-service authentication (ServiceAuthenticationConfig binds here)
+# Validated by InternalRequestAuthFilter.isValidServiceApiKey()
+service:
+  authentication:
+    api-key: ${AUTH_SERVICE_API_KEY:auth-service-secret-key-12345}
+    header-name: X-Service-Api-Key
+    service-identifier-header: X-Service-Name
+    trusted-services:
+      propertize: ${PROPERTIZE_SERVICE_KEY:propertize-dev-secret-key}
+      api-gateway: ${GATEWAY_SERVICE_KEY:gateway-dev-secret-key}

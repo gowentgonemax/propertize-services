@@ -8,6 +8,7 @@
 #   8081  → Auth Service
 #   8082  → Propertize Main Service
 #   8083  → Employee Service
+#   8084  → Payment Service
 #   8086  → Kafka UI (management console)
 #   8088  → Adminer (PostgreSQL UI)
 #   8089  → Mongo Express (MongoDB UI)
@@ -31,9 +32,9 @@ services:
     image: postgres:16-alpine
     container_name: propertize-postgres
     environment:
-      POSTGRES_DB: propertize_db
-      POSTGRES_USER: dbuser
-      POSTGRES_PASSWORD: dbpassword
+      POSTGRES_DB: ${POSTGRES_DB:-propertize_db}
+      POSTGRES_USER: ${POSTGRES_USER:-dbuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
     ports:
       - "5432:5432"
     volumes:
@@ -41,7 +42,7 @@ services:
       - ./scripts/db/init-propertize-users.sql:/docker-entrypoint-initdb.d/01-init-users.sql
       - ./scripts/db/init-superadmin.sql:/docker-entrypoint-initdb.d/02-superadmin.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dbuser -d propertize_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-dbuser} -d $${POSTGRES_DB:-propertize_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -53,9 +54,9 @@ services:
     image: mongo:7-jammy
     container_name: propertize-mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: mongo_secure_pass
-      MONGO_INITDB_DATABASE: propertize_db
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD in .env}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-propertize_db}
     ports:
       - "27017:27017"
     volumes:
@@ -72,13 +73,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: propertize-redis
-    command: redis-server --requirepass redis_secure_pass
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redis_secure_pass", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -170,9 +171,9 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: mongo_secure_pass
-      ME_CONFIG_MONGODB_URL: mongodb://admin:mongo_secure_pass@mongodb:27017/
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/
       ME_CONFIG_BASICAUTH: "false"
     ports:
       - "8089:8081"
@@ -185,8 +186,8 @@ services:
     container_name: propertize-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: propertize
-      MINIO_ROOT_PASSWORD: propertize123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-propertize}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -240,10 +241,12 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       # Only secrets here — all infra config lives in application-docker.yml
-      REDIS_PASSWORD: redis_secure_pass
-      GATEWAY_SERVICE_KEY: gateway-dev-secret-key
-      PROPERTIZE_SERVICE_KEY: propertize-dev-secret-key
-      EMPLOYECRAFT_SERVICE_KEY: employecraft-dev-secret-key
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      GATEWAY_SERVICE_KEY: ${GATEWAY_SERVICE_KEY:?Set GATEWAY_SERVICE_KEY in .env}
+      PROPERTIZE_SERVICE_KEY: ${PROPERTIZE_SERVICE_KEY:?Set PROPERTIZE_SERVICE_KEY in .env}
+      EMPLOYECRAFT_SERVICE_KEY: ${EMPLOYECRAFT_SERVICE_KEY:?Set EMPLOYECRAFT_SERVICE_KEY in .env}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
       interval: 20s
@@ -276,9 +279,11 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       # Only secrets here — all infra config lives in application-docker.yml
-      REDIS_PASSWORD: redis_secure_pass
-      SERVICE_API_KEY: propertize-secret-key-12345
-      AUTH_SERVICE_API_KEY: auth-service-secret-key-12345
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SERVICE_API_KEY: ${PROPERTIZE_SERVICE_KEY}
+      AUTH_SERVICE_API_KEY: ${AUTH_SERVICE_API_KEY:-auth-service-secret-key}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
       interval: 30s
@@ -303,12 +308,77 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       # Only secrets here — all infra config lives in application-docker.yml
-      REDIS_PASSWORD: redis_secure_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health || exit 1"]
       interval: 20s
       timeout: 10s
       start_period: 60s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ./payment-service
+    container_name: propertize-payment-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:?Set STRIPE_API_KEY in .env}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:?Set STRIPE_WEBHOOK_SECRET in .env}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      start_period: 90s
+      retries: 5
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  payroll-service:
+    build:
+      context: ./payroll-service
+    container_name: propertize-payroll-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      service-registry:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-propertize_db}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      start_period: 90s
       retries: 5
     networks:
       - propertize-net
@@ -327,12 +397,16 @@ services:
         condition: service_healthy
       employee-service:
         condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      payroll-service:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       # Only secrets here — all infra config lives in application-docker.yml
-      REDIS_PASSWORD: redis_secure_pass
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
       interval: 20s
@@ -358,7 +432,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dbuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-propertize_db}
       PORT: 8090
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8090/health')\" || exit 1"]
@@ -381,8 +455,12 @@ services:
     ports:
       - "8091:8091"
     environment:
-      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dbuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-propertize_db}
       PORT: 8091
+      # Set transformer/cache dirs writable inside container
+      HF_HOME: /tmp/.cache
+      TRANSFORMERS_CACHE: /tmp/.cache
+      XDG_CACHE_HOME: /tmp/.cache
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8091/health')\" || exit 1"]
       interval: 30s
@@ -406,10 +484,10 @@ services:
     ports:
       - "8092:8092"
     environment:
-      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dbuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-propertize_db}
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: propertize
-      MINIO_SECRET_KEY: propertize123
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-propertize}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_SECURE: "false"
       PORT: 8092
     healthcheck:
@@ -450,7 +528,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dbuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-propertize_db}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_BOOTSTRAP: kafka:29092
     networks:
@@ -468,7 +546,7 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dbuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-propertize_db}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_BOOTSTRAP: kafka:29092
     networks:
@@ -486,7 +564,7 @@ services:
       kafka:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://dbuser:dbpassword@postgres:5432/propertize_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-dbuser}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-propertize_db}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_BOOTSTRAP: kafka:29092
     networks:

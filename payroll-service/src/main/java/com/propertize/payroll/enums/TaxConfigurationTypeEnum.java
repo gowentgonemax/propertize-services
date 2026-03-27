@@ -1,0 +1,8 @@
+package com.propertize.payroll.enums;
+
+public enum TaxConfigurationTypeEnum {
+    FEDERAL_INCOME, STATE_INCOME, LOCAL_INCOME,
+    SOCIAL_SECURITY, MEDICARE, STATE_UNEMPLOYMENT,
+    FEDERAL_UNEMPLOYMENT, STATE_DISABILITY
+}
+

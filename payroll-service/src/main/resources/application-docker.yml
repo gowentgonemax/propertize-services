@@ -1,0 +1,61 @@
+# ============================================================================
+# Payroll Service — DOCKER profile
+# Active when: SPRING_PROFILES_ACTIVE=docker   (set by docker-compose.yml)
+# Hosts:  postgres:5432  service-registry:8761  auth-service:8081
+# ============================================================================
+server:
+  port: 8085
+
+spring:
+  application:
+    name: payroll-service
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:propertize_db}
+    username: ${POSTGRES_USER:propertize}
+    password: ${POSTGRES_PASSWORD:propertize123}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://admin:admin@service-registry:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    hostname: payroll-service
+    instance-id: ${spring.application.name}:${server.port}
+
+auth-service:
+  url: http://auth-service:8081
+
+propertize:
+  api:
+    url: http://propertize:8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.propertize.payroll: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][payroll] %-5level %logger{30} - %msg%n"

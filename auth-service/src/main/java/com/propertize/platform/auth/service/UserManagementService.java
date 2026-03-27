@@ -57,6 +57,8 @@ public class UserManagementService {
 
         user = userRepository.save(user);
         log.info("✅ User created successfully: {} (ID: {})", user.getUsername(), user.getId());
+        log.info("🔑 [TEMP-CREDENTIAL] Login credentials for {} — username: {} | password: {}",
+                user.getEmail(), user.getUsername(), request.getPassword());
 
         return mapToUserInfoResponse(user);
     }

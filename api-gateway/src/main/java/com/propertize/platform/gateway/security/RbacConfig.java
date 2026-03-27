@@ -104,6 +104,33 @@ public class RbacConfig {
             log.info("✅ RBAC configuration loaded: {} roles, {} templates",
                     roles.size(), permissionTemplates.size());
 
+            // ── Drift detection ─────────────────────────────────────────────────────
+            // The gateway has its own rbac.yml copy. If someone updates the auth-service
+            // rbac.yml without updating the gateway rbac.yml, authorization decisions
+            // will silently diverge. This startup check logs a WARNING if the role set
+            // in the gateway YAML differs from the canonical 22 built-in roles.
+            // TODO: Replace this static check with an HTTP call to GET /api/v1/auth/roles
+            // and compare role names + permission counts at startup.
+            Set<String> canonicalRoles = Set.of(
+                    "PLATFORM_OVERSIGHT", "PLATFORM_OPERATIONS", "PLATFORM_ENGINEERING", "PLATFORM_ANALYTICS",
+                    "PORTFOLIO_OWNER", "ORGANIZATION_OWNER", "ORGANIZATION_ADMIN",
+                    "PROPERTY_MANAGER", "ACCOUNTANT", "LEASING_AGENT", "MAINTENANCE_SUPERVISOR",
+                    "TENANT_COORDINATOR", "LEASE_SPECIALIST", "INSPECTOR", "MAINTENANCE_TECHNICIAN",
+                    "TEAM_LEAD", "TEAM_MEMBER", "VENDOR", "TENANT", "APPLICANT",
+                    "EMERGENCY_ACCESS", "READ_ONLY");
+            Set<String> missing = new java.util.HashSet<>(canonicalRoles);
+            missing.removeAll(roles.keySet());
+            Set<String> extra = new java.util.HashSet<>(roles.keySet());
+            extra.removeAll(canonicalRoles);
+            if (!missing.isEmpty()) {
+                log.warn("⚠️  RBAC DRIFT DETECTED — gateway rbac.yml is missing roles: {}. " +
+                        "Sync the gateway rbac.yml with the auth-service rbac.yml.", missing);
+            }
+            if (!extra.isEmpty()) {
+                log.info("ℹ️  Gateway rbac.yml has additional custom roles not in canonical set: {}. " +
+                        "Verify these are intentional custom roles.", extra);
+            }
+
         } catch (Exception e) {
             log.error("Failed to load RBAC configuration: {}", e.getMessage(), e);
         }

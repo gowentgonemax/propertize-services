@@ -35,6 +35,13 @@ spring:
               filters:
                 - StripPrefix=0
 
+            - id: rbac-public
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/rbac/**
+              filters:
+                - StripPrefix=0
+
             - id: propertize-admin-shortcut
               uri: lb://propertize-service
               predicates:
@@ -52,7 +59,14 @@ spring:
             - id: propertize-service
               uri: lb://propertize-service
               predicates:
-                - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/payments/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**,/api/v1/admin/**,/graphql,/graphiql,/api/v1/analytics/**,/api/v1/assets/**,/api/v1/audit/**,/api/v1/contacts/**,/api/v1/expenses/**,/api/v1/notifications/**,/api/v1/reports/**,/api/v1/search/**,/api/v1/tasks/**,/api/v1/vendors/**,/api/public/**,/api/v1/diagnostics/**
+                - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**,/api/v1/admin/**,/graphql,/graphiql,/api/v1/analytics/**,/api/v1/assets/**,/api/v1/audit/**,/api/v1/contacts/**,/api/v1/expenses/**,/api/v1/notifications/**,/api/v1/reports/**,/api/v1/search/**,/api/v1/tasks/**,/api/v1/vendors/**,/api/public/**,/api/v1/diagnostics/**
+              filters:
+                - StripPrefix=0
+
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payments/**,/api/v1/stripe/**,/api/v1/webhooks/stripe/**,/api/v1/payment-methods/**,/api/v1/payment-reminders/**,/api/v1/application-fees/**,/api/v1/organization-application-fees/**,/api/v1/transactions/**,/api/v1/promo-codes/**
               filters:
                 - StripPrefix=0
 
@@ -84,7 +98,7 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    hostname: api-gateway            # Docker container/service name
+    hostname: api-gateway # Docker container/service name
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${server.port}
     lease-renewal-interval-in-seconds: 10
@@ -109,6 +123,14 @@ gateway:
     global: 30s
     per-route: 60s
 
+# Rate limiter configuration (binds to RateLimitingFilter @Value annotations)
+rate-limit:
+  enabled: true
+  default-requests-per-minute: 600
+  authenticated-requests-per-minute: 1200
+  auth-endpoint-requests-per-minute: 60
+  burst-multiplier: 2.0
+
 management:
   endpoints:
     web:
@@ -127,4 +149,3 @@ logging:
     org.springframework.cloud.gateway: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][gateway] [%X{correlationId}] %-5level %logger{30} - %msg%n"
-

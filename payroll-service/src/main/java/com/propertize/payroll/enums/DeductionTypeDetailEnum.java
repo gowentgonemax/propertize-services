@@ -1,0 +1,8 @@
+package com.propertize.payroll.enums;
+
+public enum DeductionTypeDetailEnum {
+    HEALTH_INSURANCE, DENTAL_INSURANCE, VISION_INSURANCE,
+    LIFE_INSURANCE, RETIREMENT_401K, RETIREMENT_IRA,
+    HSA, FSA, GARNISHMENT, LOAN_REPAYMENT, UNION_DUES, OTHER
+}
+

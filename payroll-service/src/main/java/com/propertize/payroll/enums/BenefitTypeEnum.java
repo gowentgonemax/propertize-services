@@ -1,0 +1,8 @@
+package com.propertize.payroll.enums;
+
+public enum BenefitTypeEnum {
+    HEALTH_INSURANCE, DENTAL_INSURANCE, VISION_INSURANCE,
+    LIFE_INSURANCE, DISABILITY_INSURANCE, RETIREMENT_401K,
+    HSA, FSA, COMMUTER_BENEFITS, OTHER
+}
+

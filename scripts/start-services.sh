@@ -13,8 +13,7 @@
 #   ./scripts/start-services.sh --service auth-service   # single service only
 #   ./scripts/start-services.sh --with-frontend    # also start the frontend
 # =============================================================================
-set -e
-
+set -euo pipefail
 # shellcheck source=_lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 

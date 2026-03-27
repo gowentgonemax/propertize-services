@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 echo "Generating RSA key pair for JWT signing..."
 
 # Create keys directory if it doesn't exist

@@ -1,0 +1,64 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        generate_statistics: false
+        cache:
+          use_second_level_cache: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=2000,expireAfterWrite=1800s
+
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 1000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    root: WARN
+    com.wagecraft: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/wagecraft/application-qa.log
+    max-size: 50MB
+    max-history: 14
+
+resilience4j:
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 500
+        limitRefreshPeriod: 1s
+  retry:
+    instances:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+  circuitbreaker:
+    instances:
+      default:
+        slidingWindowSize: 50
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: 20s

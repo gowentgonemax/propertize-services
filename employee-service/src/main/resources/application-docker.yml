@@ -13,7 +13,7 @@ spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/propertize_db
     username: dbuser
-    password: dbpassword
+    password: ${DB_PASSWORD:${POSTGRES_PASSWORD:dbpassword}}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -41,7 +41,7 @@ eureka:
     fetch-registry: true
   instance:
     prefer-ip-address: true
-    hostname: employee-service       # Docker container/service name
+    hostname: employee-service # Docker container/service name
     instance-id: ${spring.application.name}:${server.port}
 
 auth-service:
@@ -70,4 +70,3 @@ logging:
     com.propertize.employee: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][employee] %-5level %logger{30} - %msg%n"
-

@@ -65,7 +65,7 @@ public class LoggingFilter implements GlobalFilter, Ordered {
             return xRealIp;
         }
 
-        return request.getRemoteAddress() != null
+        return request.getRemoteAddress() != null && request.getRemoteAddress().getAddress() != null
                 ? request.getRemoteAddress().getAddress().getHostAddress()
                 : "unknown";
     }

@@ -1,0 +1,115 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      validation-timeout: 5000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+    url: jdbc:mysql://${PROD_DB_HOST:localhost}:3306/wagecraft?rewriteBatchedStatements=true&cachePrepStmts=true&useServerPrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&useSSL=true&requireSSL=true
+  jpa:
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        generate_statistics: false
+        cache:
+          use_second_level_cache: false
+        jdbc:
+          batch_size: 100
+          fetch_size: 100
+        order_inserts: true
+        order_updates: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=5000,expireAfterWrite=3600s
+
+server:
+  tomcat:
+    threads:
+      max: 400
+      min-spare: 40
+    max-connections: 10000
+    accept-count: 200
+    max-swallow-size: 4MB
+    connection-timeout: 5000
+  compression:
+    enabled: true
+    min-response-size: 2048
+    mime-types: application/json,application/xml,text/html,text/plain,text/css,application/javascript
+  http2:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      base-path: /management
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      sla:
+        http.server.requests: 10ms,50ms,100ms,200ms,500ms
+
+logging:
+  level:
+    root: ERROR
+    com.wagecraft: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/wagecraft/application-prod.log
+    max-size: 100MB
+    max-history: 30
+
+resilience4j:
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 2000
+        limitRefreshPeriod: 1s
+      auth:
+        limitForPeriod: 100
+        limitRefreshPeriod: 1s
+  retry:
+    instances:
+      default:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+      external-api:
+        maxAttempts: 5
+        waitDuration: 2s
+  circuitbreaker:
+    instances:
+      default:
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 20
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+      external-api:
+        slidingWindowSize: 50
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 30s
+
+cache:
+  caffeine:
+    users:
+      maximum-size: 2000
+      expire-after-write: 2h
+    clients:
+      maximum-size: 1000
+      expire-after-write: 1h
+    employees:
+      maximum-size: 2000
+      expire-after-write: 2h

@@ -43,7 +43,7 @@ build-nc: ## Build all images with no cache
 	@echo "✅ All images rebuilt (no cache)"
 
 build-java: ## Build only Java service images
-	$(COMPOSE) build service-registry auth-service propertize employee-service api-gateway
+	$(COMPOSE) build service-registry auth-service propertize employee-service payment-service payroll-service api-gateway
 
 build-python: ## Build only Python service images
 	$(COMPOSE) build report-service vendor-matching document-service search-reranker analytics-worker payment-worker screening-worker
@@ -118,7 +118,7 @@ up-infra: ## Start infrastructure only (DB, Kafka, Redis, MinIO)
 up-java: ## Start Java microservices (needs infra running)
 	$(COMPOSE) up -d service-registry
 	@sleep 5
-	$(COMPOSE) up -d auth-service propertize employee-service
+	$(COMPOSE) up -d auth-service propertize employee-service payment-service payroll-service
 	@sleep 5
 	$(COMPOSE) up -d api-gateway
 	@echo "✅ Java services started"
@@ -163,6 +163,15 @@ logs-gateway: ## Show API gateway logs
 
 logs-registry: ## Show service registry logs
 	$(COMPOSE) logs -f service-registry
+
+logs-employee: ## Show employee service logs
+	$(COMPOSE) logs -f employee-service
+
+logs-payment: ## Show payment service logs
+	$(COMPOSE) logs -f payment-service
+
+logs-payroll: ## Show payroll service logs
+	$(COMPOSE) logs -f payroll-service
 
 logs-frontend: ## Show frontend logs
 	$(COMPOSE) logs -f frontend

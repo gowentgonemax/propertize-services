@@ -7,8 +7,7 @@
 #   ./scripts/restart-all.sh --keep-infra # keep Docker running, just restart Java
 #   ./scripts/restart-all.sh --with-python
 # =============================================================================
-set -e
-
+set -euo pipefail
 # shellcheck source=_lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
 
