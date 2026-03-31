@@ -1,5 +1,6 @@
 package com.propertize.payment.service;
 
+import com.propertize.payment.config.PaymentConfigProperties;
 import com.propertize.payment.dto.payment.request.*;
 import com.propertize.payment.dto.payment.response.StripePaymentIntentResponse;
 import com.propertize.payment.entity.Payment;
@@ -32,6 +33,7 @@ public class PaymentService {
     private final TransactionHistoryRepository transactionHistoryRepository;
     private final StripePaymentService stripePaymentService;
     private final PromoCodeService promoCodeService;
+    private final PaymentConfigProperties paymentConfigProperties;
 
     // ──────────────────────── CRUD ────────────────────────
 
@@ -93,7 +95,7 @@ public class PaymentService {
 
         StripePaymentIntentRequest intentRequest = new StripePaymentIntentRequest();
         intentRequest.setAmount(payment.getNetAmount());
-        intentRequest.setCurrency("usd");
+        intentRequest.setCurrency(paymentConfigProperties.getStripe().getCurrency());
         intentRequest.setPaymentMethodId(request.getStripePaymentMethodId());
         intentRequest.setDescription("Payment #" + paymentId);
 
@@ -105,11 +107,11 @@ public class PaymentService {
         StripePaymentIntentResponse confirmed = stripePaymentService.confirmPaymentIntent(
                 intentResponse.getId(), request.getStripePaymentMethodId());
 
-        if ("succeeded".equals(confirmed.getStatus())) {
+        if (StripePaymentIntentStatusEnum.SUCCEEDED.getStripeValue().equals(confirmed.getStatus())) {
             payment.setStatus(PaymentStatusEnum.COMPLETED);
             recordTransaction(payment, TransactionTypeEnum.RENT_PAYMENT, TransactionStatusEnum.SUCCESS,
                     intentResponse.getId());
-        } else if ("requires_action".equals(confirmed.getStatus())) {
+        } else if (StripePaymentIntentStatusEnum.REQUIRES_ACTION.getStripeValue().equals(confirmed.getStatus())) {
             payment.setStatus(PaymentStatusEnum.PENDING);
         } else {
             payment.setStatus(PaymentStatusEnum.FAILED);
@@ -137,7 +139,7 @@ public class PaymentService {
         if (request.getRefundAmount() != null) {
             refundRequest.setAmount(request.getRefundAmount());
         }
-        refundRequest.setReason(request.getReason() != null ? "requested_by_customer" : null);
+        refundRequest.setReason(request.getReason());
 
         stripePaymentService.createRefund(refundRequest);
 
@@ -201,11 +203,11 @@ public class PaymentService {
         txn.setTenantId(payment.getTenantId());
         txn.setLeaseId(payment.getLeaseId());
         txn.setAmount(payment.getNetAmount());
-        txn.setCurrency("USD");
+        txn.setCurrency(paymentConfigProperties.getStripe().getCurrency().toUpperCase());
         txn.setTransactionType(type);
         txn.setStatus(status);
         txn.setProviderReferenceId(providerRefId);
-        txn.setPaymentGateway("STRIPE");
+        txn.setPaymentGateway(PaymentGatewayEnum.STRIPE);
         txn.setTransactionDate(LocalDateTime.now());
         transactionHistoryRepository.save(txn);
     }

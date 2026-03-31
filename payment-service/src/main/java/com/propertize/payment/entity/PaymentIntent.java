@@ -1,5 +1,6 @@
 package com.propertize.payment.entity;
 
+import com.propertize.payment.config.PaymentConstants;
 import com.propertize.payment.entity.base.OrganizationScopedEntity;
 import com.propertize.payment.enums.PaymentIntentStatus;
 import com.propertize.payment.enums.PaymentMethodEnum;
@@ -41,7 +42,7 @@ public class PaymentIntent extends OrganizationScopedEntity {
     private BigDecimal amount;
 
     @Column(name = "currency", length = 10)
-    private String currency = "USD";
+    private String currency = PaymentConstants.DEFAULT_CURRENCY;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

@@ -1,13 +1,13 @@
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:propertize_db}
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:propertize_db}?stringtype=unspecified
     username: ${POSTGRES_USER:dbuser}
     password: ${POSTGRES_PASSWORD}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://service-registry:8761/eureka/
+      defaultZone: http://admin:admin@service-registry:8761/eureka/
 
 logging:
   level:

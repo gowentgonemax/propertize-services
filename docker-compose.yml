@@ -131,8 +131,8 @@ services:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "kafka:29092"]
       interval: 15s
       timeout: 10s
-      retries: 5
-      start_period: 20s
+      retries: 8
+      start_period: 60s
     networks:
       - propertize-net
     restart: unless-stopped
@@ -227,7 +227,8 @@ services:
 
   auth-service:
     build:
-      context: ./auth-service
+      context: .
+      dockerfile: auth-service/Dockerfile
     container_name: propertize-auth-service
     depends_on:
       postgres:
@@ -259,7 +260,8 @@ services:
 
   propertize:
     build:
-      context: ./propertize
+      context: .
+      dockerfile: propertize/Dockerfile
     container_name: propertize-main-service
     depends_on:
       postgres:
@@ -296,7 +298,8 @@ services:
 
   employee-service:
     build:
-      context: ./employee-service
+      context: .
+      dockerfile: employee-service/Dockerfile
     container_name: propertize-employee-service
     depends_on:
       postgres:
@@ -323,14 +326,13 @@ services:
 
   payment-service:
     build:
-      context: ./payment-service
+      context: .
+      dockerfile: payment-service/Dockerfile
     container_name: propertize-payment-service
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
       service-registry:
         condition: service_healthy
@@ -358,7 +360,8 @@ services:
 
   payroll-service:
     build:
-      context: ./payroll-service
+      context: .
+      dockerfile: payroll-service/Dockerfile
     container_name: propertize-payroll-service
     depends_on:
       postgres:

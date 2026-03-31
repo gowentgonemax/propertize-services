@@ -1,8 +1,14 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn package -DskipTests -q
+
+# Install propertize-commons to local Maven repo
+COPY propertize-commons/ /tmp/commons/
+RUN mvn -f /tmp/commons/pom.xml install -DskipTests -q
+
+# Build payment-service
+COPY payment-service/pom.xml .
+COPY payment-service/src ./src
+RUN mvn package -q
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app

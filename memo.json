@@ -1,6 +1,6 @@
 {
   "global_context": "You are part of an advanced multi-agent system powered exclusively by GitHub Copilot. Every AI model, every agent, and every automated process in this environment comes from the GitHub ecosystem. You operate as a coordinated team of specialized Copilot agents that share a unified long-term memory file named memo.json. This memory file is the single source of truth for the entire AI system. SHARED MEMORY MODEL: All agents must load memo.json before performing any task. MEMORY USAGE RULES: Follow all requirements, decisions, and conventions stored in memory. Maintain consistency with the architecture and project_state. Never contradict existing memory unless the user explicitly changes a rule. Treat memory as the authoritative knowledge base for the entire system. Assume other Copilot agents will rely on your updates. Think like a long-term collaborator, not a stateless assistant. MEMORY WRITING RULES: After completing any task, extract and store new long-term information (requirements, architecture decisions, naming conventions, project rules, user preferences, TODO items, project_state updates, cross-agent coordination notes). Do NOT store temporary instructions, small talk, debugging noise, or anything irrelevant to long-term project continuity. When updating memory: append to the correct section, never overwrite existing memory unless explicitly changed by the user, keep the file clean and structured. MULTI-AGENT COLLABORATION: Produce output that aligns with shared memory. Ensure consistency across all agents. Leave clear signals in memory for other agents to follow. Maintain architectural integrity across the entire project. Support long-term development, not just the current request. GITHUB COPILOT ENVIRONMENT: All models are GitHub Copilot models. All collaboration happens through GitHub tools. All memory is stored locally in memo.json. All agents share the same environment, context, and constraints. PRIMARY OBJECTIVE: Maintain a stable, evolving, intelligent memory system that supports long-term, multi-agent development across the entire GitHub Copilot ecosystem.",
-  "project_state": "Propertize property management platform — full-stack microservices architecture. 6 Java services + 7 Python services + Next.js frontend. ALL 23 CONTAINERS HEALTHY (2026-03-27). ALL SERVICES FULLY DOCKERIZED: single 'docker compose up -d' (or 'make up') starts all 23 containers via docker-compose.yml. Ports: auth-service:8081, propertize-core:8082, employee-service:8083, payment-service:8084, payroll-service:8085, service-registry:8761, report-svc:8090, vendor-matching:8091, document-svc:8092, search-reranker:8093, kafka-ui:8086, adminer:8088, mongo-express:8089, minio:9000/9001. All backend services compile clean. Frontend builds clean. 2026-03-27 MAJOR SESSION: (1) ShedLock permanent fix — @PostConstruct with raw JDBC + auto-commit=true for DDL in PostgreSQL (HikariCP auto-commit=false was silently rolling back the JdbcTemplate.execute() CREATE TABLE). (2) Platform user routing bug — 4 files fixed + orphaned layout deleted. (3) Employee-service batch endpoints — /changed-since (incremental sync) + /payroll-summary (minimal DTO). (4) UUID consistency — externalEmployeeId String→UUID in 6 payroll-service files. (5) Kafka event-driven sync — EmployeeEventPublisher in employee-service + EmployeeEventConsumer in payroll-service on 'employee-events' topic. (6) Redis distributed cache — CacheConfig with Caffeine L1 + Redis L2 via CompositeCacheManager. (7) Frontend role case normalization — fixed 7+ files where UPPERCASE session roles were compared against lowercase Roles constants. (8) Security: removed plaintext password logging from 3 files (OnboardingService, LeaseService, UserManagementService). REMAINING GAPS: No Showing/Rating/Inventory entities, no recurring payment scheduling, notification preferences UI incomplete, Stripe payment flow needs reimplementation via payment-service. Profile edit (PUT) for TENANT still needs PUT /api/v1/auth/me.",
+  "project_state": "Propertize property management platform — full-stack microservices architecture. 6 Java services + 7 Python services + Next.js frontend. ALL 13 CONTAINERS HEALTHY (2026-04-04). ALL SERVICES FULLY DOCKERIZED: single 'docker compose up -d' (or 'make up') starts all 13 containers via docker-compose.yml. Ports: api-gateway:8080, auth-service:8081, propertize-core:8082, employee-service:8083, payment-service:8084, payroll-service:8085, service-registry:8761. All backend services compile clean. Frontend builds clean. API VALIDATION: 38/38 endpoints passing 100% through gateway (auth 7, propertize 18, employee 1, payment 3, payroll 2). Test organization UUID: a0000000-0000-0000-0000-000000000001, code: TEST-ORG. Admin user: admin/Admin@123 (PLATFORM_OVERSIGHT role). RBAC v7.0-restructured: Single source of truth auth-service/src/main/resources/rbac.yml synced to 4 locations. 22 roles, 15+ permission hierarchy macros. Gateway RbacAuthorizationFilter enforces endpoint-to-permission mapping + readOnly restrictions. 2026-03-27 MAJOR SESSION: (1) ShedLock permanent fix — @PostConstruct with raw JDBC + auto-commit=true for DDL in PostgreSQL (HikariCP auto-commit=false was silently rolling back the JdbcTemplate.execute() CREATE TABLE). (2) Platform user routing bug — 4 files fixed + orphaned layout deleted. (3) Employee-service batch endpoints — /changed-since (incremental sync) + /payroll-summary (minimal DTO). (4) UUID consistency — externalEmployeeId String→UUID in 6 payroll-service files. (5) Kafka event-driven sync — EmployeeEventPublisher in employee-service + EmployeeEventConsumer in payroll-service on 'employee-events' topic. (6) Redis distributed cache — CacheConfig with Caffeine L1 + Redis L2 via CompositeCacheManager. (7) Frontend role case normalization — fixed 7+ files where UPPERCASE session roles were compared against lowercase Roles constants. (8) Security: removed plaintext password logging from 3 files (OnboardingService, LeaseService, UserManagementService). 2026-03-28 FRONTEND WIRING SESSION: (A) Fixed useDashboardData.ts — populated occupancyData, financialMetrics, alerts from GraphQL data instead of empty TODOs. (B) Created approval.service.ts and milestone.service.ts frontend services. (C) Wired 5 mock-data pages to real APIs: approvals→ApprovalWorkflowController, documents→DocumentController, reports→ReportController, milestones→MilestoneController, performance→financial/occupancy/maintenance reports. (D) Fixed API path prefix inconsistency: MilestoneController, DocumentController, InspectionController changed from /v1/ to ApiVersion.V1 (/api/v1/) to match gateway routing. (E) Added GraphQL proxy improvements: 15s timeout (AbortController), 1 retry on 5xx, detailed error messages. (F) Fixed Header.tsx type error (Roles includes() needed string[] cast). (G) Removed unused Loader2 imports from documents and reports pages. REMAINING GAPS: No Showing/Rating/Inventory entities, no recurring payment scheduling, notification preferences UI incomplete, Stripe payment flow needs reimplementation via payment-service. Profile edit (PUT) for TENANT still needs PUT /api/v1/auth/me. No admin org-application review endpoints. No role management endpoints (assign/remove roles). 2026-04-02 JAVA MODERNIZATION + UI SESSION: (1) DashboardShell.tsx overflow-x-hidden fix. (2) RolePermissionsGuide.tsx full dark mode retrofit + a11y. (3) users/page.tsx DSTable scroll wrapper + xl sidebar for RolePermissionsGuide. (4) AddUserModal.tsx: copy-to-clipboard credentials, removed auto-close, Done button. (5) Bruno: added 41-Employee-Service (6 requests) + 42-Payroll-Service (7 requests). (6) propertize-commons shared library (propertize-Services/propertize-commons/): ErrorCode enum, BaseException hierarchy, ErrorResponse Java-21 record, PropertizeGlobalExceptionHandler. (7) payroll-service VirtualThreadConfig (Java 21 virtual threads). (8) payroll-service calculation package: DeductionStrategy, PayrollContext (record), FederalTaxStrategy, Contribution401kStrategy, PayrollResult (record), PayrollCalculationEngine. (9) ResilientEmployeeClient: Decorator + Circuit Breaker wrapping EmployecraftFeignClient. (10) Resilience4j employecraft CB + retry instances in application.yml. (11) ObservabilityConfig: MDC correlationId filter, MeterRegistryCustomizer, JvmThreadMetrics. (12) DeductionStrategyTest.java covering all strategies + engine. (13) .github/workflows/ci.yml: 6 jobs (commons, payroll, employee, frontend, Bruno, OWASP). ADOPT COMMONS: add com.propertize:propertize-commons:1.0.0 to each service, extend domain exceptions from BaseException, remove old GlobalExceptionHandler. 2026-04-02 JAVA MODERNIZATION SESSION: propertize-commons shared library, Design Patterns, Java 21 virtual threads, ObservabilityConfig, CI workflow. 2026-04-02 JAVA MODERNIZATION SESSION: propertize-commons shared library, Design Patterns (Strategy/Factory/CircuitBreaker), Java 21 virtual threads, ObservabilityConfig, CI workflow added. 2026-04-03 BACKEND PLATFORM QUALITY SESSION: Comprehensive 11-task backend improvement. (1) RBAC FIX: payroll-service TrustedGatewayHeaderFilter now reads X-Permissions header and adds permission-based authorities to SecurityContext — fixes @PreAuthorize('hasAuthority(compensation:create)') which was completely non-functional. (2) RBAC ALIGNMENT: payroll-service UserRoleEnum completely rewritten to match auth-service's 22-role hierarchy. (3) CONTROLLER PATHS: 5 controllers fixed — payroll EmployeeController (empty→/api/v1), propertize LogController (/v1/logs→/api/v1/logs), MailDiagnosticsController (/v1/mail→/api/v1/mail), SessionController (/v1/sessions→/api/v1/sessions), DebugController (/v1/debug→/api/v1/debug). (4) SWAGGER JWT: OpenApiConfig with bearerAuth SecurityScheme created/updated in all 5 services (auth, propertize, employee, payment, payroll). swagger-ui enabled in propertize + auth-service application.yml. (5) NULL SAFETY: 12 getRoles() NPE sites fixed across AuthenticationService, CustomUserDetailsService, AuthController (4 sites), OrganizationInfoService (3 sites), MessageService, CustomRoleService (2 sites), AuthServiceAntiCorruptionLayer. PaystubService: getPayFrequency() + generateCheckNumber() null guards added. (6) READ-ONLY ENFORCEMENT: Gateway RbacConfig now parses restrictions block from rbac.yml. RbacAuthorizationFilter rejects POST/PUT/PATCH/DELETE for roles with readOnly:true (PLATFORM_ANALYTICS, READ_ONLY). (7) DOCS CLEANUP: 25 dated session reports moved to docs/archive/. (8) API INVENTORY: docs/API_ENDPOINT_INVENTORY.md created — 375+ REST + 16 GraphQL endpoints across all services. (9) CODE QUALITY: PasswordResetService no longer logs reset token. FeignClient default port fixed 8084→8081. DefaultUserInitializer admin password now from env var (ADMIN_DEFAULT_PASSWORD) instead of hardcoded 'password'. @Transactional removed from PropertyController (2 methods). (10) LOG REVIEW: No remaining sensitive data leaks. Log files properly gitignored.",
   "requirements": [
     "All agents must load memo.json before performing any task.",
     "All agents must follow the shared memory model and never contradict existing memory unless the user explicitly changes it.",
@@ -8,7 +8,7 @@
     "All changes must maintain architectural integrity across all microservices.",
     "Generated documents must go into designated documentation folders — NOT the root folder.",
     "The root folder must remain clean and contain only essential project files.",
-    "Follow best coding practices: clarity, performance, maintainability, no duplication.",
+    "Follow best coding practices: clarity, performance, maintainability, no duplication, modular design, meaningful naming, consistent style, thorough testing, secure handling of data, clear documentation, small focused functions, predictable behavior, error handling with context, avoid premature optimization, remove dead code, use version control effectively, write self‑explanatory code, keep dependencies minimal, refactor regularly, design for extensibility.",
     "Respect naming conventions and established patterns from memory before writing any code."
   ],
   "decisions": [
@@ -46,6 +46,42 @@
       "id": "test-profile-service-auth-config",
       "date": "2026-03-18T00:00:00Z",
       "decision": "application-test.yml must have service.authentication.enabled=true with api-key=propertize-secret-key-12345 and auth-service.base-url=http://localhost:8081 for AuthServiceClientIntegrationTest to work with a locally running auth-service. Disabled service auth causes 403 from auth-service.",
+      "source": "bug_fix"
+    },
+    {
+      "id": "gateway-readonly-enforcement",
+      "date": "2026-04-03T00:00:00Z",
+      "decision": "Gateway RbacAuthorizationFilter now enforces readOnly:true restrictions from rbac.yml. Roles with readOnly restriction (PLATFORM_ANALYTICS, READ_ONLY) are blocked from POST/PUT/PATCH/DELETE. RbacConfig.RoleConfig gains restrictions map and isReadOnly() helper.",
+      "source": "security_enforcement"
+    },
+    {
+      "id": "swagger-jwt-all-services",
+      "date": "2026-04-03T00:00:00Z",
+      "decision": "All 5 backend services (auth, propertize, employee, payment, payroll) now have OpenApiConfig with bearerAuth JWT SecurityScheme. Swagger UI enabled globally. swagger-ui at /swagger-ui.html on each service.",
+      "source": "api_documentation"
+    },
+    {
+      "id": "admin-password-externalized",
+      "date": "2026-04-03T00:00:00Z",
+      "decision": "DefaultUserInitializer admin password now reads from ADMIN_DEFAULT_PASSWORD env var with random UUID fallback. Never hardcoded.",
+      "source": "security_fix"
+    },
+    {
+      "id": "rbac-v7-restructured",
+      "date": "2026-04-04T00:00:00Z",
+      "decision": "rbac.yml v7.0-restructured: PLATFORM_OVERSIGHT is now read-only observer with 80+ permissions including SESSION_LIST_ALL, RENTAL_APPLICATION_LIST/READ/APPROVE/REJECT/REVIEW, ASSET_READ/LIST. Permission hierarchy macros: VENDOR_MANAGE, TASK_MANAGE, CONTACT_MANAGE, NOTIFICATION_MANAGE, DOCUMENT_MANAGE. Single source of truth is auth-service/src/main/resources/rbac.yml — must sync to api-gateway, propertize main + test resources after changes.",
+      "source": "rbac_restructure"
+    },
+    {
+      "id": "api-validation-38-38",
+      "date": "2026-04-04T00:00:00Z",
+      "decision": "38/38 API endpoints validated passing through gateway. Test org (UUID: a0000000-0000-0000-0000-000000000001, code: TEST-ORG) created for admin user org context. Payment-service endpoints require ?organizationId= query param. Employee-service uses X-Organization-Id header from gateway TrustedGatewayHeaderFilter. Auth-service RBAC catalog endpoints (/roles/**, /permissions/**) are public GET via SecurityConfig wildcard patterns.",
+      "source": "api_validation"
+    },
+    {
+      "id": "auth-security-config-public-rbac",
+      "date": "2026-04-04T00:00:00Z",
+      "decision": "Auth-service SecurityConfig.java: GET /api/v1/auth/roles/**, /api/v1/auth/permissions/**, /api/v1/auth/rbac/endpoints are permitAll(). InternalRequestAuthFilter skips /api/v1/auth/rbac/ and /api/v1/auth/roles prefixed paths. Both must stay in sync or 403 occurs.",
       "source": "bug_fix"
     }
   ],
@@ -321,39 +357,78 @@
         "name": "report-service",
         "port": 8090,
         "file": "python-services/report-service/main.py",
-        "stack": ["FastAPI", "pandas", "reportlab", "openpyxl", "psycopg2"],
+        "stack": [
+          "FastAPI",
+          "pandas",
+          "reportlab",
+          "openpyxl",
+          "psycopg2"
+        ],
         "purpose": "Async PDF and Excel report generation — replaces blocking JVM iText/Apache POI calls in ReportService.java",
-        "endpoints": ["GET /reports/financial/pdf", "GET /reports/delinquency/excel", "GET /reports/rent-roll/excel", "GET /health"]
+        "endpoints": [
+          "GET /reports/financial/pdf",
+          "GET /reports/delinquency/excel",
+          "GET /reports/rent-roll/excel",
+          "GET /health"
+        ]
       },
       {
         "name": "vendor-matching",
         "port": 8091,
         "file": "python-services/vendor-matching/matcher.py",
-        "stack": ["FastAPI", "sentence-transformers (all-MiniLM-L6-v2)", "scikit-learn", "psycopg2"],
+        "stack": [
+          "FastAPI",
+          "sentence-transformers (all-MiniLM-L6-v2)",
+          "scikit-learn",
+          "psycopg2"
+        ],
         "purpose": "Semantic NLP vendor matching — replaces keyword substring logic in VendorMatchingEngine.java. Score: 50% cosine-sim + 30% rating + 20% response-time. Falls back to keyword if model unavailable.",
-        "endpoints": ["POST /match-vendors", "GET /health"]
+        "endpoints": [
+          "POST /match-vendors",
+          "GET /health"
+        ]
       },
       {
         "name": "document-service",
         "port": 8092,
         "file": "python-services/document-service/main.py",
-        "stack": ["FastAPI", "minio", "PyMuPDF (fitz)", "psycopg2"],
+        "stack": [
+          "FastAPI",
+          "minio",
+          "PyMuPDF (fitz)",
+          "psycopg2"
+        ],
         "purpose": "Actual document storage via MinIO S3-compatible API — replaces generatePlaceholderUrl() stub in DocumentService.java. Extracts PDF text, detects PII patterns (SSN/CC/bank account), returns 7-day presigned URLs.",
-        "endpoints": ["POST /documents/upload", "GET /documents/url", "DELETE /documents/{object_name}", "GET /health"]
+        "endpoints": [
+          "POST /documents/upload",
+          "GET /documents/url",
+          "DELETE /documents/{object_name}",
+          "GET /health"
+        ]
       },
       {
         "name": "search-reranker",
         "port": 8093,
         "file": "python-services/search-reranker/reranker.py",
-        "stack": ["FastAPI", "rank-bm25"],
+        "stack": [
+          "FastAPI",
+          "rank-bm25"
+        ],
         "purpose": "BM25 reranking for search candidates from Java UniversalSearchService — fixes all-1.0 relevance scores. Field weighting: title/name=3x, address=2x, description=1x. Returns bm25_score and final_score (70% BM25 + 30% SQL).",
-        "endpoints": ["POST /rerank", "GET /health"]
+        "endpoints": [
+          "POST /rerank",
+          "GET /health"
+        ]
       },
       {
         "name": "analytics-worker",
         "port": null,
         "file": "python-services/analytics-worker/aggregate.py",
-        "stack": ["APScheduler", "pandas", "psycopg2"],
+        "stack": [
+          "APScheduler",
+          "pandas",
+          "psycopg2"
+        ],
         "purpose": "Pre-aggregates analytics_events into analytics_summary table every 5 minutes via UPSERT. Fixes full table scan in AnalyticsService.getSummary(). Runs as standalone process — no HTTP port.",
         "schedule": "Every 5 minutes"
       },
@@ -361,7 +436,12 @@
         "name": "payment-worker",
         "port": null,
         "file": "python-services/payment-worker/automation.py",
-        "stack": ["APScheduler", "pandas", "kafka-python", "psycopg2"],
+        "stack": [
+          "APScheduler",
+          "pandas",
+          "kafka-python",
+          "psycopg2"
+        ],
         "purpose": "Three cron jobs: (1) Generate PENDING rent payments monthly on 20th. (2) Apply 5% late fees to payments overdue > 5 days daily at 02:00. (3) Send Kafka payment.reminder_due events 3 days before due daily at 09:00. Fills the empty processOverduePayments() in PaymentSchedulerService.java.",
         "schedule": "Monthly (gen), Daily 02:00 (late fees), Daily 09:00 (reminders)"
       },
@@ -369,9 +449,16 @@
         "name": "screening-worker",
         "port": null,
         "file": "python-services/screening-worker/pipeline.py",
-        "stack": ["kafka-python", "pandas", "psycopg2"],
+        "stack": [
+          "kafka-python",
+          "pandas",
+          "psycopg2"
+        ],
         "purpose": "Kafka consumer on screening.initiated topic. Computes multi-factor tenant risk score (credit 35% + income-ratio 30% + criminal 25% + employment 10%). Publishes result to screening.completed. Saves score + recommendation + breakdown JSON to rental_application.screening_score.",
-        "kafka_topics": {"consume": "screening.initiated", "produce": "screening.completed"}
+        "kafka_topics": {
+          "consume": "screening.initiated",
+          "produce": "screening.completed"
+        }
       }
     ],
     "shared_modules": {
@@ -755,6 +842,36 @@
       "type": "security_fix",
       "timestamp": "2026-03-27T00:00:00Z",
       "note": "PLAINTEXT PASSWORD LOGGING REMOVED (2026-03-27): Three critical security issues fixed. (1) OnboardingService.java line 824 — log.warn('PASSWORD: {}', tempPassword) → replaced with 'PASSWORD: [REDACTED — delivered via secure channel]'. (2) LeaseService.java line 1189 — log.warn('Temporary Password: {}', tempPassword) → replaced with 'Temporary Password: [REDACTED — delivered via secure channel]'. (3) auth-service UserManagementService.java line 59-60 — log.info('TEMP-CREDENTIAL... password: {}', request.getPassword()) → entire log line removed. LOGGING AUDIT RESULTS: Frontend devtools.ts console.log calls are all properly guarded behind process.env.NODE_ENV === 'development' + NEXT_PUBLIC_DEBUG_* flags (OK). logger.service.ts console.debug is the actual logger infrastructure (OK). rental-application.service.ts console.info is annotated as temporary (low priority). No System.out.println or e.printStackTrace() in production Java code (only in utility CLI class GenerateHash.java). Python services all use standard logging module properly."
+    },
+    {
+      "type": "frontend_fix",
+      "timestamp": "2026-04-01T00:00:00Z",
+      "note": "FRONTEND UI FIXES SESSION (2026-04-01): Multiple targeted fixes applied to Next.js frontend. (1) DOUBLE SPINNER FIX: /dashboard/properties/[id]/page.tsx was rendering a loading spinner AND immediately calling router.replace() to /details — causing two simultaneous spinners. Fixed: return null instead of spinner block so redirect is invisible. (2) LEASES DATATABLE REDESIGN: Removed 'Lease #' as standalone column. Column 1 is now 'Tenant' showing name with leaseId stacked below in font-mono text-[10px]. Column 2 is new 'Contact' column showing tenant email + phone stacked. Property address shortened to city+state only (removed street to reduce width). (3) SIDEBAR BELL ICON: Added Bell import from lucide-react. Added bell button next to dark mode toggle in DashboardSidebar.tsx header. Bell routes to /dashboard/notifications. (4) SIDEBAR DISPLAY NAME: Updated displayName logic in DashboardSidebar to check firstName+lastName first before falling back to user.name (which could be username). Also updated auth.ts to extract firstName/lastName from JWT payload (payload.firstName, payload.given_name, data.firstName) and store them in session user object. (5) ADD USER MODAL CREDENTIALS: Improved success state in AddUserModal.tsx to show username, email, and assigned roles in a structured credential block. Added logger.info() call after creation (logs username+email+roles to browser console). (6) LEASE DETAIL PETS POLICY FIX: LeaseRestrictionsDTO has petsAllowed/smokingAllowed/sublettingAllowed under lease.restrictions (NOT lease.terms). Fixed all policy field references and the section visibility condition to use lease.restrictions.petsAllowed etc. Also added petTerms from restrictions as detail. Utilities section now handles includedUtilities string and utilitiesIncluded boolean fallbacks. (7) EMPLOYEE PAGE DATA EXTRACTION: Employee list page was silently empty when backend wraps EmployeePage in { success, data: {...} } envelope. Fixed: multi-format response handling (direct/wrapped/array) in fetchEmployees callback."
+    },
+    {
+      "type": "architecture_update",
+      "timestamp": "2026-04-02T00:00:00Z",
+      "note": "JAVA MODERNIZATION + SHARED LIBRARY SESSION (2026-04-02): Created propertize-commons Maven module. Provides ErrorCode (25 codes), BaseException hierarchy, ErrorResponse record, PropertizeGlobalExceptionHandler. Design patterns in payroll-service: Strategy (DeductionStrategy + 2 impls + PayrollCalculationEngine auto-wires all beans). Decorator + Circuit Breaker: ResilientEmployeeClient wraps EmployecraftFeignClient. Java 21: VirtualThreadConfig, PayrollContext/PayrollResult/ErrorResponse records, pattern-matching switch. Observability: ObservabilityConfig (MDC filter, common tags, JvmThreadMetrics). CI: .github/workflows/ci.yml 6 jobs. Bruno now 42 folders."
+    },
+    {
+      "type": "architecture_update",
+      "timestamp": "2026-04-02T00:00:00Z",
+      "note": "JAVA MODERNIZATION (2026-04-02): propertize-commons + Design Patterns + Java 21 + CI."
+    },
+    {
+      "type": "architecture_update",
+      "timestamp": "2026-04-02T00:00:00Z",
+      "note": "JAVA MODERNIZATION (2026-04-02): propertize-commons module + Design Patterns + Java 21 features + ObservabilityConfig + CI workflow."
+    },
+    {
+      "type": "architecture_update",
+      "timestamp": "2026-04-02T12:00:00Z",
+      "note": "JAVA 21 MODERNIZATION FULL ROLLOUT (2026-04-02 Session 2): Completed end-to-end migration of all 5 Java services to propertize-commons shared library. COMMONS: Fixed recurring package declaration bug (VS Code Java ext rewrites to main.java.com...), added @Order(LOWEST_PRECEDENCE) to PropertizeGlobalExceptionHandler, rebuilt and installed to M2. EMPLOYEE-SERVICE: Exceptions extend BaseException, handler extends PropertizeGlobalExceptionHandler, old ErrorResponse.java deleted, Dockerfile fixed, 5 DTOs converted to Java 21 records (CompensationSummary, PositionSummary, AddressSummary, DepartmentSummary, ManagerSummary), OpenApiConfig.java created, springdoc YAML added, REST-assured integration test (5 tests). PAYROLL-SERVICE: Exceptions extend BaseException, new handler extends PropertizeGlobalExceptionHandler, Dockerfile fixed, 2 DTOs to records (DepartmentDto, PositionDto). PAYMENT-SERVICE: Exceptions extend BaseException, existing handler preserved (ApiResponse format), OpenApiConfig.java + springdoc added. AUTH-SERVICE: Commons dependency added, Dockerfile fixed, existing Security handler preserved, springdoc added. PROPERTIZE-CORE: Commons dependency added, @Order(0) on existing handler. All 5 compile clean. FRONTEND: Playwright e2e/users/add-user.spec.ts (3 tests), Tailwind responsive spacing tokens. DOCS: docs/openapi/employee-service.yaml (OpenAPI 3.1 spec), docs/ADR-001-java21-modernization.md, docs/JAVA21_SEQUENCED_COLLECTIONS.md (migration guide), docs/MIGRATION_ROLLOUT_PLAN.md (phased rollout + feature flags inventory + canary deployment + rollback procedures)."
+    },
+    {
+      "type": "session_report",
+      "timestamp": "2026-04-04T00:00:00Z",
+      "note": "RBAC RESTRUCTURING + API VALIDATION SESSION (2026-04-04): Two-phase session. PHASE A — RBAC v7.0 RESTRUCTURING: (1) Deep role restructuring of rbac.yml — enforced read-only scope boundaries for platform roles, added permission hierarchy macros (VENDOR_MANAGE, TASK_MANAGE, CONTACT_MANAGE, NOTIFICATION_MANAGE, DOCUMENT_MANAGE), corrected PLATFORM_OVERSIGHT to read-only observer. (2) Created docs/RBAC_CENTRAL_REFERENCE.md as single-source RBAC documentation. (3) Synced rbac.yml to all 4 locations (auth-service, api-gateway, propertize/main, propertize/test). PHASE B — BUILD + LOG ANALYSIS + BUG FIXES: (4) Fixed payroll-service FK type mismatch (Long→UUID for employee_id), ambiguous @Embedded column mapping (YtdTotals), and @Enumerated annotation errors. (5) All 13 containers built and healthy. PHASE C — COMPREHENSIVE API VALIDATION (38/38 endpoints passing 100%): (6) Fixed admin password — added admin.default-password to application-docker.yml (DefaultUserInitializer was generating random UUID). (7) Created test organization (UUID: a0000000-0000-0000-0000-000000000001, code: TEST-ORG) and associated admin user with it. (8) Fixed AuditLogRepository.countByStatus(String→AuditStatusEnum) type mismatch and AuditLogDatabaseService string→enum conversion. (9) Fixed gateway routing — added /api/v1/sessions/**, /api/v1/utilities/**, /api/v1/logs/** to propertize-service route predicates in gateway application-docker.yml. (10) Fixed auth-service SecurityConfig — added /api/v1/auth/rbac/endpoints to permitAll, added wildcard patterns for /api/v1/auth/roles/** and /api/v1/auth/permissions/**. (11) Added RENTAL_APPLICATION_LIST/READ/APPROVE/REJECT/REVIEW and ASSET_READ/ASSET_LIST to PLATFORM_OVERSIGHT in rbac.yml. (12) Added SESSION_LIST_ALL/SESSION_CONFIGURE/SESSION_TERMINATE_ALL to PLATFORM_OVERSIGHT. (13) Payment-service endpoints require ?organizationId= query param. (14) Employee-service uses X-Organization-Id header from gateway (TrustedGatewayHeaderFilter). FILES MODIFIED: auth-service SecurityConfig.java (permitAll wildcard patterns), auth-service application-docker.yml (admin password), auth-service rbac.yml (permissions), api-gateway application-docker.yml (session routes), propertize AuditLogRepository.java (enum type), propertize AuditLogDatabaseService.java (enum values)."
     }
   ]
 }

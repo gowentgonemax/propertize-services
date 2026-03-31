@@ -1,0 +1,243 @@
+openapi: 3.1.0
+info:
+  title: Employecraft — Employee Service API
+  version: 1.0.0
+  description: >
+    Manages employees, departments, positions, and compensation for the
+    Propertize property-management platform.
+  contact:
+    name: Propertize Engineering
+    email: dev@propertize.io
+
+servers:
+  - url: http://localhost:8083
+    description: Direct (development)
+  - url: http://localhost:8080
+    description: Via API Gateway
+
+paths:
+  /api/v1/clients/{clientId}/employees:
+    post:
+      operationId: createEmployee
+      summary: Create a new employee
+      tags: [Employees]
+      parameters:
+        - $ref: "#/components/parameters/ClientId"
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserRoles"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmployeeRequest"
+      responses:
+        "201":
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Client not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Employee with same email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      operationId: listEmployees
+      summary: List employees for a client
+      tags: [Employees]
+      parameters:
+        - $ref: "#/components/parameters/ClientId"
+        - $ref: "#/components/parameters/XUserId"
+        - $ref: "#/components/parameters/XUserRoles"
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, INACTIVE, TERMINATED] }
+      responses:
+        "200":
+          description: Paginated list of employees
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PagedEmployeeResponse"
+
+  /api/v1/clients/{clientId}/employees/{employeeId}:
+    get:
+      operationId: getEmployee
+      summary: Get employee by ID
+      tags: [Employees]
+      parameters:
+        - $ref: "#/components/parameters/ClientId"
+        - $ref: "#/components/parameters/EmployeeId"
+        - $ref: "#/components/parameters/XUserId"
+      responses:
+        "200":
+          description: Employee details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeResponse"
+        "404":
+          description: Employee not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    EmployeeId:
+      name: employeeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    XUserId:
+      name: X-User-ID
+      in: header
+      required: true
+      schema: { type: integer, format: int64 }
+      description: Forwarded by API Gateway after JWT validation
+    XUserRoles:
+      name: X-User-Roles
+      in: header
+      schema: { type: string }
+      description: Comma-separated roles forwarded by Gateway
+
+  schemas:
+    CreateEmployeeRequest:
+      type: object
+      required: [firstName, lastName, email, employmentType]
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        middleName: { type: string }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email }
+        phoneNumber: { type: string }
+        dateOfBirth: { type: string, format: date }
+        employmentType:
+          { type: string, enum: [FULL_TIME, PART_TIME, CONTRACTOR, INTERN] }
+        hireDate: { type: string, format: date }
+        jobTitle: { type: string }
+        departmentId: { type: string, format: uuid }
+        positionId: { type: string, format: uuid }
+        managerId: { type: string, format: uuid }
+        payType: { type: string, enum: [HOURLY, SALARIED] }
+        payRate: { type: number, format: decimal }
+        payFrequency:
+          { type: string, enum: [WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY] }
+        streetAddress: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        country: { type: string }
+
+    EmployeeResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        organizationId: { type: string, format: uuid }
+        employeeNumber: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        status: { type: string, enum: [ACTIVE, INACTIVE, TERMINATED] }
+        employmentType: { type: string }
+        hireDate: { type: string, format: date }
+        department:
+          $ref: "#/components/schemas/DepartmentSummary"
+        position:
+          $ref: "#/components/schemas/PositionSummary"
+        manager:
+          $ref: "#/components/schemas/ManagerSummary"
+        homeAddress:
+          $ref: "#/components/schemas/AddressSummary"
+        compensation:
+          $ref: "#/components/schemas/CompensationSummary"
+
+    DepartmentSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        code: { type: string }
+
+    PositionSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        code: { type: string }
+
+    ManagerSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+
+    AddressSummary:
+      type: object
+      properties:
+        streetAddress: { type: string }
+        city: { type: string }
+        state: { type: string }
+        zipCode: { type: string }
+        country: { type: string }
+
+    CompensationSummary:
+      type: object
+      properties:
+        payType: { type: string }
+        payRate: { type: number, format: decimal }
+        payFrequency: { type: string }
+        annualSalary: { type: number, format: decimal }
+
+    PagedEmployeeResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmployeeResponse"
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        size: { type: integer }
+        number: { type: integer }
+
+    ErrorResponse:
+      type: object
+      properties:
+        status: { type: integer }
+        error: { type: string }
+        code: { type: string, description: ErrorCode enum value }
+        message: { type: string }
+        timestamp: { type: string, format: date-time }
+        correlationId: { type: string }
+        fieldErrors:
+          type: object
+          additionalProperties: { type: string }

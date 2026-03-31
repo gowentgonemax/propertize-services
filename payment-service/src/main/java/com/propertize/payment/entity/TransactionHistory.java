@@ -1,6 +1,8 @@
 package com.propertize.payment.entity;
 
+import com.propertize.payment.config.PaymentConstants;
 import com.propertize.payment.entity.base.OrganizationScopedEntity;
+import com.propertize.payment.enums.PaymentGatewayEnum;
 import com.propertize.payment.enums.PaymentMethodEnum;
 import com.propertize.payment.enums.TransactionStatusEnum;
 import com.propertize.payment.enums.TransactionTypeEnum;
@@ -78,7 +80,7 @@ public class TransactionHistory extends OrganizationScopedEntity {
     private BigDecimal amount;
 
     @Column(name = "currency", length = 3)
-    private String currency = "USD";
+    private String currency = PaymentConstants.DEFAULT_CURRENCY;
 
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
@@ -87,8 +89,9 @@ public class TransactionHistory extends OrganizationScopedEntity {
     private String description;
 
     // Gateway
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_gateway", length = 50)
-    private String paymentGateway;
+    private PaymentGatewayEnum paymentGateway;
 
     @Column(name = "provider_reference_id", length = 255)
     private String providerReferenceId;
