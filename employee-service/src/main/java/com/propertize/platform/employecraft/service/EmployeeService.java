@@ -202,6 +202,9 @@ public class EmployeeService {
         if (request.isCreateSystemAccess()) {
             Long userId = createUserInPropertize(request, organizationId);
             employee.setUserId(userId);
+        } else if (request.getUserId() != null) {
+            // Link to an existing auth-service user (e.g., org owner provisioned by OnboardingService)
+            employee.setUserId(request.getUserId());
         }
 
         Employee saved = employeeRepository.save(employee);

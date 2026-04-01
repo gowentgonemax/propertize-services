@@ -75,4 +75,11 @@ public class EmployeeCreateRequest {
     private boolean createSystemAccess;
     private Set<String> systemRoles;
     private String tempPassword;
+
+    /**
+     * Optional: link the employee to an existing auth-service user.
+     * When provided, the employee record is linked to the user's ID,
+     * enabling the user to log in and access their employee profile.
+     */
+    private Long userId;
 }
