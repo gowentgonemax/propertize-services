@@ -1,6 +1,6 @@
 rbac:
-  version: "5.0"
-  lastUpdated: "2025-12-18"
+  version: "7.0-restructured"
+  lastUpdated: "2026-04-04"
 
   # ============================================================================
   # CORE CONFIGURATION
@@ -14,735 +14,431 @@ rbac:
     cachePermissions: true
     cacheTTL: 3600
     allowRuntimeRoleCreation: true
-    maxCustomRolesPerClient: 50
+    maxCustomRolesPerClient: 10
 
   # ============================================================================
-  # PERMISSION TEMPLATES - Reusable permission sets
-  # Single point of change for common permission patterns
+  # PERMISSION NAMING CONVENTION:
+  # Format: RESOURCE_ACTION (e.g., USER_CREATE, PROPERTY_READ)
+  # - All UPPERCASE with underscore
+  # - Clear, consistent, predictable
   # ============================================================================
-  permissionTemplates:
-    # ========================================
-    # BASIC ACCESS TEMPLATES
-    # ========================================
-    full_crud:
-      permissions: ["create", "read", "update", "delete"]
-      description: "Complete create, read, update, delete access"
-
-    read_only:
-      permissions: ["read", "list"]
-      description: "View and list items only"
-
-    create_read:
-      permissions: ["create", "read", "list"]
-      description: "Create new items and view existing"
-
-    update_read:
-      permissions: ["read", "update", "list"]
-      description: "Update existing items and view"
-
-    # ========================================
-    # MANAGEMENT TEMPLATES
-    # ========================================
-    basic_management:
-      permissions: ["create", "read", "update", "list"]
-      description: "Manage without deletion capability"
-
-    full_management:
-      permissions: ["create", "read", "update", "delete", "list", "export"]
-      description: "Complete management with export"
-
-    administrative:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "list",
-          "export",
-          "manage",
-          "configure",
-        ]
-      description: "Full administrative control"
-
-    # ========================================
-    # OPERATIONAL TEMPLATES
-    # ========================================
-    operational:
-      permissions: ["read", "update", "list", "track"]
-      description: "Day-to-day operations and tracking"
-
-    supervisory:
-      permissions: ["read", "list", "approve", "reject", "review"]
-      description: "Oversight and approval without modification"
-
-    execution:
-      permissions: ["read", "update", "complete"]
-      description: "Task execution without creation"
-
-    assignment:
-      permissions: ["read", "list", "assign", "schedule"]
-      description: "Assign and schedule work"
-
-    # ========================================
-    # FINANCIAL TEMPLATES
-    # ========================================
-    financial_read:
-      permissions: ["read", "list", "export"]
-      description: "View financial data"
-
-    financial_operations:
-      permissions: ["create", "read", "list", "track"]
-      description: "Process financial transactions"
-
-    financial_management:
-      permissions:
-        ["create", "read", "update", "list", "approve", "export", "reconcile"]
-      description: "Manage financial operations with approval"
-
-    financial_oversight:
-      permissions: ["read", "list", "approve", "reject", "export", "reconcile"]
-      description: "Financial approval and oversight"
-
-    payment_processing:
-      permissions: ["create", "read", "process", "track", "list"]
-      description: "Process payments and track status"
-
-    billing_management:
-      permissions: ["create", "read", "update", "send", "list", "export"]
-      description: "Manage invoices and billing"
-
-    # ========================================
-    # COMMUNICATION TEMPLATES
-    # ========================================
-    communication:
-      permissions: ["read", "send", "create", "list"]
-      description: "Communication capabilities"
-
-    notification_management:
-      permissions: ["create", "read", "send", "schedule", "list", "configure"]
-      description: "Full notification control"
-
-    messaging:
-      permissions: ["read", "send", "list"]
-      description: "Send and receive messages"
-
-    # ========================================
-    # DOCUMENT TEMPLATES
-    # ========================================
-    document_viewer:
-      permissions: ["read", "list", "download"]
-      description: "View and download documents"
-
-    document_contributor:
-      permissions: ["upload", "read", "list", "download"]
-      description: "Upload and view documents"
-
-    document_manager:
-      permissions:
-        ["upload", "read", "update", "delete", "share", "list", "download"]
-      description: "Full document management"
-
-    document_administrator:
-      permissions:
-        [
-          "upload",
-          "read",
-          "update",
-          "delete",
-          "share",
-          "list",
-          "download",
-          "sign",
-          "configure",
-        ]
-      description: "Complete document control with signing"
-
-    # ========================================
-    # PROPERTY & LEASE TEMPLATES
-    # ========================================
-    property_viewer:
-      permissions: ["read", "list"]
-      description: "View property information"
-
-    property_manager:
-      permissions: ["create", "read", "update", "list", "export"]
-      description: "Manage properties without deletion"
-
-    property_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "manage",
-          "list",
-          "export",
-          "archive",
-          "transfer",
-        ]
-      description: "Complete property control"
-
-    lease_processor:
-      permissions: ["create", "read", "update", "list"]
-      description: "Process lease agreements"
-
-    lease_manager:
-      permissions:
-        ["create", "read", "update", "terminate", "renew", "list", "export"]
-      description: "Full lease lifecycle management"
-
-    lease_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "terminate",
-          "renew",
-          "list",
-          "approve",
-          "export",
-        ]
-      description: "Complete lease control with approval"
-
-    # ========================================
-    # TENANT & APPLICATION TEMPLATES
-    # ========================================
-    tenant_viewer:
-      permissions: ["read", "list"]
-      description: "View tenant information"
-
-    tenant_coordinator:
-      permissions: ["create", "read", "update", "list", "communicate"]
-      description: "Manage tenant relationships"
-
-    tenant_manager:
-      permissions:
-        ["create", "read", "update", "list", "communicate", "export", "screen"]
-      description: "Full tenant management"
-
-    tenant_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "manage",
-          "communicate",
-          "list",
-          "export",
-          "screen",
-        ]
-      description: "Complete tenant control"
-
-    application_processor:
-      permissions: ["create", "read", "update", "list", "review"]
-      description: "Process rental applications"
-
-    application_manager:
-      permissions:
-        ["create", "read", "update", "list", "review", "track", "manage"]
-      description: "Manage application workflow"
-
-    application_approver:
-      permissions: ["read", "list", "review", "approve", "reject", "track"]
-      description: "Review and approve applications"
-
-    application_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "submit",
-          "approve",
-          "reject",
-          "review",
-          "manage",
-          "list",
-          "export",
-          "track",
-        ]
-      description: "Complete application control"
-
-    # ========================================
-    # MAINTENANCE & INSPECTION TEMPLATES
-    # ========================================
-    maintenance_viewer:
-      permissions: ["read", "list"]
-      description: "View maintenance tickets"
-
-    maintenance_worker:
-      permissions: ["read", "update", "complete"]
-      description: "Execute maintenance tasks"
-
-    maintenance_coordinator:
-      permissions: ["create", "read", "update", "assign", "list", "schedule"]
-      description: "Coordinate maintenance work"
-
-    maintenance_manager:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "assign",
-          "complete",
-          "list",
-          "schedule",
-        ]
-      description: "Full maintenance management"
-
-    maintenance_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "assign",
-          "complete",
-          "list",
-          "schedule",
-          "approve",
-        ]
-      description: "Complete maintenance control with approval"
-
-    inspection_performer:
-      permissions: ["read", "complete"]
-      description: "Perform inspections"
-
-    inspection_scheduler:
-      permissions: ["create", "read", "update", "schedule", "list"]
-      description: "Schedule and manage inspections"
-
-    inspection_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "schedule",
-          "complete",
-          "list",
-          "approve",
-        ]
-      description: "Complete inspection control"
-
-    # ========================================
-    # USER & ORGANIZATION TEMPLATES
-    # ========================================
-    user_viewer:
-      permissions: ["read", "list"]
-      description: "View user information"
-
-    user_coordinator:
-      permissions: ["invite", "read", "list"]
-      description: "Invite users and view info"
-
-    user_manager:
-      permissions: ["create", "read", "update", "invite", "list"]
-      description: "Manage users without deletion"
-
-    user_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "invite",
-          "suspend",
-          "activate",
-          "list",
-          "export",
-        ]
-      description: "Complete user control"
-
-    organization_viewer:
-      permissions: ["read", "list"]
-      description: "View organization information"
-
-    organization_manager:
-      permissions: ["read", "update", "configure", "list"]
-      description: "Manage organization settings"
-
-    organization_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "configure",
-          "suspend",
-          "activate",
-          "list",
-          "transfer",
-        ]
-      description: "Complete organization control"
-
-    # ========================================
-    # ROLE & PERMISSION TEMPLATES
-    # ========================================
-    role_viewer:
-      permissions: ["read", "list"]
-      description: "View roles and permissions"
-
-    role_assigner:
-      permissions: ["read", "assign", "revoke", "list"]
-      description: "Assign roles to users"
-
-    role_manager:
-      permissions: ["create", "read", "update", "assign", "revoke", "list"]
-      description: "Manage custom roles"
-
-    role_administrator:
-      permissions:
-        ["create", "read", "update", "delete", "assign", "revoke", "list"]
-      description: "Complete role control"
-
-    # ========================================
-    # REPORTING & ANALYTICS TEMPLATES
-    # ========================================
-    report_viewer:
-      permissions: ["read", "list"]
-      description: "View reports"
-
-    report_generator:
-      permissions: ["generate", "read", "list"]
-      description: "Generate and view reports"
-
-    report_manager:
-      permissions: ["generate", "read", "export", "list", "customize"]
-      description: "Full reporting capabilities"
-
-    report_administrator:
-      permissions:
-        ["generate", "read", "export", "schedule", "list", "customize"]
-      description: "Complete reporting control"
-
-    analytics_viewer:
-      permissions: ["read", "list", "export"]
-      description: "View and export analytics"
-
-    analytics_administrator:
-      permissions: ["read", "list", "export", "analyze", "customize"]
-      description: "Full analytics control"
-
-    # ========================================
-    # AUDIT & COMPLIANCE TEMPLATES
-    # ========================================
-    audit_viewer:
-      permissions: ["read", "list"]
-      description: "View audit logs"
-
-    audit_analyst:
-      permissions: ["read", "list", "export", "analyze"]
-      description: "Analyze audit data"
-
-    compliance_reviewer:
-      permissions: ["read", "list", "review", "export"]
-      description: "Review compliance data"
-
-    # ========================================
-    # ASSET & VENDOR TEMPLATES
-    # ========================================
-    asset_viewer:
-      permissions: ["read", "list"]
-      description: "View asset information"
-
-    asset_tracker:
-      permissions: ["read", "update", "track", "list"]
-      description: "Track asset status and location"
-
-    asset_manager:
-      permissions: ["create", "read", "update", "delete", "track", "list"]
-      description: "Full asset management"
-
-    asset_administrator:
-      permissions:
-        ["create", "read", "update", "delete", "track", "list", "depreciate"]
-      description: "Complete asset control with depreciation"
-
-    vendor_viewer:
-      permissions: ["read", "list"]
-      description: "View vendor information"
-
-    vendor_coordinator:
-      permissions: ["create", "read", "update", "list", "contract"]
-      description: "Coordinate vendor relationships"
-
-    vendor_manager:
-      permissions:
-        ["create", "read", "update", "delete", "rate", "list", "contract"]
-      description: "Full vendor management"
-
-    vendor_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "rate",
-          "list",
-          "contract",
-          "pay",
-        ]
-      description: "Complete vendor control with payment"
-
-    # ========================================
-    # WORKFLOW & AUTOMATION TEMPLATES
-    # ========================================
-    workflow_viewer:
-      permissions: ["read", "list"]
-      description: "View workflows"
-
-    workflow_executor:
-      permissions: ["read", "execute", "list"]
-      description: "Execute workflows"
-
-    workflow_manager:
-      permissions: ["create", "read", "update", "execute", "list"]
-      description: "Manage workflows"
-
-    workflow_administrator:
-      permissions:
-        ["create", "read", "update", "delete", "execute", "schedule", "list"]
-      description: "Complete workflow control"
-
-    # ========================================
-    # SYSTEM & PLATFORM TEMPLATES
-    # ========================================
-    system_monitor:
-      permissions: ["monitor", "read"]
-      description: "Monitor system health"
-
-    system_operator:
-      permissions: ["configure", "monitor", "update"]
-      description: "Operate system functions"
-
-    system_administrator:
-      permissions:
-        ["configure", "monitor", "backup", "restore", "update", "troubleshoot"]
-      description: "Complete system control"
-
-    # ========================================
-    # ONBOARDING TEMPLATES
-    # ========================================
-    onboarding_viewer:
-      permissions: ["read", "list"]
-      description: "View onboarding requests"
-
-    onboarding_processor:
-      permissions: ["create", "read", "update", "submit", "list"]
-      description: "Process onboarding requests"
-
-    onboarding_approver:
-      permissions: ["read", "approve", "reject", "list", "export"]
-      description: "Approve onboarding requests"
-
-    onboarding_administrator:
-      permissions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "submit",
-          "approve",
-          "reject",
-          "list",
-          "export",
-        ]
-      description: "Complete onboarding control"
-
-    # ========================================
-    # UTILITY & CONTACT TEMPLATES
-    # ========================================
-    utility_viewer:
-      permissions: ["read", "list"]
-      description: "View utility information"
-
-    utility_tracker:
-      permissions: ["read", "update", "track", "list"]
-      description: "Track utility usage"
-
-    utility_manager:
-      permissions: ["create", "read", "update", "track", "list", "reconcile"]
-      description: "Full utility management"
-
-    task_assignee:
-      permissions: ["read", "update", "list", "complete"]
-      description: "Execute assigned tasks"
-
-    task_manager:
-      permissions: ["create", "read", "update", "delete", "list", "assign"]
-      description: "Full task management"
-
-    schedule_viewer:
-      permissions: ["read", "list", "availability"]
-      description: "View schedule and check availability"
-
-    schedule_manager:
-      permissions:
-        ["create", "read", "update", "delete", "list", "availability"]
-      description: "Full schedule management"
-
-    milestone_tracker:
-      permissions: ["read", "list", "track"]
-      description: "Track milestone progress"
-
-    milestone_manager:
-      permissions: ["create", "read", "update", "delete", "list", "track"]
-      description: "Full milestone management"
-
-    contact_viewer:
-      permissions: ["read", "list"]
-      description: "View contact information"
-
-    contact_manager:
-      permissions:
-        ["create", "read", "update", "delete", "manage", "list", "export"]
-      description: "Full contact management"
 
   # ============================================================================
-  # ROLE DEFINITIONS - User roles with permissions and capabilities
+  # PERMISSION HIERARCHY - Reduces duplication via inheritance
+  # ============================================================================
+  permissionHierarchy:
+    USER_MANAGE:
+      includes:
+        ["USER_CREATE", "USER_READ", "USER_UPDATE", "USER_DELETE", "USER_LIST"]
+
+    ORGANIZATION_MANAGE:
+      includes:
+        [
+          "ORGANIZATION_CREATE",
+          "ORGANIZATION_READ",
+          "ORGANIZATION_UPDATE",
+          "ORGANIZATION_DELETE",
+          "ORGANIZATION_LIST",
+          "ORGANIZATION_LIST_ALL",
+          "ORGANIZATION_CONFIGURE",
+        ]
+
+    PROPERTY_MANAGE:
+      includes:
+        [
+          "PROPERTY_CREATE",
+          "PROPERTY_READ",
+          "PROPERTY_UPDATE",
+          "PROPERTY_DELETE",
+          "PROPERTY_LIST",
+        ]
+
+    LEASE_MANAGE:
+      includes:
+        [
+          "LEASE_CREATE",
+          "LEASE_READ",
+          "LEASE_UPDATE",
+          "LEASE_DELETE",
+          "LEASE_LIST",
+          "LEASE_APPROVE",
+          "LEASE_TERMINATE",
+          "LEASE_RENEW",
+        ]
+
+    TENANT_MANAGE:
+      includes:
+        [
+          "TENANT_CREATE",
+          "TENANT_READ",
+          "TENANT_UPDATE",
+          "TENANT_DELETE",
+          "TENANT_LIST",
+          "TENANT_SCREEN",
+          "TENANT_COMMUNICATE",
+        ]
+
+    PAYMENT_MANAGE:
+      includes:
+        [
+          "PAYMENT_CREATE",
+          "PAYMENT_READ",
+          "PAYMENT_UPDATE",
+          "PAYMENT_DELETE",
+          "PAYMENT_LIST",
+          "PAYMENT_PROCESS",
+          "PAYMENT_RECONCILE",
+        ]
+
+    MAINTENANCE_MANAGE:
+      includes:
+        [
+          "MAINTENANCE_CREATE",
+          "MAINTENANCE_READ",
+          "MAINTENANCE_UPDATE",
+          "MAINTENANCE_DELETE",
+          "MAINTENANCE_LIST",
+          "MAINTENANCE_ASSIGN",
+          "MAINTENANCE_APPROVE",
+          "MAINTENANCE_COMPLETE",
+        ]
+
+    INVOICE_MANAGE:
+      includes:
+        [
+          "INVOICE_CREATE",
+          "INVOICE_READ",
+          "INVOICE_UPDATE",
+          "INVOICE_DELETE",
+          "INVOICE_LIST",
+          "INVOICE_SEND",
+        ]
+
+    EMPLOYEE_MANAGE:
+      includes:
+        [
+          "EMPLOYEE_CREATE",
+          "EMPLOYEE_READ",
+          "EMPLOYEE_UPDATE",
+          "EMPLOYEE_DELETE",
+          "EMPLOYEE_LIST",
+        ]
+
+    PAYROLL_MANAGE:
+      includes:
+        [
+          "PAYROLL_CREATE",
+          "PAYROLL_READ",
+          "PAYROLL_UPDATE",
+          "PAYROLL_DELETE",
+          "PAYROLL_LIST",
+          "PAYROLL_PROCESS",
+          "PAYROLL_APPROVE",
+        ]
+
+    REPORT_FULL:
+      includes:
+        [
+          "REPORT_CREATE",
+          "REPORT_READ",
+          "REPORT_UPDATE",
+          "REPORT_DELETE",
+          "REPORT_LIST",
+          "REPORT_GENERATE",
+          "REPORT_EXPORT",
+          "REPORT_CUSTOMIZE",
+        ]
+
+    SYSTEM_ADMIN:
+      includes:
+        [
+          "SYSTEM_CONFIGURE",
+          "SYSTEM_MONITOR",
+          "SYSTEM_BACKUP",
+          "SYSTEM_RESTORE",
+          "SYSTEM_UPDATE",
+          "SYSTEM_TROUBLESHOOT",
+        ]
+
+    VENDOR_MANAGE:
+      includes:
+        [
+          "VENDOR_CREATE",
+          "VENDOR_READ",
+          "VENDOR_UPDATE",
+          "VENDOR_DELETE",
+          "VENDOR_LIST",
+        ]
+
+    TASK_MANAGE:
+      includes:
+        ["TASK_CREATE", "TASK_READ", "TASK_UPDATE", "TASK_DELETE", "TASK_LIST"]
+
+    CONTACT_MANAGE:
+      includes:
+        [
+          "CONTACT_CREATE",
+          "CONTACT_READ",
+          "CONTACT_UPDATE",
+          "CONTACT_DELETE",
+          "CONTACT_LIST",
+        ]
+
+    NOTIFICATION_MANAGE:
+      includes:
+        [
+          "NOTIFICATION_CREATE",
+          "NOTIFICATION_READ",
+          "NOTIFICATION_SEND",
+          "NOTIFICATION_LIST",
+        ]
+
+    DOCUMENT_MANAGE:
+      includes:
+        [
+          "DOCUMENT_CREATE",
+          "DOCUMENT_READ",
+          "DOCUMENT_UPDATE",
+          "DOCUMENT_DELETE",
+          "DOCUMENT_LIST",
+          "DOCUMENT_UPLOAD",
+          "DOCUMENT_DOWNLOAD",
+        ]
+
+  # ============================================================================
+  # SCOPE DEFINITIONS
+  # ============================================================================
+  scopes:
+    platform:
+      description: "Platform-wide access across all organizations"
+      level: 1000
+
+    portfolio:
+      description: "Multiple organizations (investor/portfolio owner)"
+      level: 900
+
+    organization:
+      description: "Single organization scope"
+      level: 800
+
+    team:
+      description: "Team or department within organization"
+      level: 500
+
+    self:
+      description: "Individual user scope only"
+      level: 100
+
+  # ============================================================================
+  # ROLES CONFIGURATION (v7.0 - Restructured per business logic)
+  #
+  # KEY BUSINESS RULES:
+  # - Organization Owner = single org landlord, NO employee/payroll access
+  # - Portfolio Owner = multi-org investor, FULL access including employee/payroll
+  # - Platform roles = READ-ONLY for org data, CAN access employee/payroll reads
+  # - Each role scoped to its business function
   # ============================================================================
   roles:
-    PLATFORM_OVERSIGHT:
-      description: "Platform-wide oversight and approval authority"
-      level: 1000
-      category: "platform"
+    # ==========================================================================
+    # SPECIAL ROLES
+    # ==========================================================================
+
+    EMERGENCY_ACCESS:
+      description: "Emergency break-glass access (time-limited)"
+      level: 999
+      category: "special"
       scope: "platform"
       permissions:
-        - "*"
-        - "admin:access"
-        - "user:create"
-        - "user:read"
-        - "user:update"
-        - "user:delete"
-        - "user:list"
-        - "user:list_all"
-        - "organization:create"
-        - "organization:read"
-        - "organization:update"
-        - "organization:delete"
-        - "organization:list"
-        - "organization:list_all"
-        - "organization:manage"
-        - "organization:configure"
-        - "property:create"
-        - "property:read"
-        - "property:update"
-        - "property:delete"
-        - "property:list"
-        - "property:list_all"
-        - "property:view_all"
-        - "lease:create"
-        - "lease:read"
-        - "lease:update"
-        - "lease:delete"
-        - "lease:list"
-        - "lease:list_all"
-        - "tenant:create"
-        - "tenant:read"
-        - "tenant:update"
-        - "tenant:delete"
-        - "tenant:list"
-        - "tenant:list_all"
-        - "payment:create"
-        - "payment:read"
-        - "payment:update"
-        - "payment:delete"
-        - "payment:list"
-        - "payment:list_all"
-        - "maintenance:create"
-        - "maintenance:read"
-        - "maintenance:update"
-        - "maintenance:delete"
-        - "maintenance:list"
-        - "maintenance:list_all"
-        - "invoice:create"
-        - "invoice:read"
-        - "invoice:update"
-        - "invoice:delete"
-        - "invoice:list"
-        - "invoice:send"
-        - "report:create"
-        - "report:read"
-        - "report:export"
-        - "report:export_all"
-        - "report:list"
-        - "report:generate"
-        - "notification:create"
-        - "notification:read"
-        - "notification:send"
-        - "notification:list"
-        - "notification:configure"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_platform_dashboard"
-        - "session:list"
-        - "session:list_all"
-        - "session:terminate"
-        - "session:terminate_all"
-        - "system:configure"
-        - "system:monitor"
-        - "system:backup"
-        - "system:restore"
-        - "audit_log:read"
-        - "audit_log:export"
+        - "ADMIN_ACCESS"
+        - "USER_MANAGE"
+        - "ORGANIZATION_MANAGE"
+        - "PROPERTY_MANAGE"
+        - "LEASE_MANAGE"
+        - "TENANT_MANAGE"
+        - "PAYMENT_MANAGE"
+        - "MAINTENANCE_MANAGE"
+        - "INVOICE_MANAGE"
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "REPORT_FULL"
+        - "SYSTEM_ADMIN"
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
       capabilities:
         emergencyAccess: true
         fullSystemAccess: true
         bypassRestrictions: true
-        immediateAction: true
       restrictions:
         requireMFA: true
-        requireHardwareKey: true
-        requireApproval: true
-        autoExpireHours: 4
         auditAllActions: true
-        notifyOnActivation: true
+        maxSessionDuration: 3600
+
+    # ==========================================================================
+    # PLATFORM ROLES - Oversee platform, READ-ONLY for org data,
+    #                   CAN access employee/payroll reads
+    # ==========================================================================
+
+    PLATFORM_OVERSIGHT:
+      description: "Platform oversight - monitors all organizations (READ-ONLY for org data, can read employee/payroll)"
+      level: 1000
+      category: "platform"
+      scope: "platform"
+      permissions:
+        # === Core Access ===
+        - "ADMIN_ACCESS"
+
+        # === User Management (Full) ===
+        - "USER_MANAGE"
+        - "USER_INVITE"
+
+        # === Organization (READ-ONLY) ===
+        - "ORGANIZATION_READ"
+        - "ORGANIZATION_LIST"
+        - "ORGANIZATION_LIST_ALL"
+
+        # === Properties (READ-ONLY) ===
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+
+        # === Leases (READ-ONLY) ===
+        - "LEASE_READ"
+        - "LEASE_LIST"
+
+        # === Tenants (READ-ONLY) ===
+        - "TENANT_READ"
+        - "TENANT_LIST"
+
+        # === Payments (READ-ONLY) ===
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+
+        # === Maintenance (READ-ONLY) ===
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+
+        # === Invoices (READ-ONLY) ===
+        - "INVOICE_READ"
+        - "INVOICE_LIST"
+
+        # === Employee (READ — platform can view employee data) ===
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+
+        # === Payroll (READ — platform can view payroll data) ===
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+
+        # === Reporting (Full) ===
+        - "REPORT_FULL"
+
+        # === Analytics (Full) ===
+        - "ANALYTICS_READ"
+        - "ANALYTICS_ANALYZE"
+        - "ANALYTICS_EXPORT"
+
+        # === Dashboard ===
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
+        - "DASHBOARD_READ_PLATFORM_DASHBOARD"
+        - "DASHBOARD_READ_OVERSIGHT_DASHBOARD"
+
+        # === Session Management ===
+        - "SESSION_LIST"
+        - "SESSION_TERMINATE"
+        - "SESSION_LIST_ALL"
+        - "SESSION_CONFIGURE"
+        - "SESSION_TERMINATE_ALL"
+
+        # === System (Full) ===
+        - "SYSTEM_ADMIN"
+
+        # === Audit (Full) ===
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
+
+        # === Notifications ===
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_SEND"
+        - "NOTIFICATION_LIST"
+
+        # === Vendors (READ-ONLY) ===
+        - "VENDOR_READ"
+        - "VENDOR_LIST"
+
+        # === Tasks (READ-ONLY) ===
+        - "TASK_READ"
+        - "TASK_LIST"
+
+        # === Contacts (MANAGE — platform oversight reviews contact submissions) ===
+        - "CONTACT_MANAGE"
+
+        # === Documents (READ-ONLY) ===
+        - "DOCUMENT_READ"
+        - "DOCUMENT_LIST"
+        - "DOCUMENT_DOWNLOAD"
+
+        # === Rental Applications (READ + decision) ===
+        - "RENTAL_APPLICATION_LIST"
+        - "RENTAL_APPLICATION_READ"
+        - "RENTAL_APPLICATION_APPROVE"
+        - "RENTAL_APPLICATION_REJECT"
+        - "RENTAL_APPLICATION_REVIEW"
+
+        # === Assets (READ-ONLY) ===
+        - "ASSET_READ"
+        - "ASSET_LIST"
+
+      explicitDenials:
+        - "ORGANIZATION_CREATE"
+        - "ORGANIZATION_UPDATE"
+        - "ORGANIZATION_DELETE"
+        - "ORGANIZATION_CONFIGURE"
+        - "ORGANIZATION_MANAGE"
+        - "PROPERTY_CREATE"
+        - "PROPERTY_UPDATE"
+        - "PROPERTY_DELETE"
+        - "PROPERTY_MANAGE"
+        - "EMPLOYEE_CREATE"
+        - "EMPLOYEE_UPDATE"
+        - "EMPLOYEE_DELETE"
+        - "PAYROLL_CREATE"
+        - "PAYROLL_UPDATE"
+        - "PAYROLL_DELETE"
+        - "PAYROLL_PROCESS"
+        - "PAYROLL_APPROVE"
+
+      bypass_all_checks: true
+
+      capabilities:
+        emergencyAccess: true
+        fullSystemAccess: false
+        bypassRestrictions: false
+        canManageOrganizations: false
+
+      restrictions:
+        requireMFA: true
+        auditAllActions: true
         cannotDeleteSelf: true
-        emergencyOnly: true
 
     PLATFORM_OPERATIONS:
-      description: "Platform operations and organization management"
+      description: "Platform operations - manage organizations, can read employee/payroll"
       level: 970
       category: "platform"
       scope: "platform"
       permissions:
-        - "organization:create"
-        - "organization:read"
-        - "organization:update"
-        - "organization:configure"
-        - "organization:list"
-        - "organization:list_all"
-        - "organization:manage"
-        - "user:create"
-        - "user:read"
-        - "user:update"
-        - "user:invite"
-        - "user:list"
-        - "user:list_all"
-        - "property:list"
-        - "property:list_all"
-        - "property:view_all"
-        - "report:generate"
-        - "report:read"
-        - "report:export"
-        - "system:monitor"
-        - "system:update"
+        - "ORGANIZATION_MANAGE"
+        - "USER_MANAGE"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+        - "SYSTEM_MONITOR"
+        - "DASHBOARD_READ_PLATFORM_DASHBOARD"
 
     PLATFORM_ENGINEERING:
       description: "System operations and infrastructure"
@@ -750,1719 +446,689 @@ rbac:
       category: "platform"
       scope: "platform"
       permissions:
-        - "system:configure"
-        - "system:monitor"
-        - "system:backup"
-        - "system:restore"
-        - "system:update"
-        - "system:troubleshoot"
+        - "SYSTEM_ADMIN"
+        - "AUDIT_LOG_READ"
 
     PLATFORM_ANALYTICS:
-      description: "Business intelligence and cross-org reporting"
+      description: "Business intelligence and analytics (can read employee/payroll for reporting)"
       level: 930
       category: "platform"
       scope: "platform"
       permissions:
-        - "report:generate"
-        - "report:read"
-        - "report:export"
-        - "report:customize"
-        - "analytics:read"
-        - "analytics:export"
-        - "analytics:analyze"
+        - "REPORT_FULL"
+        - "ANALYTICS_READ"
+        - "ANALYTICS_ANALYZE"
+        - "ANALYTICS_EXPORT"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "DASHBOARD_READ_PLATFORM_DASHBOARD"
+      restrictions:
+        readOnly: true
 
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_platform_dashboard"
+    # ==========================================================================
+    # PORTFOLIO LEVEL - Manages MULTIPLE organizations
+    # This is the primary business-operations role with full access
+    # Portfolio owners are investors/operators managing multiple properties
+    # across multiple organizations — they need employee & payroll access
+    # ==========================================================================
 
     PORTFOLIO_OWNER:
-      description: "Multi-organization portfolio investor"
+      description: "Multi-organization portfolio manager — full business operations across all owned organizations"
       level: 920
       category: "portfolio"
       scope: "portfolio"
       permissions:
-        - "organization:read"
-        - "organization:list"
-        - "property:read"
-        - "property:list"
-        - "lease:read"
-        - "lease:list"
-        - "payment:read"
-        - "payment:list"
-        - "report:generate"
-        - "report:read"
-        - "report:export"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_portfolio_dashboard"
+        # === Organization (Read + Update, not Create/Delete — that's platform ops) ===
+        - "ORGANIZATION_READ"
+        - "ORGANIZATION_UPDATE"
+        - "ORGANIZATION_LIST"
+        - "ORGANIZATION_CONFIGURE"
+
+        # === User Management (Full within orgs) ===
+        - "USER_MANAGE"
+        - "USER_INVITE"
+
+        # === Property Management (Full) ===
+        - "PROPERTY_MANAGE"
+
+        # === Lease Management (Full) ===
+        - "LEASE_MANAGE"
+
+        # === Tenant Management (Full) ===
+        - "TENANT_MANAGE"
+
+        # === Payment Management (Full) ===
+        - "PAYMENT_MANAGE"
+
+        # === Maintenance Management (Full) ===
+        - "MAINTENANCE_MANAGE"
+
+        # === Invoice Management (Full) ===
+        - "INVOICE_MANAGE"
+
+        # === Employee Management (Full — manages staff across orgs) ===
+        - "EMPLOYEE_MANAGE"
+
+        # === Payroll Management (Full — processes payroll across orgs) ===
+        - "PAYROLL_MANAGE"
+
+        # === Reporting (Full) ===
+        - "REPORT_FULL"
+
+        # === Analytics ===
+        - "ANALYTICS_READ"
+        - "ANALYTICS_ANALYZE"
+        - "ANALYTICS_EXPORT"
+
+        # === Dashboard ===
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
+        - "DASHBOARD_READ_PORTFOLIO_DASHBOARD"
+        - "DASHBOARD_READ_MANAGER"
+
+        # === Audit ===
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
+
+        # === Notifications ===
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_SEND"
+        - "NOTIFICATION_LIST"
+
+        # === Vendor Management (Full) ===
+        - "VENDOR_MANAGE"
+
+        # === Task Management (Full) ===
+        - "TASK_MANAGE"
+
+        # === Contact Management (Full) ===
+        - "CONTACT_MANAGE"
+
+        # === Document Management (Full) ===
+        - "DOCUMENT_MANAGE"
+
+      explicitDenials:
+        - "ORGANIZATION_CREATE"
+        - "ORGANIZATION_DELETE"
+        - "SYSTEM_ADMIN"
+
+      capabilities:
+        emergencyAccess: false
+        fullSystemAccess: false
+        canManageOrganizations: true
+
+    # ==========================================================================
+    # ORGANIZATION LEVEL - Owns/manages a SINGLE organization
+    # Organization Owner is a landlord — manages their properties, tenants,
+    # leases, maintenance. Does NOT manage employees or payroll (that's
+    # portfolio-level for multi-org operators).
+    # ==========================================================================
 
     ORGANIZATION_OWNER:
-      description: "Single organization owner/landlord"
+      description: "Single organization owner/landlord — property & tenant management, NO employee/payroll"
       level: 900
       category: "organization"
       scope: "organization"
       permissions:
-        - "organization:read"
-        - "organization:update"
-        - "organization:configure"
-        - "organization:list"
-        - "user:create"
-        - "user:read"
-        - "user:update"
-        - "user:delete"
-        - "user:list"
-        - "property:create"
-        - "property:read"
-        - "property:update"
-        - "property:delete"
-        - "property:list"
-        - "lease:create"
-        - "lease:read"
-        - "lease:update"
-        - "lease:approve"
-        - "lease:list"
-        - "tenant:create"
-        - "tenant:read"
-        - "tenant:update"
-        - "tenant:list"
-        - "payment:read"
-        - "payment:process"
-        - "payment:list"
-        - "invoice:create"
-        - "invoice:read"
-        - "invoice:send"
-        - "invoice:list"
-        - "report:generate"
-        - "report:read"
-        - "report:list"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_manager"
-        - "dashboard:read_portfolio_dashboard"
-        - "maintenance:create"
-        - "maintenance:read"
-        - "maintenance:update"
-        - "maintenance:list"
-        - "task:create"
-        - "task:read"
-        - "task:update"
-        - "task:delete"
-        - "task:list"
-        - "task:assign"
-        - "schedule:create"
-        - "schedule:read"
-        - "schedule:update"
-        - "schedule:delete"
-        - "schedule:list"
-        - "schedule:availability"
-        - "milestone:create"
-        - "milestone:read"
-        - "milestone:update"
-        - "milestone:delete"
-        - "milestone:list"
-        - "milestone:track"
-        - "rental_application:create"
-        - "rental_application:read"
-        - "rental_application:update"
-        - "rental_application:review"
-        - "rental_application:approve"
-        - "rental_application:reject"
-        - "rental_application:delete"
-        - "rental_application:list"
-        - "rental_application:manage"
+        # === Organization (own org only) ===
+        - "ORGANIZATION_READ"
+        - "ORGANIZATION_UPDATE"
+        - "ORGANIZATION_CONFIGURE"
+
+        # === User Management (within their org) ===
+        - "USER_MANAGE"
+        - "USER_INVITE"
+
+        # === Property Management (Full) ===
+        - "PROPERTY_MANAGE"
+
+        # === Lease Management (Full) ===
+        - "LEASE_MANAGE"
+
+        # === Tenant Management (Full) ===
+        - "TENANT_MANAGE"
+
+        # === Payment (VIEW ONLY — landlord monitors payments) ===
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+
+        # === Maintenance Management (Full) ===
+        - "MAINTENANCE_MANAGE"
+
+        # === Invoice (VIEW ONLY) ===
+        - "INVOICE_READ"
+        - "INVOICE_LIST"
+
+        # === Reporting (Generate & View) ===
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+
+        # === Dashboard ===
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
+        - "DASHBOARD_READ_MANAGER"
+
+        # === Audit (own org) ===
+        - "AUDIT_LOG_READ"
+
+        # === Notifications ===
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+
+        # === Vendor Management (Full — manages vendors for maintenance) ===
+        - "VENDOR_MANAGE"
+
+        # === Task Management (Full) ===
+        - "TASK_MANAGE"
+
+        # === Contact (Read submissions) ===
+        - "CONTACT_MANAGE"
+
+        # === Document (Full) ===
+        - "DOCUMENT_MANAGE"
+
+      explicitDenials:
+        - "EMPLOYEE_CREATE"
+        - "EMPLOYEE_UPDATE"
+        - "EMPLOYEE_DELETE"
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_CREATE"
+        - "PAYROLL_UPDATE"
+        - "PAYROLL_DELETE"
+        - "PAYROLL_PROCESS"
+        - "PAYROLL_APPROVE"
+        - "PAYROLL_MANAGE"
+        - "ORGANIZATION_CREATE"
+        - "ORGANIZATION_DELETE"
 
     ORGANIZATION_ADMIN:
-      description: "Organization operations administrator"
+      description: "Organization administrator — day-to-day operations"
       level: 850
       category: "organization"
       scope: "organization"
       permissions:
-        - "organization:read"
-        - "organization:update"
-        - "organization:list"
-        - "user:create"
-        - "user:read"
-        - "user:update"
-        - "user:invite"
-        - "user:list"
-        - "property:create"
-        - "property:read"
-        - "property:update"
-        - "property:list"
-        - "lease:create"
-        - "lease:read"
-        - "lease:update"
-        - "lease:list"
-        - "tenant:create"
-        - "tenant:read"
-        - "tenant:update"
-        - "tenant:list"
-        - "payment:read"
-        - "payment:list"
-        - "invoice:create"
-        - "invoice:read"
-        - "invoice:list"
-        - "report:generate"
-        - "report:read"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_manager"
-        - "dashboard:read_portfolio_dashboard"
-        - "maintenance:read"
-        - "maintenance:list"
-        - "task:create"
-        - "task:read"
-        - "task:update"
-        - "task:list"
-        - "task:assign"
-        - "schedule:create"
-        - "schedule:read"
-        - "schedule:update"
-        - "schedule:list"
-        - "schedule:availability"
-        - "milestone:read"
-        - "milestone:list"
-        - "milestone:track"
-        - "rental_application:create"
-        - "rental_application:read"
-        - "rental_application:update"
-        - "rental_application:review"
-        - "rental_application:approve"
-        - "rental_application:reject"
-        - "rental_application:delete"
-        - "rental_application:list"
-        - "rental_application:manage"
+        - "ORGANIZATION_READ"
+        - "USER_CREATE"
+        - "USER_READ"
+        - "USER_UPDATE"
+        - "USER_LIST"
+        - "USER_INVITE"
+        - "PROPERTY_MANAGE"
+        - "LEASE_MANAGE"
+        - "TENANT_MANAGE"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "MAINTENANCE_MANAGE"
+        - "INVOICE_MANAGE"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "DASHBOARD_READ_MANAGER"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+        - "CONTACT_MANAGE"
+        - "DOCUMENT_MANAGE"
+
+      explicitDenials:
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "ORGANIZATION_DELETE"
+
+    # ==========================================================================
+    # FUNCTIONAL SPECIALIST ROLES
+    # ==========================================================================
 
     PROPERTY_MANAGER:
-      description: "Property management and operations"
-      level: 700
+      description: "Property portfolio manager — properties, leases, tenants, maintenance"
+      level: 800
       category: "organization"
       scope: "organization"
       permissions:
-        - "organization:read"
-        - "organization:list"
-        - "user:read"
-        - "user:list"
-        - "property:create"
-        - "property:read"
-        - "property:update"
-        - "property:manage"
-        - "property:list"
-        - "lease:create"
-        - "lease:read"
-        - "lease:update"
-        - "lease:terminate"
-        - "lease:renew"
-        - "lease:list"
-        - "tenant:read"
-        - "tenant:update"
-        - "tenant:communicate"
-        - "tenant:list"
-        - "maintenance:create"
-        - "maintenance:read"
-        - "maintenance:update"
-        - "maintenance:assign"
-        - "maintenance:list"
-        - "inspection:create"
-        - "inspection:read"
-        - "inspection:schedule"
-        - "inspection:list"
-        - "payment:read"
-        - "payment:list"
-        - "invoice:read"
-        - "invoice:list"
-        - "report:generate"
-        - "report:read"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_manager"
-        - "task:create"
-        - "task:read"
-        - "task:update"
-        - "task:list"
-        - "task:assign"
-        - "task:complete"
-        - "schedule:create"
-        - "schedule:read"
-        - "schedule:update"
-        - "schedule:list"
-        - "schedule:availability"
-        - "milestone:read"
-        - "milestone:list"
-        - "rental_application:read"
-        - "rental_application:list"
-
-    ACCOUNTANT:
-      description: "Financial management and reporting"
-      level: 650
-      category: "organization"
-      scope: "organization"
-      permissions:
-        - "organization:read"
-        - "organization:list"
-        - "user:read"
-        - "user:list"
-        - "payment:create"
-        - "payment:read"
-        - "payment:process"
-        - "payment:reconcile"
-        - "payment:list"
-        - "invoice:create"
-        - "invoice:read"
-        - "invoice:update"
-        - "invoice:send"
-        - "invoice:list"
-        - "report:generate"
-        - "report:read"
-        - "report:export"
-        - "report:list"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_financial_dashboard"
-        - "financial:analyze"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_manager"
-        - "property:list"
-        - "tenant:list"
-
-    LEASING_AGENT:
-      description: "Tenant acquisition and rental applications"
-      level: 600
-      category: "organization"
-      scope: "organization"
-      permissions:
-        - "organization:read"
-        - "organization:list"
-        - "user:read"
-        - "user:list"
-        - "property:read"
-        - "property:list"
-        - "lease:create"
-        - "lease:read"
-        - "lease:update"
-        - "tenant:create"
-        - "tenant:read"
-        - "tenant:update"
-        - "tenant:screen"
-        - "rental_application:create"
-        - "rental_application:read"
-        - "rental_application:update"
-        - "rental_application:review"
-        - "rental_application:approve"
-        - "rental_application:reject"
-        - "rental_application:delete"
-        - "rental_application:list"
-        - "rental_application:manage"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_leasing_dashboard"
+        - "PROPERTY_MANAGE"
+        - "LEASE_MANAGE"
+        - "TENANT_MANAGE"
+        - "MAINTENANCE_MANAGE"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "INVOICE_CREATE"
+        - "INVOICE_READ"
+        - "INVOICE_SEND"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "DASHBOARD_READ_MANAGER"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "DOCUMENT_MANAGE"
 
     LEASE_SPECIALIST:
-      description: "Lease agreement and contract management"
-      level: 680
+      description: "Lease agreements and contract management"
+      level: 750
       category: "organization"
-      scope: "organization"
+      scope: "team"
       permissions:
-        # Dashboard Access
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_manager"
-        - "dashboard:read_leasing_dashboard"
+        - "LEASE_MANAGE"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "DOCUMENT_READ"
+        - "DOCUMENT_UPLOAD"
+        - "DOCUMENT_DOWNLOAD"
 
-        # Organization Access
-        - "organization:read"
-        - "organization:list"
+    LEASING_AGENT:
+      description: "Tenant acquisition and leasing operations"
+      level: 700
+      category: "organization"
+      scope: "team"
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_CREATE"
+        - "LEASE_READ"
+        - "LEASE_UPDATE"
+        - "LEASE_LIST"
+        - "TENANT_MANAGE"
+        - "INVOICE_CREATE"
+        - "INVOICE_READ"
+        - "DASHBOARD_READ_LEASING_DASHBOARD"
 
-        # Property Access (Read-Only)
-        - "property:list"
-        - "property:read"
-
-        # Tenant Access (Read-Only for coordination)
-        - "tenant:list"
-        - "tenant:read"
-
-        # Lease Management (Full Access)
-        - "lease:create"
-        - "lease:read"
-        - "lease:update"
-        - "lease:terminate"
-        - "lease:renew"
-        - "lease:approve"
-        - "lease:list"
-
-        # Payment Tracking (Read-Only)
-        - "payment:read"
-        - "payment:list"
-
-        # Document Management
-        - "document:create"
-        - "document:read"
-        - "document:update"
-        - "document:sign"
-        - "document:list"
-
-        # Rental Application Access (Full workflow management)
-        - "rental_application:create"
-        - "rental_application:read"
-        - "rental_application:update"
-        - "rental_application:approve"
-        - "rental_application:reject"
-        - "rental_application:list"
-        - "rental_application:review"
+    ACCOUNTANT:
+      description: "Financial operations — payments, invoices, payroll reads"
+      level: 650
+      category: "organization"
+      scope: "team"
+      permissions:
+        - "PAYMENT_MANAGE"
+        - "INVOICE_MANAGE"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+        - "DASHBOARD_READ_FINANCIAL_DASHBOARD"
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
 
     MAINTENANCE_SUPERVISOR:
       description: "Maintenance operations supervisor"
-      level: 550
+      level: 600
       category: "organization"
-      scope: "organization"
+      scope: "team"
       permissions:
-        - "organization:read"
-        - "organization:list"
-        - "user:read"
-        - "user:list"
-        - "property:read"
-        - "property:list"
-        - "tenant:read"
-        - "tenant:list"
-        - "maintenance:create"
-        - "maintenance:read"
-        - "maintenance:update"
-        - "maintenance:assign"
-        - "maintenance:approve"
-        - "maintenance:list"
-        - "inspection:create"
-        - "inspection:read"
-        - "inspection:schedule"
-        - "inspection:update"
-        - "inspection:list"
-        - "vendor:create"
-        - "vendor:read"
-        - "vendor:update"
-        - "vendor:contract"
-        - "vendor:list"
-        - "asset:read"
-        - "asset:update"
-        - "asset:track"
-        - "asset:list"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_manager"
-        - "dashboard:read_maintenance_dashboard"
-        - "dashboard:read_oversight_dashboard"
+        - "MAINTENANCE_MANAGE"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "DASHBOARD_READ_MAINTENANCE_DASHBOARD"
 
     TENANT_COORDINATOR:
       description: "Tenant relations and communication"
+      level: 550
+      category: "organization"
+      scope: "team"
+      permissions:
+        - "TENANT_READ"
+        - "TENANT_UPDATE"
+        - "TENANT_LIST"
+        - "TENANT_COMMUNICATE"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_CREATE"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_SEND"
+
+    # ==========================================================================
+    # TEAM ROLES
+    # ==========================================================================
+
+    TEAM_LEAD:
+      description: "Team or department lead"
       level: 500
       category: "organization"
-      scope: "organization"
+      scope: "team"
       permissions:
-        - "organization:read"
-        - "organization:list"
-        - "user:read"
-        - "user:list"
-        - "property:read"
-        - "property:list"
-        - "tenant:read"
-        - "tenant:list"
-        - "tenant:update"
-        - "tenant:communicate"
-        - "lease:read"
-        - "lease:list"
-        - "payment:read"
-        - "payment:list"
-        - "maintenance:create"
-        - "maintenance:read"
-        - "maintenance:list"
-        - "notification:create"
-        - "notification:send"
-        - "notification:read"
-        - "notification:list"
-        - "document:read"
-        - "document:share"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "rental_application:read"
-        - "rental_application:list"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "MAINTENANCE_ASSIGN"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "REPORT_READ"
+        - "DASHBOARD_READ_MANAGER"
 
     INSPECTOR:
       description: "Property inspection specialist"
       level: 450
-      category: "organization"
-      scope: "organization"
-      permissions:
-        - "organization:read"
-        - "organization:list"
-        - "property:read"
-        - "property:list"
-        - "inspection:create"
-        - "inspection:read"
-        - "inspection:update"
-        - "inspection:complete"
-        - "inspection:list"
-        - "maintenance:read"
-        - "maintenance:list"
-        - "document:upload"
-        - "document:read"
-        - "dashboard:read"
-        - "dashboard:view"
-
-    MAINTENANCE_TECHNICIAN:
-      description: "Maintenance task execution"
-      level: 400
-      category: "organization"
-      scope: "organization"
-      permissions:
-        - "organization:read"
-        - "organization:list"
-        - "property:read"
-        - "property:list"
-        - "maintenance:read"
-        - "maintenance:update"
-        - "maintenance:complete"
-        - "maintenance:list"
-        - "asset:read"
-        - "asset:update"
-        - "asset:list"
-        - "document:upload"
-        - "document:read"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_maintenance_dashboard"
-
-    TEAM_LEAD:
-      description: "Team or department lead"
-      level: 550
-      category: "team"
+      category: "operational"
       scope: "team"
       permissions:
-        - "team:manage"
-        - "user:read"
-        - "user:list"
-        - "report:generate"
-        - "report:read"
-        - "dashboard:read"
-        - "dashboard:view"
-        - "dashboard:read_oversight_dashboard"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_CREATE"
+        - "MAINTENANCE_UPDATE"
+        - "DOCUMENT_READ"
+        - "DOCUMENT_UPLOAD"
+
+    # ==========================================================================
+    # OPERATIONAL ROLES
+    # ==========================================================================
+
+    MAINTENANCE_TECHNICIAN:
+      description: "Maintenance work execution"
+      level: 400
+      category: "operational"
+      scope: "team"
+      permissions:
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_UPDATE"
+        - "MAINTENANCE_COMPLETE"
+        - "PROPERTY_READ"
 
     TEAM_MEMBER:
       description: "General team member"
       level: 300
-      category: "team"
+      category: "operational"
       scope: "team"
       permissions:
-        - "assigned:read"
-        - "assigned:update"
-        - "team:collaborate"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "DASHBOARD_VIEW"
+
+    # ==========================================================================
+    # EXTERNAL ROLES
+    # ==========================================================================
 
     VENDOR:
-      description: "External vendor access"
+      description: "External vendor portal access"
       level: 200
       category: "external"
       scope: "self"
       permissions:
-        - "assigned:read"
-        - "assigned:update"
-        - "communication:send"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_UPDATE"
+        - "INVOICE_CREATE"
+        - "INVOICE_READ"
 
     TENANT:
-      description: "Tenant self-service portal access"
-      level: 100
-      category: "resident"
+      description: "Tenant self-service portal"
+      level: 150
+      category: "external"
       scope: "self"
       permissions:
-        - "profile:read"
-        - "profile:update"
-        - "lease:read"
-        - "payment:read"
-        - "payment:create"
-        - "maintenance:create"
-        - "maintenance:read"
-        - "document:read"
-        - "document:upload"
-        - "notification:read"
+        - "TENANT_READ"
+        - "TENANT_UPDATE"
+        - "PAYMENT_CREATE"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "MAINTENANCE_CREATE"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "PROPERTY_READ"
+        - "DOCUMENT_READ"
+        - "DOCUMENT_UPLOAD"
+        - "DOCUMENT_DOWNLOAD"
+        - "NOTIFICATION_READ"
+        - "DASHBOARD_VIEW"
+        - "DASHBOARD_PORTAL"
 
     APPLICANT:
       description: "Rental application submission"
-      level: 50
-      category: "resident"
+      level: 100
+      category: "external"
       scope: "self"
       permissions:
-        - "rental_application:create"
-        - "rental_application:read"
-        - "rental_application:update"
-        - "profile:read"
-        - "profile:update"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "DOCUMENT_UPLOAD"
+        - "DOCUMENT_READ"
 
-  # ============================================================================
-  # SCOPE DEFINITIONS - Hierarchical access levels
-  # ============================================================================
-  scopes:
-    platform:
-      level: 4
-      description: "Platform-wide access across all organizations"
-      inherits: ["portfolio", "organization", "team", "self"]
-      features:
-        - crossOrganizationAccess
-        - systemAdministration
-        - globalReporting
-        - platformConfiguration
-
-    portfolio:
-      level: 3
-      description: "Multi-organization portfolio management"
-      inherits: ["organization", "team", "self"]
-      features:
-        - multiOrganizationAccess
-        - portfolioReporting
-        - crossOrgWorkflows
-
-    organization:
-      level: 2
-      description: "Single organization full access"
-      inherits: ["team", "self"]
-      features:
-        - organizationAdministration
-        - userManagement
-        - roleManagement
-        - organizationReporting
-
-    team:
-      level: 1
-      description: "Team or department level access"
-      inherits: ["self"]
-      features:
-        - teamCollaboration
-        - assignedResourceAccess
-
-    self:
-      level: 0
-      description: "Personal resources only"
-      inherits: []
-      features:
-        - profileManagement
-        - ownDataAccess
-
-  # ============================================================================
-  # RESOURCE DEFINITIONS - Domain entities with their capabilities
-  # ============================================================================
-  resources:
-    property:
-      category: "core_business"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "manage",
-          "list",
-          "export",
-          "archive",
-          "transfer",
-        ]
-      ownerField: "organizationId"
-      allowedScopes: ["platform", "portfolio", "organization", "team"]
-      auditRequired: true
-      relationships:
-        hasMany: ["lease", "maintenance", "inspection", "asset"]
-        belongsTo: ["organization"]
-
-    lease:
-      category: "core_business"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "terminate",
-          "renew",
-          "list",
-          "approve",
-          "export",
-        ]
-      ownerField: "propertyId"
-      allowedScopes: ["portfolio", "organization", "team", "self"]
-      auditRequired: true
-      relationships:
-        belongsTo: ["property", "tenant"]
-        hasMany: ["payment", "document"]
-
-    tenant:
-      category: "core_business"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "manage",
-          "communicate",
-          "list",
-          "export",
-          "screen",
-        ]
-      ownerField: "organizationId"
-      piiFields: ["ssn", "creditScore", "bankAccount", "dob", "phone", "email"]
-      allowedScopes: ["portfolio", "organization", "team"]
-      auditRequired: true
-      dataRetentionDays: 2555
-      relationships:
-        hasMany: ["lease", "payment", "rental_application"]
-
-    rental_application:
-      category: "core_business"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "submit",
-          "approve",
-          "reject",
-          "review",
-          "manage",
-          "list",
-          "export",
-          "track",
-        ]
-      ownerField: "organizationId"
-      piiFields:
-        [
-          "firstName",
-          "lastName",
-          "email",
-          "phone",
-          "ssn",
-          "currentAddress",
-          "employer",
-        ]
-      allowedScopes: ["platform", "portfolio", "organization", "team"]
-      auditRequired: true
-      requiresApproval: true
-      dataRetentionDays: 2555
-      relationships:
-        belongsTo: ["property", "tenant"]
-
-    payment:
-      category: "financial"
-      actions:
-        [
-          "create",
-          "read",
-          "process",
-          "refund",
-          "track",
-          "approve",
-          "list",
-          "export",
-          "reconcile",
-        ]
-      ownerField: "leaseId"
-      allowedScopes: ["portfolio", "organization", "team"]
-      auditRequired: true
-      requiresApproval: true
-      relationships:
-        belongsTo: ["lease", "tenant"]
-
-    invoice:
-      category: "financial"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "send",
-          "approve",
-          "list",
-          "export",
-        ]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-      auditRequired: true
-      relationships:
-        belongsTo: ["organization"]
-
-    document:
-      category: "core_business"
-      actions:
-        [
-          "upload",
-          "read",
-          "update",
-          "delete",
-          "share",
-          "list",
-          "download",
-          "sign",
-          "configure",
-        ]
-      ownerField: "uploadedBy"
-      encryptionRequired: true
-      allowedScopes: ["portfolio", "organization", "team", "self"]
-      auditRequired: true
-      relationships:
-        polymorphic: true
-
-    maintenance:
-      category: "operations"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "assign",
-          "complete",
-          "list",
-          "schedule",
-          "approve",
-        ]
-      ownerField: "propertyId"
-      allowedScopes: ["portfolio", "organization", "team", "self"]
-      relationships:
-        belongsTo: ["property"]
-
-    inspection:
-      category: "operations"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "schedule",
-          "complete",
-          "list",
-          "approve",
-        ]
-      ownerField: "propertyId"
-      allowedScopes: ["portfolio", "organization", "team"]
-      relationships:
-        belongsTo: ["property"]
-
-    user:
-      category: "administration"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "invite",
-          "suspend",
-          "activate",
-          "list",
-          "export",
-        ]
-      ownerField: "organizationId"
-      piiFields: ["email", "phone", "ssn", "address"]
-      allowedScopes: ["platform", "portfolio", "organization"]
-      auditRequired: true
-
-    organization:
-      category: "administration"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "configure",
-          "suspend",
-          "activate",
-          "list",
-          "transfer",
-          "manage",
-        ]
-      ownerField: "ownerUserId"
-      allowedScopes: ["platform", "portfolio", "organization"]
-      auditRequired: true
-      relationships:
-        hasMany: ["user", "property", "tenant"]
-
-    report:
-      category: "analytics"
-      actions: ["generate", "read", "export", "schedule", "list", "customize"]
-      ownerField: "organizationId"
-      allowedScopes: ["platform", "portfolio", "organization", "team"]
-
-    asset:
-      category: "operations"
-      actions:
-        ["create", "read", "update", "delete", "track", "list", "depreciate"]
-      ownerField: "propertyId"
-      allowedScopes: ["portfolio", "organization", "team"]
-      relationships:
-        belongsTo: ["property"]
-
-    vendor:
-      category: "operations"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "rate",
-          "list",
-          "contract",
-          "pay",
-        ]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    notification:
-      category: "communication"
-      actions: ["create", "read", "send", "schedule", "list", "configure"]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    utility:
-      category: "financial"
-      actions: ["create", "read", "update", "track", "list", "reconcile"]
-      ownerField: "propertyId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    task:
-      category: "operations"
-      actions:
-        ["create", "read", "update", "delete", "list", "assign", "complete"]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    schedule:
-      category: "operations"
-      actions: ["create", "read", "update", "delete", "list", "availability"]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    milestone:
-      category: "analytics"
-      actions: ["create", "read", "update", "delete", "list", "track"]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    contact:
-      category: "operations"
-      actions:
-        ["create", "read", "update", "delete", "manage", "list", "export"]
-      ownerField: "organizationId"
-      allowedScopes: ["portfolio", "organization", "team"]
-
-    system:
-      category: "platform"
-      actions:
-        ["configure", "monitor", "backup", "restore", "update", "troubleshoot"]
-      ownerField: "platform"
-      allowedScopes: ["platform"]
-      auditRequired: true
-
-    audit_log:
-      category: "compliance"
-      actions: ["read", "export", "analyze"]
-      ownerField: "platform"
-      allowedScopes: ["platform", "organization"]
-      immutable: true
-
-    onboarding:
-      category: "platform"
-      actions:
-        [
-          "create",
-          "read",
-          "update",
-          "delete",
-          "submit",
-          "approve",
-          "reject",
-          "list",
-          "export",
-        ]
-      ownerField: "platform"
-      allowedScopes: ["platform"]
-      auditRequired: true
-      requiresApproval: true
-      piiFields: ["contactEmail", "contactPhone", "ownerEmail", "ownerPhone"]
-
-    role:
-      category: "administration"
-      actions:
-        ["create", "read", "update", "delete", "assign", "revoke", "list"]
-      ownerField: "organizationId"
-      allowedScopes: ["platform", "portfolio", "organization"]
-      auditRequired: true
-
-    workflow:
-      category: "automation"
-      actions:
-        ["create", "read", "update", "delete", "execute", "schedule", "list"]
-      ownerField: "organizationId"
-      allowedScopes: ["organization", "team"]
-
-  # ============================================================================
-  # ROLE PROFILES - Template-based role definitions
-  # ============================================================================
-  roleProfiles:
-    # ========================================
-    # PLATFORM ROLES
-    # ========================================
-    platform_oversight:
-      description: "Platform-wide oversight and approval authority"
-      scope: "platform"
-      category: "platform"
-      level: 1000
-      resourcePermissions:
-        onboarding: { template: "onboarding_approver" }
-        organization:
-          {
-            template: "organization_viewer",
-            additionalPermissions: ["suspend", "activate"],
-          }
-        user:
-          {
-            template: "user_viewer",
-            additionalPermissions: ["suspend", "activate"],
-          }
-        system:
-          { template: "system_monitor", additionalPermissions: ["configure"] }
-        audit_log: { template: "audit_analyst" }
-        report: { template: "report_administrator" }
-        role: { template: "role_viewer" }
-        property:
-          { template: "property_viewer", additionalPermissions: ["export"] }
-        lease: { template: "read_only" }
-        tenant: { template: "tenant_viewer" }
-        rental_application:
-          { template: "read_only", additionalPermissions: ["export"] }
-        payment:
-          { template: "financial_read", additionalPermissions: ["approve"] }
-        invoice: { template: "read_only", additionalPermissions: ["approve"] }
-        document: { template: "document_viewer" }
-      capabilities:
-        - approvalAuthority
-        - crossOrganizationView
-        - systemMonitoring
-        - viewAllAuditLogs
-        - suspendOrganizations
-        - emergencyAccess
-        - bypassReadRestrictions
-      restrictions:
-        requireMFA: true
-        requireHardwareKey: true
-        ipWhitelist: true
-        sessionTimeout: 900
-        auditAllActions: true
-        oversightOnly: true
-        cannotDeleteSelf: true
-        cannotCreateHigherRole: true
-
-    platform_operations:
-      description: "Platform operations and organization management"
-      scope: "platform"
-      category: "platform"
-      level: 970
-      resourcePermissions:
-        organization:
-          {
-            template: "organization_manager",
-            additionalPermissions: ["create", "transfer"],
-          }
-        onboarding: { template: "onboarding_processor" }
-        user: { template: "user_manager" }
-        role: { template: "role_manager" }
-        notification: { template: "notification_management" }
-        document: { template: "document_administrator" }
-        report: { template: "report_administrator" }
-        audit_log:
-          { template: "audit_viewer", additionalPermissions: ["export"] }
-        property:
-          { template: "property_viewer", additionalPermissions: ["export"] }
-        lease: { template: "read_only" }
-        tenant: { template: "tenant_viewer" }
-        rental_application:
-          { template: "read_only", additionalPermissions: ["export", "track"] }
-        payment: { template: "financial_read" }
-        invoice: { template: "read_only" }
-        asset: { template: "asset_viewer" }
-        vendor: { template: "vendor_viewer" }
-        maintenance: { template: "maintenance_viewer" }
-      capabilities:
-        - organizationManagement
-        - onboardingManagement
-        - userManagement
-        - roleManagement
-        - customerSuccess
-        - crossOrganizationView
-        - organizationSetup
-        - supportAccess
-      restrictions:
-        requireMFA: true
-        sessionTimeout: 1800
-        requireApprovalForActivation: true
-        requireApprovalForDeletion: true
-        auditAllActions: true
-        cannotDeleteSelf: true
-        cannotCreateHigherRole: true
-
-    platform_engineering:
-      description: "System operations and infrastructure"
-      scope: "platform"
-      category: "platform"
-      level: 950
-      resourcePermissions:
-        system: { template: "system_administrator" }
-        audit_log: { template: "audit_analyst" }
-        organization: { template: "organization_viewer" }
-        user: { template: "user_viewer" }
-        report: { template: "report_generator" }
-        notification: { permissions: ["read"] }
-      capabilities:
-        - systemMaintenance
-        - performanceMonitoring
-        - backupRestore
-        - troubleshootIssues
-        - viewSystemLogs
-      restrictions:
-        requireMFA: true
-        requireHardwareKey: true
-        ipWhitelist: true
-        sessionTimeout: 1800
-        readOnlyBusinessData: true
-        cannotDeleteSelf: true
-        cannotCreateHigherRole: true
-
-    platform_analytics:
-      description: "Business intelligence and cross-org reporting"
-      scope: "platform"
-      category: "platform"
-      level: 930
-      resourcePermissions:
-        report: { template: "report_administrator" }
-        audit_log: { template: "analytics_administrator" }
-        organization: { template: "organization_viewer" }
-        property:
-          { template: "property_viewer", additionalPermissions: ["export"] }
-        lease: { template: "read_only", additionalPermissions: ["export"] }
-        tenant: { template: "tenant_viewer", additionalPermissions: ["export"] }
-        rental_application:
-          { template: "read_only", additionalPermissions: ["export"] }
-        payment:
-          { template: "financial_read", additionalPermissions: ["export"] }
-        invoice: { template: "read_only", additionalPermissions: ["export"] }
-        asset: { template: "asset_viewer" }
-        vendor: { template: "vendor_viewer" }
-        maintenance: { template: "maintenance_viewer" }
-        user: { template: "user_viewer" }
-      capabilities:
-        - advancedReporting
-        - dataAnalysis
-        - crossOrganizationView
-        - exportAllData
-        - customReports
-      restrictions:
-        requireMFA: true
-        sessionTimeout: 1800
-        readOnly: true
-        cannotDeleteSelf: true
-        cannotCreateHigherRole: true
-
-    # ========================================
-    # PORTFOLIO ROLES
-    # ========================================
-    portfolio_owner:
-      description: "Multi-organization portfolio investor"
-      scope: "portfolio"
-      category: "portfolio"
-      level: 920
-      resourcePermissions:
-        organization: { permissions: ["create", "read", "update", "configure"] }
-        property: { template: "property_administrator" }
-        lease: { template: "lease_administrator" }
-        tenant: { template: "tenant_administrator" }
-        rental_application: { template: "application_administrator" }
-        payment: { template: "financial_management" }
-        invoice: { template: "billing_management" }
-        document: { template: "document_administrator" }
-        maintenance: { template: "maintenance_administrator" }
-        inspection: { template: "inspection_administrator" }
-        user: { template: "user_administrator" }
-        report: { template: "report_administrator" }
-        asset: { template: "asset_administrator" }
-        vendor: { template: "vendor_administrator" }
-        notification: { template: "notification_management" }
-        utility: { template: "utility_manager" }
-        contact: { template: "contact_manager" }
-        workflow: { template: "workflow_administrator" }
-        audit_log: { permissions: ["read", "export"] }
-        role: { template: "role_administrator" }
-      capabilities:
-        - multiOrganizationAccess
-        - createOrganizations
-        - fullOrganizationControl
-        - manageAllUsers
-        - createCustomRoles
-        - assignRolesBelow
-        - exportAllData
-        - viewFinancials
-        - configureWorkflows
-        - billingAccess
-        - crossOrganizationReporting
-      restrictions:
-        requireMFA: true
-        maxOrganizations: 50
-        maxSubordinateLevel: 919
-        cannotDeleteSelf: true
-        cannotCreateHigherRole: true
-        cannotModifyOwnRole: true
-
-    # ========================================
-    # ORGANIZATION ROLES
-    # ========================================
-    organization_owner:
-      description: "Single organization owner/landlord"
-      scope: "organization"
-      category: "organization"
-      level: 900
-      resourcePermissions:
-        organization: { permissions: ["read", "update", "configure"] }
-        property: { template: "property_administrator" }
-        lease: { template: "lease_administrator" }
-        tenant: { template: "tenant_administrator" }
-        rental_application: { template: "application_administrator" }
-        payment: { template: "financial_management" }
-        invoice: { template: "billing_management" }
-        document: { template: "document_administrator" }
-        maintenance: { template: "maintenance_administrator" }
-        inspection: { template: "inspection_administrator" }
-        user: { template: "user_administrator" }
-        report: { template: "report_administrator" }
-        asset: { template: "asset_administrator" }
-        vendor: { template: "vendor_administrator" }
-        notification: { template: "notification_management" }
-        utility: { template: "utility_manager" }
-        contact: { template: "contact_manager" }
-        workflow: { template: "workflow_administrator" }
-        audit_log: { permissions: ["read", "export"] }
-        role: { template: "role_administrator" }
-      capabilities:
-        - fullOrganizationControl
-        - propertyManagement
-        - tenantManagement
-        - leaseManagement
-        - financialManagement
-        - userManagement
-        - createCustomRoles
-        - assignRolesBelow
-        - exportAllData
-        - viewFinancials
-        - configureWorkflows
-        - billingAccess
-      restrictions:
-        requireMFA: true
-        maxSubordinateLevel: 899
-        cannotDeleteSelf: true
-        cannotCreateHigherRole: true
-        cannotModifyOwnRole: true
-
-    organization_admin:
-      description: "Organization operations administrator"
-      scope: "organization"
-      category: "organization"
-      level: 850
-      resourcePermissions:
-        organization: { permissions: ["read", "configure"] }
-        property: { template: "property_manager" }
-        lease: { template: "lease_manager" }
-        tenant: { template: "tenant_manager" }
-        rental_application: { template: "application_manager" }
-        payment: { template: "financial_operations" }
-        invoice: { template: "billing_management" }
-        document: { template: "document_manager" }
-        maintenance: { template: "maintenance_manager" }
-        inspection: { template: "inspection_scheduler" }
-        user: { template: "user_manager" }
-        report: { template: "report_manager" }
-        asset: { template: "asset_manager" }
-        vendor: { template: "vendor_manager" }
-        notification: { template: "communication" }
-        utility: { template: "utility_tracker" }
-        contact: { template: "contact_manager" }
-        workflow: { template: "workflow_manager" }
-        audit_log: { permissions: ["read", "export"] }
-        role: { template: "role_viewer" }
-      capabilities:
-        - organizationOperations
-        - propertyManagement
-        - tenantManagement
-        - leaseManagement
-        - userManagement
-        - viewFinancials
-        - exportData
-        - configureSettings
-      restrictions:
-        requireMFA: true
-        maxSubordinateLevel: 849
-        cannotDeleteSelf: true
-
-    property_manager:
-      description: "Property management and operations"
-      scope: "organization"
-      category: "operations"
-      level: 700
-      resourcePermissions:
-        property: { template: "property_manager" }
-        lease: { template: "lease_manager" }
-        tenant: { template: "tenant_coordinator" }
-        rental_application: { template: "application_manager" }
-        payment: { template: "payment_processing" }
-        invoice: { template: "read_only" }
-        document: { template: "document_manager" }
-        maintenance: { template: "maintenance_manager" }
-        inspection: { template: "inspection_scheduler" }
-        report: { template: "report_generator" }
-        asset: { template: "asset_manager" }
-        vendor: { template: "vendor_coordinator" }
-        notification: { template: "communication" }
-        utility: { template: "utility_tracker" }
-        contact: { template: "contact_manager" }
-        user: { permissions: ["read", "list"] }
-        audit_log: { permissions: ["read"] }
-      capabilities:
-        - propertyManagement
-        - tenantRelations
-        - leaseManagement
-        - maintenanceCoordination
-        - inspectionScheduling
-        - vendorCoordination
-        - reportGeneration
-      restrictions:
-        cannotDeleteSelf: true
-
-    accountant:
-      description: "Financial management and reporting"
-      scope: "organization"
-      category: "financial"
-      level: 650
-      resourcePermissions:
-        payment: { template: "financial_management" }
-        invoice: { template: "billing_management" }
-        report: { template: "report_administrator" }
-        lease: { permissions: ["read", "list", "export"] }
-        tenant: { permissions: ["read", "list"] }
-        property: { permissions: ["read", "list"] }
-        document: { template: "document_viewer" }
-        utility: { template: "utility_manager" }
-        vendor: { permissions: ["read", "list", "pay"] }
-        asset: { permissions: ["read", "list", "depreciate"] }
-        audit_log: { permissions: ["read", "export"] }
-        user: { permissions: ["read"] }
-      capabilities:
-        - financialManagement
-        - invoicing
-        - paymentProcessing
-        - financialReporting
-        - reconciliation
-        - vendorPayments
-        - exportFinancials
-      restrictions:
-        requireMFA: true
-        cannotDeleteSelf: true
-        financialAccessOnly: true
-
-    leasing_agent:
-      description: "Tenant acquisition and rental applications"
-      scope: "organization"
-      category: "operations"
-      level: 600
-      resourcePermissions:
-        rental_application: { template: "application_processor" }
-        property: { permissions: ["read", "list"] }
-        tenant: { template: "tenant_coordinator" }
-        lease: { template: "lease_processor" }
-        document: { template: "document_contributor" }
-        notification: { template: "messaging" }
-        contact: { permissions: ["create", "read", "list"] }
-        report: { permissions: ["read", "generate"] }
-        user: { permissions: ["read"] }
-      capabilities:
-        - processApplications
-        - tenantScreening
-        - propertyShowing
-        - leasePreparation
-        - tenantCommunication
-      restrictions:
-        cannotDeleteSelf: true
-
-    maintenance_supervisor:
-      description: "Maintenance operations supervisor"
-      scope: "organization"
-      category: "operations"
-      level: 550
-      resourcePermissions:
-        maintenance: { template: "maintenance_manager" }
-        inspection: { template: "inspection_scheduler" }
-        property: { permissions: ["read", "list"] }
-        asset: { template: "asset_tracker" }
-        vendor: { template: "vendor_coordinator" }
-        document: { template: "document_contributor" }
-        notification: { template: "messaging" }
-        report: { permissions: ["read", "generate"] }
-        user: { permissions: ["read", "list"] }
-      capabilities:
-        - maintenanceManagement
-        - taskAssignment
-        - workScheduling
-        - vendorCoordination
-        - inspectionScheduling
-        - assetTracking
-      restrictions:
-        cannotDeleteSelf: true
-
-    maintenance_technician:
-      description: "Maintenance task execution"
-      scope: "team"
-      category: "operations"
-      level: 400
-      resourcePermissions:
-        maintenance: { template: "maintenance_worker" }
-        inspection: { template: "inspection_performer" }
-        property: { permissions: ["read"] }
-        asset: { permissions: ["read", "update", "track"] }
-        document: { template: "document_contributor" }
-        notification: { permissions: ["read"] }
-        report: { permissions: ["read"] }
-      capabilities:
-        - executeMaintenance
-        - performInspections
-        - updateTaskStatus
-        - documentWork
-        - trackAssets
-      restrictions:
-        cannotDeleteSelf: true
-        assignedTasksOnly: true
-
-    tenant_coordinator:
-      description: "Tenant relations and communication"
-      scope: "organization"
-      category: "operations"
-      level: 500
-      resourcePermissions:
-        tenant: { template: "tenant_coordinator" }
-        lease: { permissions: ["read", "list"] }
-        property: { permissions: ["read", "list"] }
-        payment: { permissions: ["read", "track"] }
-        maintenance: { permissions: ["create", "read", "list"] }
-        document: { template: "document_contributor" }
-        notification: { template: "communication" }
-        contact: { template: "contact_manager" }
-        user: { permissions: ["read"] }
-      capabilities:
-        - tenantCommunication
-        - issueResolution
-        - maintenanceRequests
-        - documentManagement
-        - relationshipManagement
-      restrictions:
-        cannotDeleteSelf: true
-
-    inspector:
-      description: "Property inspection specialist"
-      scope: "team"
-      category: "operations"
-      level: 450
-      resourcePermissions:
-        inspection: { template: "inspection_performer" }
-        property: { permissions: ["read", "list"] }
-        maintenance: { permissions: ["create", "read"] }
-        document: { template: "document_contributor" }
-        asset: { permissions: ["read", "track"] }
-        notification: { permissions: ["read"] }
-        report: { permissions: ["read", "generate"] }
-      capabilities:
-        - performInspections
-        - documentFindings
-        - createMaintenanceRequests
-        - assetInspection
-        - reportGeneration
-      restrictions:
-        cannotDeleteSelf: true
-
-    # ========================================
-    # TEAM ROLES
-    # ========================================
-    team_lead:
-      description: "Team or department lead"
-      scope: "team"
-      category: "team"
-      level: 550
-      resourcePermissions:
-        property: { permissions: ["read", "list"] }
-        lease: { permissions: ["read", "list"] }
-        tenant: { permissions: ["read", "list"] }
-        maintenance: { template: "maintenance_coordinator" }
-        inspection: { template: "inspection_scheduler" }
-        document: { template: "document_manager" }
-        notification: { template: "messaging" }
-        report: { template: "report_generator" }
-        user: { permissions: ["read", "list"] }
-        asset: { template: "asset_tracker" }
-        vendor: { permissions: ["read", "list"] }
-      capabilities:
-        - teamManagement
-        - taskAssignment
-        - workScheduling
-        - teamReporting
-        - resourceCoordination
-      restrictions:
-        cannotDeleteSelf: true
-        teamScopeOnly: true
-
-    team_member:
-      description: "General team member"
-      scope: "team"
-      category: "team"
-      level: 300
-      resourcePermissions:
-        property: { permissions: ["read"] }
-        lease: { permissions: ["read"] }
-        tenant: { permissions: ["read"] }
-        maintenance: { permissions: ["read", "update"] }
-        inspection: { permissions: ["read"] }
-        document: { template: "document_viewer" }
-        notification: { permissions: ["read"] }
-        report: { permissions: ["read"] }
-      capabilities:
-        - viewAssignedWork
-        - updateTaskStatus
-        - viewDocuments
-        - receiveNotifications
-      restrictions:
-        cannotDeleteSelf: true
-        assignedTasksOnly: true
-
-    # ========================================
-    # SELF-SERVICE ROLES
-    # ========================================
-    tenant:
-      description: "Tenant self-service portal access"
-      scope: "self"
-      category: "external"
-      level: 100
-      resourcePermissions:
-        property: { permissions: ["read"] }
-        lease: { permissions: ["read"] }
-        payment: { permissions: ["create", "read", "track"] }
-        maintenance: { permissions: ["create", "read", "list"] }
-        document: { permissions: ["read", "download", "upload"] }
-        notification: { permissions: ["read"] }
-        contact: { permissions: ["read"] }
-      capabilities:
-        - viewOwnLease
-        - makePayments
-        - submitMaintenanceRequests
-        - viewPaymentHistory
-        - uploadDocuments
-        - receiveNotifications
-      restrictions:
-        cannotDeleteSelf: true
-        selfResourcesOnly: true
-        readOnlyForOthers: true
-
-    applicant:
-      description: "Rental application submission"
-      scope: "self"
-      category: "external"
+    READ_ONLY:
+      description: "Read-only observer / auditor"
       level: 50
-      resourcePermissions:
-        rental_application: { permissions: ["create", "read", "track"] }
-        property: { permissions: ["read", "list"] }
-        document: { permissions: ["upload", "read"] }
-        notification: { permissions: ["read"] }
-      capabilities:
-        - submitApplication
-        - trackApplicationStatus
-        - uploadDocuments
-        - viewProperties
-      restrictions:
-        cannotDeleteSelf: true
-        applicationScopeOnly: true
-        noAccessToOtherTenants: true
-
-    vendor:
-      description: "External vendor access"
-      scope: "self"
       category: "external"
-      level: 200
-      resourcePermissions:
-        maintenance: { permissions: ["read", "update", "complete"] }
-        property: { permissions: ["read"] }
-        document: { permissions: ["upload", "read"] }
-        notification: { permissions: ["read"] }
-        invoice: { permissions: ["create", "read"] }
-      capabilities:
-        - viewAssignedWork
-        - updateWorkStatus
-        - submitInvoices
-        - uploadDocuments
-        - receiveNotifications
+      scope: "self"
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "DASHBOARD_VIEW"
       restrictions:
-        cannotDeleteSelf: true
-        assignedWorkOnly: true
-        noAccessToTenantData: true
-
-    # ========================================
-    # SPECIAL ROLES
-    # ========================================
-    read_only:
-      description: "Read-only access for auditors or observers"
-      scope: "organization"
-      category: "special"
-      level: 250
-      resourcePermissions:
-        property: { permissions: ["read", "list"] }
-        lease: { permissions: ["read", "list"] }
-        tenant: { permissions: ["read", "list"] }
-        payment: { permissions: ["read", "list"] }
-        invoice: { permissions: ["read", "list"] }
-        maintenance: { permissions: ["read", "list"] }
-        inspection: { permissions: ["read", "list"] }
-        document: { permissions: ["read", "download"] }
-        report: { permissions: ["read", "generate", "export"] }
-        audit_log: { permissions: ["read", "export"] }
-        asset: { permissions: ["read", "list"] }
-        vendor: { permissions: ["read", "list"] }
-        user: { permissions: ["read", "list"] }
-      capabilities:
-        - viewAllData
-        - generateReports
-        - exportData
-        - auditAccess
-      restrictions:
-        cannotDeleteSelf: true
         readOnly: true
-        noModifications: true
-
-    emergency_access:
-      description: "Emergency temporary access (break-glass)"
-      scope: "platform"
-      category: "special"
-      level: 999
-      resourcePermissions:
-        property: { template: "full_crud" }
-        lease: { template: "full_crud" }
-        tenant: { template: "full_crud" }
-        payment: { template: "full_crud" }
-        maintenance: { template: "full_crud" }
-        inspection: { template: "full_crud" }
-        user: { template: "full_crud" }
-        organization: { template: "full_crud" }
-        system: { template: "system_administrator" }
-        audit_log: { permissions: ["read", "export"] }
-      capabilities:
-        - emergencyAccess
-        - fullSystemAccess
-        - bypassRestrictions
-        - immediateAction
-      restrictions:
-        requireMFA: true
-        requireHardwareKey: true
-        requireApproval: true
-        autoExpireHours: 4
-        auditAllActions: true
-        notifyOnActivation: true
-        cannotDeleteSelf: true
-        emergencyOnly: true
 
   # ============================================================================
-  # ROLE INHERITANCE MAPPINGS
+  # ENDPOINT MAPPINGS (Optional - for API Gateway)
   # ============================================================================
-  roleInheritance:
-    platform_oversight: ["platform_operations", "platform_analytics"]
-    platform_operations: ["platform_engineering"]
-    portfolio_owner: ["organization_owner"]
-    organization_owner: ["organization_admin", "property_manager", "accountant"]
-    organization_admin:
-      [
-        "property_manager",
-        "leasing_agent",
-        "maintenance_supervisor",
-        "tenant_coordinator",
-      ]
-    property_manager:
-      ["leasing_agent", "maintenance_supervisor", "tenant_coordinator"]
-    maintenance_supervisor: ["maintenance_technician", "inspector", "team_lead"]
-    team_lead: ["team_member"]
+  endpoints:
+    "/api/v1/users":
+      GET: "USER_LIST"
+      POST: "USER_CREATE"
+    "/api/v1/users/{id}":
+      GET: "USER_READ"
+      PUT: "USER_UPDATE"
+      DELETE: "USER_DELETE"
+    "/api/v1/organizations":
+      GET: "ORGANIZATION_LIST"
+      POST: "ORGANIZATION_CREATE"
+    "/api/v1/organizations/{id}":
+      GET: "ORGANIZATION_READ"
+      PUT: "ORGANIZATION_UPDATE"
+      DELETE: "ORGANIZATION_DELETE"
+    "/api/v1/properties":
+      GET: "PROPERTY_LIST"
+      POST: "PROPERTY_CREATE"
+    "/api/v1/properties/{id}":
+      GET: "PROPERTY_READ"
+      PUT: "PROPERTY_UPDATE"
+      DELETE: "PROPERTY_DELETE"
 
   # ============================================================================
-  # ROLE TRANSITIONS - Allowed role changes without approval
+  # TIME RESTRICTIONS - Restrict access by time-of-day and day-of-week
   # ============================================================================
-  roleTransitions:
-    applicant: ["tenant"]
-    tenant: []
-    team_member: ["team_lead"]
-    maintenance_technician: ["maintenance_supervisor"]
-    leasing_agent: ["property_manager"]
-    inspector: ["maintenance_supervisor"]
-
-  # ============================================================================
-  # AUTO-ASSIGNMENT RULES
-  # ============================================================================
-  autoAssignmentRules:
-    newTenant:
-      role: "tenant"
-      scope: "self"
-      condition: "leaseActive"
-
-    newApplicant:
-      role: "applicant"
-      scope: "self"
-      condition: "applicationSubmitted"
-
-    firstOrgUser:
-      role: "organization_owner"
-      scope: "organization"
-      condition: "firstUserInOrganization"
-
-    invitedVendor:
-      role: "vendor"
-      scope: "self"
-      condition: "vendorInvitation"
+  timeRestrictions:
+    MAINTENANCE_TECHNICIAN:
+      activeHours: "06:00-22:00"
+      activeDays: ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
+      timezone: "America/New_York"
+    LEASING_AGENT:
+      activeHours: "08:00-20:00"
+      activeDays: ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
+      timezone: "America/New_York"
+    ACCOUNTANT:
+      activeHours: "07:00-19:00"
+      activeDays: ["MON", "TUE", "WED", "THU", "FRI"]
+      timezone: "America/New_York"
 
   # ============================================================================
-  # DEPRECATION NOTICES
+  # FIELD-LEVEL PERMISSIONS - Control which fields are visible per role
   # ============================================================================
-  deprecatedRoles:
-    LANDLORD:
-      replacedBy: "organization_owner"
-      deprecatedDate: "2025-12-18"
-      removalDate: "2026-06-18"
-      autoMigrate: true
-
-    SUPERADMIN:
-      replacedBy: "platform_oversight"
-      deprecatedDate: "2025-12-18"
-      removalDate: "2026-06-18"
-      autoMigrate: true
-
-    OPERATIONS_ADMIN:
-      replacedBy: "platform_operations"
-      deprecatedDate: "2025-12-18"
-      removalDate: "2026-06-18"
-      autoMigrate: true
+  fieldLevelPermissions:
+    tenant:
+      PLATFORM_OVERSIGHT:
+        visible:
+          [
+            "name",
+            "email",
+            "phone",
+            "lease_info",
+            "payment_status",
+            "ssn",
+            "bank_account",
+            "credit_score",
+          ]
+      ORGANIZATION_OWNER:
+        visible:
+          [
+            "name",
+            "email",
+            "phone",
+            "lease_info",
+            "payment_status",
+            "credit_score",
+          ]
+        hidden: ["ssn", "bank_account"]
+      PROPERTY_MANAGER:
+        visible: ["name", "email", "phone", "lease_info", "payment_status"]
+        hidden: ["ssn", "bank_account", "credit_score"]
+      LEASING_AGENT:
+        visible: ["name", "email", "phone", "rental_application"]
+        hidden: ["ssn", "bank_account", "payment_history", "credit_score"]
+      ACCOUNTANT:
+        visible: ["name", "payment_status", "balance", "payment_history"]
+        hidden: ["ssn", "credit_score", "phone"]
+      MAINTENANCE_TECHNICIAN:
+        visible: ["name", "phone", "unit_number"]
+        hidden:
+          [
+            "ssn",
+            "bank_account",
+            "credit_score",
+            "payment_status",
+            "payment_history",
+            "email",
+          ]
+    property:
+      PLATFORM_OVERSIGHT:
+        visible:
+          [
+            "address",
+            "name",
+            "units",
+            "status",
+            "purchase_price",
+            "current_value",
+            "private_notes",
+            "target_rent",
+          ]
+      ORGANIZATION_OWNER:
+        visible:
+          [
+            "address",
+            "name",
+            "units",
+            "status",
+            "purchase_price",
+            "current_value",
+            "private_notes",
+            "target_rent",
+          ]
+      PROPERTY_MANAGER:
+        visible:
+          ["address", "name", "units", "status", "target_rent", "private_notes"]
+        hidden: ["purchase_price", "current_value"]
+      LEASING_AGENT:
+        visible: ["address", "name", "units", "status", "availability"]
+        hidden:
+          ["purchase_price", "current_value", "private_notes", "target_rent"]
+      ACCOUNTANT:
+        visible:
+          ["address", "name", "purchase_price", "current_value", "rent_roll"]
+        hidden: ["private_notes", "target_rent"]
+      MAINTENANCE_TECHNICIAN:
+        visible: ["address", "name", "units", "condition"]
+        hidden:
+          ["purchase_price", "current_value", "private_notes", "target_rent"]
 
   # ============================================================================
-  # METADATA
+  # DATA SCOPES - Row-Level Security (which records a role can access)
   # ============================================================================
-  metadata:
-    totalRoles: 28
-    totalPermissionTemplates: 72
-    totalResources: 21
-    lastReviewed: "2025-12-18"
-    reviewedBy: "System Architect"
-    nextReview: "2026-03-18"
-    version: "5.0"
-    status: "production"
+  dataScopes:
+    PROPERTY_MANAGER:
+      property: "assigned_portfolio"
+      tenant: "own_properties"
+      maintenance: "own_properties"
+      lease: "own_properties"
+    LEASING_AGENT:
+      property: "own_region"
+      tenant: "own_region"
+      lease: "own_properties"
+    MAINTENANCE_SUPERVISOR:
+      property: "own_properties"
+      maintenance: "own_properties"
+    MAINTENANCE_TECHNICIAN:
+      maintenance: "self_only"
+      property: "own_properties"
+    ACCOUNTANT:
+      payment: "own_organization"
+      invoice: "own_organization"
+    TENANT:
+      lease: "self_only"
+      payment: "self_only"
+      maintenance: "self_only"
+
+  # ============================================================================
+  # CONDITIONAL PERMISSIONS - Amount and value limits per role
+  # ============================================================================
+  conditionalPermissions:
+    PROPERTY_MANAGER:
+      "payment:approve":
+        max_amount: 5000
+      "maintenance:approve":
+        max_cost: 2500
+    ORGANIZATION_ADMIN:
+      "payment:approve":
+        max_amount: 25000
+        requires_secondary_approval_above: 10000
+    MAINTENANCE_SUPERVISOR:
+      "maintenance:approve":
+        max_cost: 10000
+    ACCOUNTANT:
+      "payment:approve":
+        max_amount: 10000
+
+  # ============================================================================
+  # DYNAMIC ROLE COMPOSITION - Context-based role activation
+  # ============================================================================
+  dynamicRoleComposition:
+    ORGANIZATION_OWNER:
+      activateWhen:
+        org_status: "ACTIVE"
+        user_verified: true
+      additionalRoles:
+        - "FINANCIAL_ANALYST"
+    PORTFOLIO_OWNER:
+      conditions:
+        subscription_plan: ["PREMIUM", "ENTERPRISE"]
+      additionalRoles:
+        - "ANALYTICS_VIEWER"

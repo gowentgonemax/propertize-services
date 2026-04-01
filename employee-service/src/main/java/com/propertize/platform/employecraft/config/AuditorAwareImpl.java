@@ -25,9 +25,10 @@ public class AuditorAwareImpl implements AuditorAware<String> {
 
         Object principal = authentication.getPrincipal();
         if (principal instanceof GatewayAuthenticatedUser user) {
-            return Optional.of(user.getUsername());
+            String username = user.getUsername();
+            return Optional.of(username != null ? username : user.getUserId());
         }
 
-        return Optional.of(authentication.getName());
+        return Optional.ofNullable(authentication.getName()).or(() -> Optional.of("system"));
     }
 }

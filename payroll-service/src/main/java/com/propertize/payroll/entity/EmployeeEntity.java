@@ -148,8 +148,8 @@ public class EmployeeEntity extends BaseEntity {
     @JoinColumn(name = "position_id")
     private PositionEntity position;
 
-    @Column(length = 100)
-    private String departmentId;
+    @Column(name = "department_id")
+    private UUID departmentId;
 
     @Column(length = 100)
     private String departmentName;

@@ -51,7 +51,9 @@ public class AuthServiceAntiCorruptionLayer {
             var authUser = authServiceClient.getUserById(userId);
             if (authUser == null)
                 return false;
-            return mapAuthRolesToEmployeePermissions(authUser.getRoles()).contains(permission);
+            return mapAuthRolesToEmployeePermissions(
+                    authUser.getRoles() != null ? authUser.getRoles() : java.util.Collections.emptySet())
+                    .contains(permission);
         } catch (Exception e) {
             log.error("ACL: Permission check failed for user {}: {}", userId, e.getMessage());
             return false;

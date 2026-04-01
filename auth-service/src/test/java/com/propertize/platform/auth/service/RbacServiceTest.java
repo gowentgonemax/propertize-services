@@ -583,6 +583,111 @@ class RbacServiceTest {
         }
     }
 
+    // ==================== getExplicitDenialsForRoles ====================
+
+    @Nested
+    @DisplayName("getExplicitDenialsForRoles Tests")
+    class GetExplicitDenialsForRolesTests {
+
+        @Test
+        @DisplayName("Should return empty set when roles is null")
+        void testNullRoles() {
+            Set<String> result = rbacService.getExplicitDenialsForRoles(null);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should return empty set when roles is empty")
+        void testEmptyRoles() {
+            Set<String> result = rbacService.getExplicitDenialsForRoles(Collections.emptySet());
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should return empty set when rbacConfig.getRoles() is null")
+        void testNullRolesConfig() {
+            when(rbacConfig.getRoles()).thenReturn(null);
+            Set<String> result = rbacService.getExplicitDenialsForRoles(Set.of("ORGANIZATION_OWNER"));
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should return denials for a role with explicit denials configured")
+        void testRoleWithExplicitDenials() {
+            RbacConfig.RoleConfig cfg = new RbacConfig.RoleConfig();
+            cfg.setExplicitDenials(List.of("EMPLOYEE_MANAGE", "PAYROLL_MANAGE", "EMPLOYEE_CREATE"));
+            rolesMap.put("ORGANIZATION_OWNER", cfg);
+            when(rbacConfig.getRoles()).thenReturn(rolesMap);
+
+            Set<String> denials = rbacService.getExplicitDenialsForRoles(Set.of("ORGANIZATION_OWNER"));
+
+            assertEquals(3, denials.size());
+            assertTrue(denials.contains("EMPLOYEE_MANAGE"));
+            assertTrue(denials.contains("PAYROLL_MANAGE"));
+            assertTrue(denials.contains("EMPLOYEE_CREATE"));
+        }
+
+        @Test
+        @DisplayName("Should union denials across multiple roles")
+        void testMultipleRolesDenialsUnioned() {
+            RbacConfig.RoleConfig ownerCfg = new RbacConfig.RoleConfig();
+            ownerCfg.setExplicitDenials(List.of("EMPLOYEE_MANAGE", "PAYROLL_MANAGE"));
+
+            RbacConfig.RoleConfig adminCfg = new RbacConfig.RoleConfig();
+            adminCfg.setExplicitDenials(List.of("ORGANIZATION_DELETE", "PAYROLL_MANAGE"));
+
+            rolesMap.put("ORGANIZATION_OWNER", ownerCfg);
+            rolesMap.put("ORGANIZATION_ADMIN", adminCfg);
+            when(rbacConfig.getRoles()).thenReturn(rolesMap);
+
+            Set<String> denials = rbacService.getExplicitDenialsForRoles(
+                    Set.of("ORGANIZATION_OWNER", "ORGANIZATION_ADMIN"));
+
+            assertEquals(3, denials.size(), "Duplicate PAYROLL_MANAGE should appear once");
+            assertTrue(denials.contains("EMPLOYEE_MANAGE"));
+            assertTrue(denials.contains("PAYROLL_MANAGE"));
+            assertTrue(denials.contains("ORGANIZATION_DELETE"));
+        }
+
+        @Test
+        @DisplayName("Should return empty set for a role with no explicit denials")
+        void testRoleWithNoExplicitDenials() {
+            RbacConfig.RoleConfig cfg = new RbacConfig.RoleConfig();
+            cfg.setExplicitDenials(null);
+            rolesMap.put("TEAM_MEMBER", cfg);
+            when(rbacConfig.getRoles()).thenReturn(rolesMap);
+
+            Set<String> result = rbacService.getExplicitDenialsForRoles(Set.of("TEAM_MEMBER"));
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        @DisplayName("Should ignore blank/null entries in the denials list")
+        void testBlankEntriesIgnored() {
+            RbacConfig.RoleConfig cfg = new RbacConfig.RoleConfig();
+            cfg.setExplicitDenials(Arrays.asList("EMPLOYEE_MANAGE", "  ", null, "PAYROLL_MANAGE"));
+            rolesMap.put("SOLO_OWNER", cfg);
+            when(rbacConfig.getRoles()).thenReturn(rolesMap);
+
+            Set<String> denials = rbacService.getExplicitDenialsForRoles(Set.of("SOLO_OWNER"));
+            assertEquals(2, denials.size());
+            assertFalse(denials.contains("  "));
+            assertFalse(denials.contains(null));
+        }
+
+        @Test
+        @DisplayName("Returned set should be unmodifiable")
+        void testReturnedSetIsUnmodifiable() {
+            RbacConfig.RoleConfig cfg = new RbacConfig.RoleConfig();
+            cfg.setExplicitDenials(List.of("EMPLOYEE_MANAGE"));
+            rolesMap.put("ORGANIZATION_OWNER", cfg);
+            when(rbacConfig.getRoles()).thenReturn(rolesMap);
+
+            Set<String> denials = rbacService.getExplicitDenialsForRoles(Set.of("ORGANIZATION_OWNER"));
+            assertThrows(UnsupportedOperationException.class, () -> denials.add("SOMETHING"));
+        }
+    }
+
     // ==================== Helpers ====================
 
     private void setSecurityContext(String username, List<String> authorities) {

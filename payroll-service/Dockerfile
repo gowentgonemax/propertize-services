@@ -7,10 +7,14 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
-COPY pom.xml .
-RUN mvn dependency:go-offline -q
+# Build commons dependency first
+COPY propertize-commons/pom.xml propertize-commons/pom.xml
+COPY propertize-commons/src propertize-commons/src
+RUN cd propertize-commons && mvn install -DskipTests -q
 
-COPY src ./src
+# Build payroll service
+COPY payroll-service/pom.xml .
+COPY payroll-service/src ./src
 RUN mvn package -DskipTests -q
 
 # ---- Runtime Stage ----

@@ -3,6 +3,9 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: payroll-service
+  threads:
+    virtual:
+      enabled: ${VIRTUAL_THREADS_ENABLED:true} # Java 21 — feature-flagged for rollback
   session:
     store-type: none
   jackson:
@@ -117,6 +120,8 @@ security:
   gateway:
     # Expected value of X-Gateway-Source header
     expected-value: api-gateway
+    # HMAC secret for verifying gateway-forwarded headers (must match api-gateway)
+    hmac-secret: ${GATEWAY_HMAC_SECRET:}
   # Set to 'trusted-gateway' for production, 'hybrid' for development
   mode: ${SECURITY_MODE:hybrid}
 
@@ -169,6 +174,14 @@ resilience4j:
         waitDuration: 1s
         enableExponentialBackoff: true
         exponentialBackoffMultiplier: 2
+      employecraft:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - feign.RetryableException
+          - java.net.ConnectException
   circuitbreaker:
     instances:
       default:
@@ -179,9 +192,20 @@ resilience4j:
         minimumNumberOfCalls: 5
         waitDurationInOpenState: 30s
         failureRateThreshold: 50
+      employecraft:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 20s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 2s
 
 server:
   port: ${SERVER_PORT:8085}
+  max-http-request-header-size: 65536
   servlet:
     context-path: /
   compression:

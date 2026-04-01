@@ -4,7 +4,6 @@ import com.propertize.platform.employecraft.entity.Employee;
 import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,48 +17,52 @@ import java.util.UUID;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
 
-        @EntityGraph(attributePaths = { "department", "manager" })
-        Page<Employee> findByOrganizationId(UUID organizationId, Pageable pageable);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid)")
+        Page<Employee> findByOrganizationId(@Param("orgId") String orgId, Pageable pageable);
 
-        List<Employee> findByOrganizationIdAndStatus(UUID organizationId, EmployeeStatusEnum status);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.status = :status")
+        List<Employee> findByOrganizationIdAndStatus(@Param("orgId") String orgId,
+                        @Param("status") EmployeeStatusEnum status);
 
-        @EntityGraph(attributePaths = { "department", "manager" })
-        Optional<Employee> findByIdAndOrganizationId(UUID id, UUID organizationId);
+        @Query("SELECT e FROM Employee e WHERE e.id = CAST(:id AS uuid) AND e.organizationId = CAST(:orgId AS uuid)")
+        Optional<Employee> findByIdAndOrganizationId(@Param("id") String id, @Param("orgId") String orgId);
 
-        Optional<Employee> findByEmployeeNumberAndOrganizationId(String employeeNumber, UUID organizationId);
+        @Query("SELECT e FROM Employee e WHERE e.employeeNumber = :empNum AND e.organizationId = CAST(:orgId AS uuid)")
+        Optional<Employee> findByEmployeeNumberAndOrganizationId(@Param("empNum") String employeeNumber,
+                        @Param("orgId") String orgId);
 
-        Optional<Employee> findByEmailAndOrganizationId(String email, UUID organizationId);
+        @Query("SELECT e FROM Employee e WHERE e.email = :email AND e.organizationId = CAST(:orgId AS uuid)")
+        Optional<Employee> findByEmailAndOrganizationId(@Param("email") String email, @Param("orgId") String orgId);
 
         Optional<Employee> findByUserId(Long userId);
 
-        Optional<Employee> findByUserIdAndOrganizationId(Long userId, UUID organizationId);
+        @Query("SELECT e FROM Employee e WHERE e.userId = :userId AND e.organizationId = CAST(:orgId AS uuid)")
+        Optional<Employee> findByUserIdAndOrganizationId(@Param("userId") Long userId, @Param("orgId") String orgId);
 
-        boolean existsByEmployeeNumberAndOrganizationId(String employeeNumber, UUID organizationId);
+        @Query("SELECT COUNT(e) FROM Employee e WHERE e.employeeNumber = :empNum AND e.organizationId = CAST(:orgId AS uuid)")
+        long countByEmployeeNumberAndOrganizationId(@Param("empNum") String employeeNumber,
+                        @Param("orgId") String orgId);
 
-        boolean existsByEmailAndOrganizationId(String email, UUID organizationId);
+        @Query("SELECT COUNT(e) FROM Employee e WHERE e.email = :email AND e.organizationId = CAST(:orgId AS uuid)")
+        long countByEmailAndOrganizationId(@Param("email") String email, @Param("orgId") String orgId);
 
-        @Query("SELECT COUNT(e) FROM Employee e WHERE e.organizationId = :orgId AND e.status = :status")
-        long countByOrganizationIdAndStatus(@Param("orgId") UUID organizationId,
+        @Query("SELECT COUNT(e) FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.status = :status")
+        long countByOrganizationIdAndStatus(@Param("orgId") String orgId,
                         @Param("status") EmployeeStatusEnum status);
 
-        @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.department.id = :deptId")
-        List<Employee> findByOrganizationIdAndDepartmentId(@Param("orgId") UUID organizationId,
-                        @Param("deptId") UUID departmentId);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.department.id = CAST(:deptId AS uuid)")
+        List<Employee> findByOrganizationIdAndDepartmentId(@Param("orgId") String orgId,
+                        @Param("deptId") String departmentId);
 
-        @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.manager.id = :managerId")
-        List<Employee> findByOrganizationIdAndManagerId(@Param("orgId") UUID organizationId,
-                        @Param("managerId") UUID managerId);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.manager.id = CAST(:managerId AS uuid)")
+        List<Employee> findByOrganizationIdAndManagerId(@Param("orgId") String orgId,
+                        @Param("managerId") String managerId);
 
-        /**
-         * Find employees modified after a given timestamp (for incremental sync).
-         */
-        Page<Employee> findByOrganizationIdAndUpdatedAtAfter(UUID organizationId, LocalDateTime since,
-                        Pageable pageable);
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.updatedAt > :since")
+        Page<Employee> findByOrganizationIdAndUpdatedAtAfter(@Param("orgId") String orgId,
+                        @Param("since") LocalDateTime since, Pageable pageable);
 
-        /**
-         * Find all active employees for payroll summary.
-         */
-        @Query("SELECT e FROM Employee e WHERE e.organizationId = :orgId AND e.status IN :statuses")
-        List<Employee> findByOrganizationIdAndStatusIn(@Param("orgId") UUID organizationId,
+        @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.status IN :statuses")
+        List<Employee> findByOrganizationIdAndStatusIn(@Param("orgId") String orgId,
                         @Param("statuses") List<EmployeeStatusEnum> statuses);
 }

@@ -17,12 +17,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * InternalRequestAuthFilter — establishes a Spring Security principal for
@@ -55,6 +59,13 @@ public class InternalRequestAuthFilter extends OncePerRequestFilter {
     @Value("${service.authentication.apiKey:}")
     private String serviceApiKey;
 
+    /**
+     * Shared secret for HMAC gateway header verification. Empty = verification
+     * skipped.
+     */
+    @Value("${security.gateway.hmac-secret:}")
+    private String hmacSecret;
+
     // Paths that are completely open — SecurityConfig already permits them, but
     // listed here so the filter knows not to attempt to set a principal.
     private static final Set<String> SKIP_PATHS = Set.of(
@@ -67,14 +78,19 @@ public class InternalRequestAuthFilter extends OncePerRequestFilter {
             "/.well-known/jwks.json",
             "/api/health",
             "/actuator/health",
-            "/actuator/health/liveness");
+            "/actuator/health/liveness",
+            "/swagger-ui.html");
 
     private static final Set<String> SKIP_PATH_PREFIXES = Set.of(
             "/api/v1/rbac/",
             "/api/v1/auth/rbac/",
             "/api/v1/auth/roles",
             "/api/v1/auth/permissions/all",
-            "/actuator/health");
+            "/actuator/health",
+            "/swagger-ui/",
+            "/v3/api-docs",
+            "/api-docs",
+            "/webjars/");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -111,6 +127,17 @@ public class InternalRequestAuthFilter extends OncePerRequestFilter {
 
         if (GATEWAY_SOURCE_VALUE.equals(gatewaySource) && rolesHeader != null && !rolesHeader.isBlank()) {
             String userId = request.getHeader(USER_ID_HEADER);
+
+            // Verify HMAC signature when configured
+            if (!hmacSecret.isBlank()) {
+                String signature = request.getHeader("X-Gateway-Signature");
+                if (!isValidGatewaySignature(signature, userId, rolesHeader)) {
+                    log.warn("Invalid or missing gateway HMAC signature for path={}", path);
+                    sendUnauthorized(response, "Invalid gateway signature");
+                    return;
+                }
+            }
+
             List<SimpleGrantedAuthority> authorities = parseRoles(rolesHeader);
             log.debug("Gateway-forwarded request: userId={}, roles={}, path={}", userId, rolesHeader, path);
             setUserAuthentication(userId != null ? userId : "unknown", authorities);
@@ -173,5 +200,29 @@ public class InternalRequestAuthFilter extends OncePerRequestFilter {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(
                 "{\"success\":false,\"error\":\"" + message + "\",\"status\":401}");
+    }
+
+    private boolean isValidGatewaySignature(String signature, String userId, String roles) {
+        if (signature == null || userId == null) {
+            return false;
+        }
+        long epochMinutes = Instant.now().getEpochSecond() / 60;
+        return signature.equals(computeHmac(userId + ":" + roles + ":" + epochMinutes))
+                || signature.equals(computeHmac(userId + ":" + roles + ":" + (epochMinutes - 1)));
+    }
+
+    private String computeHmac(String payload) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(hmacSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] raw = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(raw.length * 2);
+            for (byte b : raw)
+                sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            log.error("HMAC computation failed", e);
+            return "";
+        }
     }
 }

@@ -47,6 +47,7 @@ public class UserManagementService {
                 .phoneNumber(request.getPhoneNumber())
                 .organizationId(request.getOrganizationId())
                 .organizationCode(request.getOrganizationCode())
+                .organizationType(request.getOrganizationType())
                 .roles(request.getRoles() != null ? request.getRoles() : new HashSet<>())
                 .enabled(request.getEnabled() != null ? request.getEnabled() : true)
                 .accountNonExpired(true)

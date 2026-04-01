@@ -3,8 +3,8 @@ package com.propertize.platform.auth.config;
 import com.propertize.platform.auth.entity.User;
 import com.propertize.enums.UserRoleEnum;
 import com.propertize.platform.auth.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,21 +20,27 @@ import java.util.Set;
  * This ensures there's always at least one admin user available for system
  * access.
  * 
- * User credentials:
- * - Username: admin
- * - Password: password (CHANGE IN PRODUCTION!)
- * - Role: PLATFORM_OVERSIGHT
+ * Override the default password via ADMIN_DEFAULT_PASSWORD environment
+ * variable.
  * 
  * @author Propertize Platform
  * @since February 2026
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class DefaultUserInitializer implements ApplicationRunner {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String adminDefaultPassword;
+
+    public DefaultUserInitializer(UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            @Value("${admin.default-password:#{T(java.util.UUID).randomUUID().toString()}}") String adminDefaultPassword) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.adminDefaultPassword = adminDefaultPassword;
+    }
 
     @Override
     @Transactional
@@ -46,7 +52,7 @@ public class DefaultUserInitializer implements ApplicationRunner {
             createDefaultUser(
                     "admin",
                     "admin@propertize.com",
-                    "password",
+                    adminDefaultPassword,
                     "Admin",
                     "User",
                     Set.of(UserRoleEnum.PLATFORM_OVERSIGHT));

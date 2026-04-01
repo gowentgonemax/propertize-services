@@ -22,16 +22,20 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+
 /**
  * Security Configuration for Wagecraft
  *
  * This configuration uses Gateway Authentication:
- * - API Gateway validates JWT and propagates user context via headers (X-User-Id, X-Organization-Id, X-Roles)
+ * - API Gateway validates JWT and propagates user context via headers
+ * (X-User-Id, X-Organization-Id, X-Roles)
  * - TrustedGatewayHeaderFilter extracts user info from trusted gateway headers
  * - All authentication is handled centrally by auth-service via API Gateway
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final TrustedGatewayHeaderFilter trustedGatewayHeaderFilter;
@@ -43,19 +47,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-            .exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, authException) -> {
-                response.setContentType("application/json");
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getOutputStream().println("{ \"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\" }");
-            }))
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/error", "/v3/api-docs/**", "/swagger-ui/**", "/actuator/**").permitAll()
-                .anyRequest().authenticated())
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // Gateway header filter - authenticates requests from API Gateway
-            .addFilterBefore(trustedGatewayHeaderFilter, UsernamePasswordAuthenticationFilter.class);
+                .exceptionHandling(
+                        exception -> exception.authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getOutputStream().println("{ \"error\": \"Unauthorized\", \"message\": \""
+                                    + authException.getMessage() + "\" }");
+                        }))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/", "/error", "/swagger-ui.html", "/swagger-ui/**",
+                                "/v3/api-docs", "/v3/api-docs/**", "/webjars/**", "/actuator/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Gateway header filter - authenticates requests from API Gateway
+                .addFilterBefore(trustedGatewayHeaderFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -64,15 +72,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:3002"
-        ));
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://localhost:3002"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

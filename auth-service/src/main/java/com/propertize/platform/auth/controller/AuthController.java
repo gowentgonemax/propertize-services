@@ -2,6 +2,7 @@ package com.propertize.platform.auth.controller;
 
 import com.propertize.platform.auth.dto.*;
 import com.propertize.platform.auth.entity.User;
+import com.propertize.platform.auth.repository.UserCustomRoleAssignmentRepository;
 import com.propertize.platform.auth.repository.UserRepository;
 import com.propertize.platform.auth.security.JwtTokenProvider;
 import com.propertize.platform.auth.service.*;
@@ -43,12 +44,14 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
+    private final UserCustomRoleAssignmentRepository userCustomRoleAssignmentRepository;
     private final PasswordResetService passwordResetService;
     private final RateLimitService rateLimitService;
     private final SessionManagementService sessionService;
     private final RbacService rbacService;
     private final PasswordEncoder passwordEncoder;
     private final TokenBlacklistService tokenBlacklistService;
+    private final PermissionCacheService permissionCacheService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request,
@@ -139,13 +142,47 @@ public class AuthController {
                     .flatMap(role -> rbacService.getBasePermissionsForRole(role).stream())
                     .collect(Collectors.toSet());
 
-            log.info("📋 Collected {} base permissions for JWT token (user: {})", permissions.size(), username);
+            // Add permissions from any custom roles assigned to this user (Phase 3)
+            try {
+                userCustomRoleAssignmentRepository
+                        .findByUserIdAndIsActiveTrueWithRole(user.getId())
+                        .forEach(assignment -> {
+                            roles.add(assignment.getRbacRole().getRoleName());
+                            permissions.addAll(assignment.getRbacRole().getPermissionSet());
+                        });
+            } catch (Exception ex) {
+                log.warn("⚠️ Could not load custom role assignments for {}: {}", username, ex.getMessage());
+            }
+
+            // Apply explicit denials — roles may explicitly block certain permissions
+            Set<String> deniedPerms = rbacService.getExplicitDenialsForRoles(roles);
+            permissions.removeAll(deniedPerms);
+            if (!deniedPerms.isEmpty()) {
+                log.info("🚫 Removed {} explicitly-denied permissions for user {} (denied: {})",
+                        deniedPerms.size(), username, deniedPerms);
+            }
+
+            log.info("📋 Collected {} effective permissions for JWT token (user: {})", permissions.size(), username);
 
             // Generate tokens
             String accessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
                     username, roles, organizationId,
-                    organizationCode, permissions);
+                    organizationCode, permissions, user.getOrganizationType());
             String refreshToken = jwtTokenProvider.generateRefreshToken(user);
+
+            // Cache permissions in Redis (JWT no longer carries permissions list)
+            String jti = jwtTokenProvider.getJtiFromToken(accessToken);
+            if (jti != null) {
+                permissionCacheService.cachePermissions(jti, permissions);
+            }
+
+            // Store refresh token for rotation tracking
+            try {
+                tokenBlacklistService.storeRefreshToken(refreshToken, username,
+                        7L * 24 * 3600); // 7 days
+            } catch (Exception e) {
+                log.warn("⚠️ Failed to store refresh token in Redis: {}", e.getMessage());
+            }
 
             log.info("✅ User '{}' logged in successfully with roles: {}", username, roles);
 
@@ -187,9 +224,17 @@ public class AuthController {
         log.info("Token refresh attempt");
 
         try {
-            String username = jwtTokenProvider.getUsernameFromToken(request.getRefreshToken());
+            String refreshToken = request.getRefreshToken();
 
-            if (!jwtTokenProvider.validateToken(request.getRefreshToken())) {
+            // ── Token Rotation: Reject reused refresh tokens ──────────────────
+            if (tokenBlacklistService.isRefreshTokenUsed(refreshToken)) {
+                log.warn("❌ Refresh token replay detected — token already used");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
+
+            if (!jwtTokenProvider.validateToken(refreshToken)) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
@@ -199,7 +244,8 @@ public class AuthController {
             }
 
             User user = userOpt.get();
-            Set<String> roles = user.getRoles().stream()
+            Set<String> roles = (user.getRoles() != null ? user.getRoles()
+                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
                     .map(role -> role.name())
                     .collect(Collectors.toSet());
 
@@ -215,10 +261,42 @@ public class AuthController {
                     .flatMap(role -> rbacService.getBasePermissionsForRole(role).stream())
                     .collect(Collectors.toSet());
 
+            // Add custom role permissions (Phase 3)
+            try {
+                userCustomRoleAssignmentRepository
+                        .findByUserIdAndIsActiveTrueWithRole(user.getId())
+                        .forEach(assignment -> {
+                            roles.add(assignment.getRbacRole().getRoleName());
+                            permissions.addAll(assignment.getRbacRole().getPermissionSet());
+                        });
+            } catch (Exception ex) {
+                log.warn("⚠️ Could not load custom role assignments for {}: {}", username, ex.getMessage());
+            }
+
+            // Apply explicit denials
+            Set<String> deniedPermsRefresh = rbacService.getExplicitDenialsForRoles(roles);
+            permissions.removeAll(deniedPermsRefresh);
+
+            // Generate new tokens (rotation: old refresh token is revoked, new one issued)
             String newAccessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
                     username, roles, organizationId,
-                    organizationCode, permissions);
+                    organizationCode, permissions, user.getOrganizationType());
             String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
+
+            // ── Token Rotation: Revoke old refresh token, store new one ──────
+            try {
+                tokenBlacklistService.revokeRefreshToken(refreshToken);
+                tokenBlacklistService.storeRefreshToken(newRefreshToken, username, 7L * 24 * 3600);
+                log.debug("🔄 Refresh token rotated for user: {}", username);
+            } catch (Exception e) {
+                log.warn("⚠️ Refresh token rotation tracking failed: {}", e.getMessage());
+            }
+
+            // Cache permissions for new access token (permissions excluded from JWT)
+            String newJti = jwtTokenProvider.getJtiFromToken(newAccessToken);
+            if (newJti != null) {
+                permissionCacheService.cachePermissions(newJti, permissions);
+            }
 
             log.info("✅ Token refreshed for user: {}", username);
 
@@ -249,8 +327,25 @@ public class AuthController {
                 String token = authHeader.substring(7);
                 username = jwtTokenProvider.getUsernameFromToken(token);
                 tokenBlacklistService.blacklistToken(token, 86400); // 24 hours
+
+                // Evict the permissions cache for this token's jti
+                String jti = jwtTokenProvider.getJtiFromToken(token);
+                if (jti != null) {
+                    permissionCacheService.evictPermissions(jti);
+                    tokenBlacklistService.blacklistByJti(jti, 86400, "logout");
+                }
             } catch (Exception e) {
                 log.warn("Failed to extract username from token: {}", e.getMessage());
+            }
+        }
+
+        // Revoke the refresh token if provided
+        String refreshTokenToRevoke = requestBody != null ? requestBody.get("refreshToken") : null;
+        if (refreshTokenToRevoke != null && !refreshTokenToRevoke.isBlank()) {
+            try {
+                tokenBlacklistService.revokeRefreshToken(refreshTokenToRevoke);
+            } catch (Exception e) {
+                log.warn("Failed to revoke refresh token on logout: {}", e.getMessage());
             }
         }
 
@@ -429,7 +524,8 @@ public class AuthController {
             }
 
             User user = userOpt.get();
-            Set<String> roles = user.getRoles().stream()
+            Set<String> roles = (user.getRoles() != null ? user.getRoles()
+                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
                     .map(Enum::name)
                     .collect(Collectors.toSet());
 
@@ -508,7 +604,9 @@ public class AuthController {
             log.info("✅ PUT /api/v1/auth/me — updated profile for user: {}", username);
 
             // Return updated profile
-            Set<String> roles = user.getRoles().stream().map(Enum::name).collect(Collectors.toSet());
+            Set<String> roles = (user.getRoles() != null ? user.getRoles()
+                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                    .map(Enum::name).collect(Collectors.toSet());
             Map<String, Object> profile = new HashMap<>();
             profile.put("id", user.getId());
             profile.put("username", user.getUsername());
@@ -563,23 +661,49 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
 
-            Set<String> roles = user.getRoles().stream()
+            Set<String> roles = (user.getRoles() != null ? user.getRoles()
+                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
                     .map(Enum::name)
                     .collect(Collectors.toSet());
+
+            // ── P6: applicableOrgTypes enforcement ──────────────────────────
+            // Warn (non-blocking) if any assigned roles are incompatible with the target
+            // org's type. Future versions may enforce this as a hard rejection.
+            String targetOrgType = user.getOrganizationType();
+            if (targetOrgType != null && !targetOrgType.isBlank()) {
+                roles.forEach(roleName -> {
+                    var roleCfg = rbacService.getRoleConfig(roleName);
+                    if (roleCfg != null && roleCfg.getApplicableOrgTypes() != null
+                            && !roleCfg.getApplicableOrgTypes().isEmpty()
+                            && !roleCfg.getApplicableOrgTypes().contains(targetOrgType)) {
+                        log.warn("⚠️ Role {} has applicableOrgTypes={} but target org type is {} (user={})",
+                                roleName, roleCfg.getApplicableOrgTypes(), targetOrgType, username);
+                    }
+                });
+            }
 
             Set<String> permissions = roles.stream()
                     .flatMap(role -> rbacService.getBasePermissionsForRole(role).stream())
                     .collect(Collectors.toSet());
 
-            // Determine org code — use existing if same org, otherwise use orgId as
-            // fallback
+            // Apply explicit denials
+            Set<String> deniedPermsSwitch = rbacService.getExplicitDenialsForRoles(roles);
+            permissions.removeAll(deniedPermsSwitch);
+
+            // Determine org code — use existing if same org, otherwise use orgId as fallback
             String organizationCode = (user.getOrganizationCode() != null && !user.getOrganizationCode().isBlank())
                     ? user.getOrganizationCode()
                     : targetOrgId;
 
             String newAccessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    username, roles, targetOrgId, organizationCode, permissions);
+                    username, roles, targetOrgId, organizationCode, permissions, user.getOrganizationType());
             String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
+
+            // Cache permissions for new access token (permissions excluded from JWT)
+            String switchJti = jwtTokenProvider.getJtiFromToken(newAccessToken);
+            if (switchJti != null) {
+                permissionCacheService.cachePermissions(switchJti, permissions);
+            }
 
             log.info("✅ Organization switched to {} for user: {}", targetOrgId, username);
 

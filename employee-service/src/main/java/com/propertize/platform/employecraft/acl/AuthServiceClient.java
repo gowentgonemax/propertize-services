@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * Part of the Anti-Corruption Layer — only used by
  * AuthServiceAntiCorruptionLayer.
  */
-@FeignClient(name = "auth-service", url = "${services.auth.url:http://localhost:8084}", path = "/api/v1/users")
+@FeignClient(name = "auth-service", url = "${services.auth.url:http://localhost:8081}", path = "/api/v1/users")
 public interface AuthServiceClient {
 
     @GetMapping("/{userId}")

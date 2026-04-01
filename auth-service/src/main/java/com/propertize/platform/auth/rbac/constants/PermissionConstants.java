@@ -271,4 +271,30 @@ public final class PermissionConstants {
         private Communication() {
         }
     }
+
+    public static final class Employee {
+        public static final String CREATE = "employee:create";
+        public static final String READ = "employee:read";
+        public static final String UPDATE = "employee:update";
+        public static final String DELETE = "employee:delete";
+        public static final String LIST = "employee:list";
+        public static final String MANAGE = "employee:manage";
+
+        private Employee() {
+        }
+    }
+
+    public static final class Payroll {
+        public static final String CREATE = "payroll:create";
+        public static final String READ = "payroll:read";
+        public static final String UPDATE = "payroll:update";
+        public static final String DELETE = "payroll:delete";
+        public static final String LIST = "payroll:list";
+        public static final String PROCESS = "payroll:process";
+        public static final String APPROVE = "payroll:approve";
+        public static final String MANAGE = "payroll:manage";
+
+        private Payroll() {
+        }
+    }
 }

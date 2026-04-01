@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +20,13 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/clients/{clientId}/payroll")
+@RequestMapping("/api/v1/clients/{clientId}/payroll")
 @RequiredArgsConstructor
 public class PayrollController {
     private final PayrollService payrollService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
     public ResponseEntity<Page<PayrollRun>> getPayrollRuns(
             @PathVariable UUID clientId,
             @RequestParam(defaultValue = "0") int page,
@@ -43,6 +45,7 @@ public class PayrollController {
     }
 
     @GetMapping("/{payrollId}")
+    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
     public ResponseEntity<PayrollRun> getPayrollRun(
             @PathVariable UUID clientId,
             @PathVariable UUID payrollId) {
@@ -50,6 +53,7 @@ public class PayrollController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
     public ResponseEntity<PayrollRun> createPayrollRun(
             @PathVariable UUID clientId,
             @Valid @RequestBody PayrollRun payrollRun) {
@@ -58,6 +62,7 @@ public class PayrollController {
     }
 
     @PostMapping("/{payrollId}/process")
+    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
     public ResponseEntity<PayrollRun> processPayrollRun(
             @PathVariable UUID clientId,
             @PathVariable UUID payrollId) {
@@ -65,6 +70,7 @@ public class PayrollController {
     }
 
     @PostMapping("/{payrollId}/approve")
+    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN')")
     public ResponseEntity<PayrollRun> approvePayrollRun(
             @PathVariable UUID clientId,
             @PathVariable UUID payrollId,

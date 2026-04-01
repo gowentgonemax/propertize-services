@@ -32,6 +32,7 @@ public class RbacConfig {
 
     private Map<String, RoleConfig> roles = new HashMap<>();
     private Map<String, PermissionTemplate> permissionTemplates = new HashMap<>();
+    private Map<String, List<String>> permissionHierarchyMap = new HashMap<>();
     private List<EndpointMapping> endpointMappings = new ArrayList<>();
 
     @PostConstruct
@@ -67,6 +68,21 @@ public class RbacConfig {
                 });
             }
 
+            // Load permission hierarchy (v7.0+: EMPLOYEE_MANAGE -> [EMPLOYEE_CREATE, ...])
+            Map<String, Object> hierarchy = (Map<String, Object>) rbac.get("permissionHierarchy");
+            if (hierarchy != null) {
+                hierarchy.forEach((macro, value) -> {
+                    if (value instanceof Map) {
+                        Map<String, Object> hData = (Map<String, Object>) value;
+                        Object includes = hData.get("includes");
+                        if (includes instanceof List) {
+                            permissionHierarchyMap.put(macro, (List<String>) includes);
+                        }
+                    }
+                });
+                log.info("✅ Permission hierarchy loaded: {} macro permissions", permissionHierarchyMap.size());
+            }
+
             // Load roles
             Map<String, Object> rolesConfig = (Map<String, Object>) rbac.get("roles");
             if (rolesConfig != null) {
@@ -89,6 +105,12 @@ public class RbacConfig {
                             rp.put(resource, resourcePerm);
                         });
                         role.setResourcePermissions(rp);
+                    }
+
+                    // Load restrictions (readOnly, requireMFA, etc.)
+                    Map<String, Object> restrictionsData = (Map<String, Object>) roleData.get("restrictions");
+                    if (restrictionsData != null) {
+                        role.setRestrictions(restrictionsData);
                     }
 
                     roles.put(name, role);
@@ -185,7 +207,32 @@ public class RbacConfig {
             permissions.remove("*");
         }
 
-        return permissions;
+        // Expand permission hierarchy (e.g., EMPLOYEE_MANAGE -> EMPLOYEE_READ, ...)
+        Set<String> expanded = new LinkedHashSet<>(permissions);
+        for (String perm : permissions) {
+            List<String> children = permissionHierarchyMap.get(perm);
+            if (children != null) {
+                expanded.addAll(children);
+            }
+        }
+
+        // Normalize: add lowercase colon-separated form for each UPPER_UNDERSCORE
+        // permission
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String perm : expanded) {
+            normalized.add(perm);
+            // EMPLOYEE_READ -> employee:read
+            if (perm.contains("_") && !perm.contains(":")) {
+                int lastUnderscore = perm.lastIndexOf('_');
+                if (lastUnderscore > 0) {
+                    String resource = perm.substring(0, lastUnderscore).toLowerCase();
+                    String action = perm.substring(lastUnderscore + 1).toLowerCase();
+                    normalized.add(resource + ":" + action);
+                }
+            }
+        }
+
+        return normalized;
     }
 
     /**
@@ -195,12 +242,34 @@ public class RbacConfig {
         return roles.keySet();
     }
 
+    /**
+     * Check if any of the given roles has a readOnly restriction.
+     * If ANY role is marked readOnly, the user is considered read-only.
+     */
+    public boolean isAnyRoleReadOnly(Set<String> roleNames) {
+        for (String roleName : roleNames) {
+            RoleConfig config = roles.get(roleName);
+            if (config != null && config.isReadOnly()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Data
     public static class RoleConfig {
         private String description;
         private List<String> permissions;
         private List<String> inherits;
         private Map<String, ResourcePermission> resourcePermissions;
+        private Map<String, Object> restrictions;
+
+        public boolean isReadOnly() {
+            if (restrictions == null)
+                return false;
+            Object readOnly = restrictions.get("readOnly");
+            return Boolean.TRUE.equals(readOnly);
+        }
     }
 
     @Data

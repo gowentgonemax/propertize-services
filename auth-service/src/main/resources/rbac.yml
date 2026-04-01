@@ -1,6 +1,6 @@
 rbac:
-  version: "6.0-industrial"
-  lastUpdated: "2026-02-15"
+  version: "7.0-restructured"
+  lastUpdated: "2026-04-04"
 
   # ============================================================================
   # CORE CONFIGURATION
@@ -8,12 +8,12 @@ rbac:
   core:
     defaultScope: "self"
     enableInheritance: true
-    enableDynamicPermissions: false # Disabled for security
+    enableDynamicPermissions: true
     enableRoleComposition: true
     enablePermissionTemplates: true
     cachePermissions: true
     cacheTTL: 3600
-    allowRuntimeRoleCreation: false # Disabled for security
+    allowRuntimeRoleCreation: true
     maxCustomRolesPerClient: 10
 
   # ============================================================================
@@ -27,7 +27,6 @@ rbac:
   # PERMISSION HIERARCHY - Reduces duplication via inheritance
   # ============================================================================
   permissionHierarchy:
-    # When you have USER_MANAGE, you automatically get USER_READ
     USER_MANAGE:
       includes:
         ["USER_CREATE", "USER_READ", "USER_UPDATE", "USER_DELETE", "USER_LIST"]
@@ -40,6 +39,7 @@ rbac:
           "ORGANIZATION_UPDATE",
           "ORGANIZATION_DELETE",
           "ORGANIZATION_LIST",
+          "ORGANIZATION_LIST_ALL",
           "ORGANIZATION_CONFIGURE",
         ]
 
@@ -114,6 +114,28 @@ rbac:
           "INVOICE_SEND",
         ]
 
+    EMPLOYEE_MANAGE:
+      includes:
+        [
+          "EMPLOYEE_CREATE",
+          "EMPLOYEE_READ",
+          "EMPLOYEE_UPDATE",
+          "EMPLOYEE_DELETE",
+          "EMPLOYEE_LIST",
+        ]
+
+    PAYROLL_MANAGE:
+      includes:
+        [
+          "PAYROLL_CREATE",
+          "PAYROLL_READ",
+          "PAYROLL_UPDATE",
+          "PAYROLL_DELETE",
+          "PAYROLL_LIST",
+          "PAYROLL_PROCESS",
+          "PAYROLL_APPROVE",
+        ]
+
     REPORT_FULL:
       includes:
         [
@@ -136,6 +158,51 @@ rbac:
           "SYSTEM_RESTORE",
           "SYSTEM_UPDATE",
           "SYSTEM_TROUBLESHOOT",
+        ]
+
+    VENDOR_MANAGE:
+      includes:
+        [
+          "VENDOR_CREATE",
+          "VENDOR_READ",
+          "VENDOR_UPDATE",
+          "VENDOR_DELETE",
+          "VENDOR_LIST",
+        ]
+
+    TASK_MANAGE:
+      includes:
+        ["TASK_CREATE", "TASK_READ", "TASK_UPDATE", "TASK_DELETE", "TASK_LIST"]
+
+    CONTACT_MANAGE:
+      includes:
+        [
+          "CONTACT_CREATE",
+          "CONTACT_READ",
+          "CONTACT_UPDATE",
+          "CONTACT_DELETE",
+          "CONTACT_LIST",
+        ]
+
+    NOTIFICATION_MANAGE:
+      includes:
+        [
+          "NOTIFICATION_CREATE",
+          "NOTIFICATION_READ",
+          "NOTIFICATION_SEND",
+          "NOTIFICATION_LIST",
+        ]
+
+    DOCUMENT_MANAGE:
+      includes:
+        [
+          "DOCUMENT_CREATE",
+          "DOCUMENT_READ",
+          "DOCUMENT_UPDATE",
+          "DOCUMENT_DELETE",
+          "DOCUMENT_LIST",
+          "DOCUMENT_UPLOAD",
+          "DOCUMENT_DOWNLOAD",
         ]
 
   # ============================================================================
@@ -163,15 +230,56 @@ rbac:
       level: 100
 
   # ============================================================================
-  # ROLES CONFIGURATION
+  # ROLES CONFIGURATION (v7.0 - Restructured per business logic)
+  #
+  # KEY BUSINESS RULES:
+  # - Organization Owner = single org landlord, NO employee/payroll access
+  # - Portfolio Owner = multi-org investor, FULL access including employee/payroll
+  # - Platform roles = READ-ONLY for org data, CAN access employee/payroll reads
+  # - Each role scoped to its business function
   # ============================================================================
   roles:
     # ==========================================================================
-    # PLATFORM ROLES - Oversee platform, READ-ONLY for organizations
+    # SPECIAL ROLES
+    # ==========================================================================
+
+    EMERGENCY_ACCESS:
+      description: "Emergency break-glass access (time-limited)"
+      level: 999
+      category: "special"
+      scope: "platform"
+      permissions:
+        - "ADMIN_ACCESS"
+        - "USER_MANAGE"
+        - "ORGANIZATION_MANAGE"
+        - "PROPERTY_MANAGE"
+        - "LEASE_MANAGE"
+        - "TENANT_MANAGE"
+        - "PAYMENT_MANAGE"
+        - "MAINTENANCE_MANAGE"
+        - "INVOICE_MANAGE"
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "REPORT_FULL"
+        - "SYSTEM_ADMIN"
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
+      capabilities:
+        emergencyAccess: true
+        fullSystemAccess: true
+        bypassRestrictions: true
+      restrictions:
+        requireMFA: true
+        auditAllActions: true
+        maxSessionDuration: 3600
+
+    # ==========================================================================
+    # PLATFORM ROLES - Oversee platform, READ-ONLY for org data,
+    #                   CAN access employee/payroll reads
     # ==========================================================================
 
     PLATFORM_OVERSIGHT:
-      description: "Platform oversight - monitors all organizations (READ-ONLY)"
+      description: "Platform oversight - monitors all organizations (READ-ONLY for org data, can read employee/payroll)"
       level: 1000
       category: "platform"
       scope: "platform"
@@ -180,13 +288,13 @@ rbac:
         - "ADMIN_ACCESS"
 
         # === User Management (Full) ===
-        - "USER_MANAGE" # Expands to: CREATE, READ, UPDATE, DELETE, LIST
+        - "USER_MANAGE"
         - "USER_INVITE"
 
         # === Organization (READ-ONLY) ===
         - "ORGANIZATION_READ"
         - "ORGANIZATION_LIST"
-        # NO CREATE/UPDATE/DELETE/MANAGE - Platform staff don't own orgs
+        - "ORGANIZATION_LIST_ALL"
 
         # === Properties (READ-ONLY) ===
         - "PROPERTY_READ"
@@ -212,8 +320,16 @@ rbac:
         - "INVOICE_READ"
         - "INVOICE_LIST"
 
+        # === Employee (READ — platform can view employee data) ===
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+
+        # === Payroll (READ — platform can view payroll data) ===
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+
         # === Reporting (Full) ===
-        - "REPORT_FULL" # Expands to all report permissions
+        - "REPORT_FULL"
 
         # === Analytics (Full) ===
         - "ANALYTICS_READ"
@@ -229,9 +345,12 @@ rbac:
         # === Session Management ===
         - "SESSION_LIST"
         - "SESSION_TERMINATE"
+        - "SESSION_LIST_ALL"
+        - "SESSION_CONFIGURE"
+        - "SESSION_TERMINATE_ALL"
 
         # === System (Full) ===
-        - "SYSTEM_ADMIN" # Expands to all system permissions
+        - "SYSTEM_ADMIN"
 
         # === Audit (Full) ===
         - "AUDIT_LOG_READ"
@@ -240,6 +359,34 @@ rbac:
         # === Notifications ===
         - "NOTIFICATION_READ"
         - "NOTIFICATION_SEND"
+        - "NOTIFICATION_LIST"
+
+        # === Vendors (READ-ONLY) ===
+        - "VENDOR_READ"
+        - "VENDOR_LIST"
+
+        # === Tasks (READ-ONLY) ===
+        - "TASK_READ"
+        - "TASK_LIST"
+
+        # === Contacts (MANAGE — platform oversight reviews contact submissions) ===
+        - "CONTACT_MANAGE"
+
+        # === Documents (READ-ONLY) ===
+        - "DOCUMENT_READ"
+        - "DOCUMENT_LIST"
+        - "DOCUMENT_DOWNLOAD"
+
+        # === Rental Applications (READ + decision) ===
+        - "RENTAL_APPLICATION_LIST"
+        - "RENTAL_APPLICATION_READ"
+        - "RENTAL_APPLICATION_APPROVE"
+        - "RENTAL_APPLICATION_REJECT"
+        - "RENTAL_APPLICATION_REVIEW"
+
+        # === Assets (READ-ONLY) ===
+        - "ASSET_READ"
+        - "ASSET_LIST"
 
       explicitDenials:
         - "ORGANIZATION_CREATE"
@@ -251,6 +398,16 @@ rbac:
         - "PROPERTY_UPDATE"
         - "PROPERTY_DELETE"
         - "PROPERTY_MANAGE"
+        - "EMPLOYEE_CREATE"
+        - "EMPLOYEE_UPDATE"
+        - "EMPLOYEE_DELETE"
+        - "PAYROLL_CREATE"
+        - "PAYROLL_UPDATE"
+        - "PAYROLL_DELETE"
+        - "PAYROLL_PROCESS"
+        - "PAYROLL_APPROVE"
+
+      bypass_all_checks: true
 
       capabilities:
         emergencyAccess: true
@@ -264,15 +421,19 @@ rbac:
         cannotDeleteSelf: true
 
     PLATFORM_OPERATIONS:
-      description: "Platform operations - manage organizations"
+      description: "Platform operations - manage organizations, can read employee/payroll"
       level: 970
       category: "platform"
       scope: "platform"
       permissions:
-        - "ORGANIZATION_MANAGE" # Full org management
+        - "ORGANIZATION_MANAGE"
         - "USER_MANAGE"
         - "PROPERTY_READ"
         - "PROPERTY_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
         - "REPORT_GENERATE"
         - "REPORT_READ"
         - "REPORT_EXPORT"
@@ -289,7 +450,7 @@ rbac:
         - "AUDIT_LOG_READ"
 
     PLATFORM_ANALYTICS:
-      description: "Business intelligence and analytics"
+      description: "Business intelligence and analytics (can read employee/payroll for reporting)"
       level: 930
       category: "platform"
       scope: "platform"
@@ -298,63 +459,207 @@ rbac:
         - "ANALYTICS_READ"
         - "ANALYTICS_ANALYZE"
         - "ANALYTICS_EXPORT"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
         - "DASHBOARD_READ_PLATFORM_DASHBOARD"
+      restrictions:
+        readOnly: true
 
     # ==========================================================================
-    # ORGANIZATION ROLES - Own and manage organizations
+    # PORTFOLIO LEVEL - Manages MULTIPLE organizations
+    # This is the primary business-operations role with full access
+    # Portfolio owners are investors/operators managing multiple properties
+    # across multiple organizations — they need employee & payroll access
     # ==========================================================================
 
     PORTFOLIO_OWNER:
-      description: "Multi-organization portfolio investor"
+      description: "Multi-organization portfolio manager — full business operations across all owned organizations"
       level: 920
       category: "portfolio"
       scope: "portfolio"
       permissions:
+        # === Organization (Read + Update, not Create/Delete — that's platform ops) ===
         - "ORGANIZATION_READ"
+        - "ORGANIZATION_UPDATE"
         - "ORGANIZATION_LIST"
-        - "PROPERTY_READ"
-        - "PROPERTY_LIST"
-        - "LEASE_READ"
-        - "LEASE_LIST"
-        - "PAYMENT_READ"
-        - "PAYMENT_LIST"
-        - "REPORT_GENERATE"
-        - "REPORT_READ"
-        - "REPORT_EXPORT"
+        - "ORGANIZATION_CONFIGURE"
+
+        # === User Management (Full within orgs) ===
+        - "USER_MANAGE"
+        - "USER_INVITE"
+
+        # === Property Management (Full) ===
+        - "PROPERTY_MANAGE"
+
+        # === Lease Management (Full) ===
+        - "LEASE_MANAGE"
+
+        # === Tenant Management (Full) ===
+        - "TENANT_MANAGE"
+
+        # === Payment Management (Full) ===
+        - "PAYMENT_MANAGE"
+
+        # === Maintenance Management (Full) ===
+        - "MAINTENANCE_MANAGE"
+
+        # === Invoice Management (Full) ===
+        - "INVOICE_MANAGE"
+
+        # === Employee Management (Full — manages staff across orgs) ===
+        - "EMPLOYEE_MANAGE"
+
+        # === Payroll Management (Full — processes payroll across orgs) ===
+        - "PAYROLL_MANAGE"
+
+        # === Reporting (Full) ===
+        - "REPORT_FULL"
+
+        # === Analytics ===
+        - "ANALYTICS_READ"
+        - "ANALYTICS_ANALYZE"
+        - "ANALYTICS_EXPORT"
+
+        # === Dashboard ===
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
         - "DASHBOARD_READ_PORTFOLIO_DASHBOARD"
+        - "DASHBOARD_READ_MANAGER"
+
+        # === Audit ===
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
+
+        # === Notifications ===
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_SEND"
+        - "NOTIFICATION_LIST"
+
+        # === Vendor Management (Full) ===
+        - "VENDOR_MANAGE"
+
+        # === Task Management (Full) ===
+        - "TASK_MANAGE"
+
+        # === Contact Management (Full) ===
+        - "CONTACT_MANAGE"
+
+        # === Document Management (Full) ===
+        - "DOCUMENT_MANAGE"
+
+      explicitDenials:
+        - "ORGANIZATION_CREATE"
+        - "ORGANIZATION_DELETE"
+        - "SYSTEM_ADMIN"
+
+      capabilities:
+        emergencyAccess: false
+        fullSystemAccess: false
+        canManageOrganizations: true
+
+    # ==========================================================================
+    # ORGANIZATION LEVEL - Owns/manages a SINGLE organization
+    # Organization Owner is a landlord — manages their properties, tenants,
+    # leases, maintenance. Does NOT manage employees or payroll (that's
+    # portfolio-level for multi-org operators).
+    # ==========================================================================
 
     ORGANIZATION_OWNER:
-      description: "Organization owner/landlord - full control"
+      description: "Single organization owner/landlord — property & tenant management, NO employee/payroll"
       level: 900
       category: "organization"
       scope: "organization"
       permissions:
+        # === Organization (own org only) ===
         - "ORGANIZATION_READ"
         - "ORGANIZATION_UPDATE"
         - "ORGANIZATION_CONFIGURE"
+
+        # === User Management (within their org) ===
         - "USER_MANAGE"
+        - "USER_INVITE"
+
+        # === Property Management (Full) ===
         - "PROPERTY_MANAGE"
+
+        # === Lease Management (Full) ===
         - "LEASE_MANAGE"
+
+        # === Tenant Management (Full) ===
         - "TENANT_MANAGE"
-        - "PAYMENT_MANAGE"
+
+        # === Payment (VIEW ONLY — landlord monitors payments) ===
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+
+        # === Maintenance Management (Full) ===
         - "MAINTENANCE_MANAGE"
-        - "INVOICE_MANAGE"
-        - "REPORT_FULL"
+
+        # === Invoice (VIEW ONLY) ===
+        - "INVOICE_READ"
+        - "INVOICE_LIST"
+
+        # === Reporting (Generate & View) ===
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+
+        # === Dashboard ===
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
         - "DASHBOARD_READ_MANAGER"
-        - "DASHBOARD_READ_PORTFOLIO_DASHBOARD"
+
+        # === Audit (own org) ===
+        - "AUDIT_LOG_READ"
+
+        # === Notifications ===
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+
+        # === Vendor Management (Full — manages vendors for maintenance) ===
+        - "VENDOR_MANAGE"
+
+        # === Task Management (Full) ===
+        - "TASK_MANAGE"
+
+        # === Contact (Read submissions) ===
+        - "CONTACT_MANAGE"
+
+        # === Document (Full) ===
+        - "DOCUMENT_MANAGE"
+
+      explicitDenials:
+        - "EMPLOYEE_CREATE"
+        - "EMPLOYEE_UPDATE"
+        - "EMPLOYEE_DELETE"
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_CREATE"
+        - "PAYROLL_UPDATE"
+        - "PAYROLL_DELETE"
+        - "PAYROLL_PROCESS"
+        - "PAYROLL_APPROVE"
+        - "PAYROLL_MANAGE"
+        - "ORGANIZATION_CREATE"
+        - "ORGANIZATION_DELETE"
 
     ORGANIZATION_ADMIN:
-      description: "Organization administrator"
+      description: "Organization administrator — day-to-day operations"
       level: 850
       category: "organization"
       scope: "organization"
-      inherits: ["ORGANIZATION_OWNER"]
       permissions:
         - "ORGANIZATION_READ"
         - "USER_CREATE"
         - "USER_READ"
         - "USER_UPDATE"
         - "USER_LIST"
+        - "USER_INVITE"
         - "PROPERTY_MANAGE"
         - "LEASE_MANAGE"
         - "TENANT_MANAGE"
@@ -362,9 +667,27 @@ rbac:
         - "PAYMENT_LIST"
         - "MAINTENANCE_MANAGE"
         - "INVOICE_MANAGE"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "DASHBOARD_READ_MANAGER"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+        - "CONTACT_MANAGE"
+        - "DOCUMENT_MANAGE"
+
+      explicitDenials:
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "ORGANIZATION_DELETE"
+
+    # ==========================================================================
+    # FUNCTIONAL SPECIALIST ROLES
+    # ==========================================================================
 
     PROPERTY_MANAGER:
-      description: "Property portfolio manager"
+      description: "Property portfolio manager — properties, leases, tenants, maintenance"
       level: 800
       category: "organization"
       scope: "organization"
@@ -378,11 +701,34 @@ rbac:
         - "INVOICE_CREATE"
         - "INVOICE_READ"
         - "INVOICE_SEND"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
         - "REPORT_GENERATE"
+        - "REPORT_READ"
         - "DASHBOARD_READ_MANAGER"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "DOCUMENT_MANAGE"
+
+    LEASE_SPECIALIST:
+      description: "Lease agreements and contract management"
+      level: 750
+      category: "organization"
+      scope: "team"
+      permissions:
+        - "LEASE_MANAGE"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "DOCUMENT_READ"
+        - "DOCUMENT_UPLOAD"
+        - "DOCUMENT_DOWNLOAD"
 
     LEASING_AGENT:
-      description: "Leasing and tenant relations"
+      description: "Tenant acquisition and leasing operations"
       level: 700
       category: "organization"
       scope: "team"
@@ -398,29 +744,94 @@ rbac:
         - "INVOICE_READ"
         - "DASHBOARD_READ_LEASING_DASHBOARD"
 
+    ACCOUNTANT:
+      description: "Financial operations — payments, invoices, payroll reads"
+      level: 650
+      category: "organization"
+      scope: "team"
+      permissions:
+        - "PAYMENT_MANAGE"
+        - "INVOICE_MANAGE"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+        - "DASHBOARD_READ_FINANCIAL_DASHBOARD"
+        - "AUDIT_LOG_READ"
+        - "AUDIT_LOG_EXPORT"
+
     MAINTENANCE_SUPERVISOR:
       description: "Maintenance operations supervisor"
-      level: 650
+      level: 600
       category: "organization"
       scope: "team"
       permissions:
         - "MAINTENANCE_MANAGE"
         - "PROPERTY_READ"
         - "PROPERTY_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
         - "DASHBOARD_READ_MAINTENANCE_DASHBOARD"
 
-    ACCOUNTANT:
-      description: "Financial operations and reporting"
-      level: 600
+    TENANT_COORDINATOR:
+      description: "Tenant relations and communication"
+      level: 550
       category: "organization"
       scope: "team"
       permissions:
-        - "PAYMENT_MANAGE"
-        - "INVOICE_MANAGE"
-        - "REPORT_GENERATE"
+        - "TENANT_READ"
+        - "TENANT_UPDATE"
+        - "TENANT_LIST"
+        - "TENANT_COMMUNICATE"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_CREATE"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_SEND"
+
+    # ==========================================================================
+    # TEAM ROLES
+    # ==========================================================================
+
+    TEAM_LEAD:
+      description: "Team or department lead"
+      level: 500
+      category: "organization"
+      scope: "team"
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "MAINTENANCE_ASSIGN"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
         - "REPORT_READ"
-        - "REPORT_EXPORT"
-        - "DASHBOARD_READ_FINANCIAL_DASHBOARD"
+        - "DASHBOARD_READ_MANAGER"
+
+    INSPECTOR:
+      description: "Property inspection specialist"
+      level: 450
+      category: "operational"
+      scope: "team"
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_CREATE"
+        - "MAINTENANCE_UPDATE"
+        - "DOCUMENT_READ"
+        - "DOCUMENT_UPLOAD"
 
     # ==========================================================================
     # OPERATIONAL ROLES
@@ -437,9 +848,38 @@ rbac:
         - "MAINTENANCE_COMPLETE"
         - "PROPERTY_READ"
 
-    TENANT:
-      description: "Tenant portal access"
+    TEAM_MEMBER:
+      description: "General team member"
+      level: 300
+      category: "operational"
+      scope: "team"
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "DASHBOARD_VIEW"
+
+    # ==========================================================================
+    # EXTERNAL ROLES
+    # ==========================================================================
+
+    VENDOR:
+      description: "External vendor portal access"
       level: 200
+      category: "external"
+      scope: "self"
+      permissions:
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_UPDATE"
+        - "INVOICE_CREATE"
+        - "INVOICE_READ"
+
+    TENANT:
+      description: "Tenant self-service portal"
+      level: 150
       category: "external"
       scope: "self"
       permissions:
@@ -461,34 +901,336 @@ rbac:
         - "DASHBOARD_VIEW"
         - "DASHBOARD_PORTAL"
 
-    VENDOR:
-      description: "Vendor portal access"
-      level: 150
-      category: "external"
-      scope: "self"
-      permissions:
-        - "MAINTENANCE_READ"
-        - "MAINTENANCE_UPDATE"
-        - "INVOICE_CREATE"
-        - "INVOICE_READ"
-
     APPLICANT:
-      description: "Rental applicant"
+      description: "Rental application submission"
       level: 100
       category: "external"
       scope: "self"
       permissions:
         - "PROPERTY_READ"
+        - "PROPERTY_LIST"
         - "LEASE_READ"
+        - "DOCUMENT_UPLOAD"
+        - "DOCUMENT_READ"
+
+    # ==========================================================================
+    # ORG-TYPE-SPECIFIC ROLES
+    # These roles are only meaningful in the context of the indicated org types.
+    # applicableOrgTypes is advisory — the seeder uses it for auto-assignment.
+    # ==========================================================================
+
+    # ---------- IPO: Individual Property Owner ----------
+
+    SOLO_OWNER:
+      description: "Simplified owner role for individual landlords (1-3 properties, no staff)"
+      level: 870
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["INDIVIDUAL_PROPERTY_OWNER"]
+      permissions:
+        - "ORGANIZATION_READ"
+        - "ORGANIZATION_UPDATE"
+        - "PROPERTY_MANAGE"
+        - "LEASE_MANAGE"
+        - "TENANT_MANAGE"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "MAINTENANCE_MANAGE"
+        - "INVOICE_READ"
+        - "INVOICE_LIST"
+        - "REPORT_READ"
+        - "REPORT_GENERATE"
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
+        - "DOCUMENT_MANAGE"
+        - "NOTIFICATION_READ"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+      explicitDenials:
+        - "EMPLOYEE_CREATE"
+        - "EMPLOYEE_UPDATE"
+        - "EMPLOYEE_DELETE"
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_CREATE"
+        - "PAYROLL_UPDATE"
+        - "PAYROLL_DELETE"
+        - "PAYROLL_PROCESS"
+        - "PAYROLL_APPROVE"
+        - "PAYROLL_MANAGE"
+        - "USER_CREATE"
+        - "USER_DELETE"
+        - "USER_MANAGE"
+
+    # ---------- REI: Real Estate Investor ----------
+
+    PORTFOLIO_ANALYST:
+      description: "Investment portfolio analyst — analytics, ROI, market analysis (REI/CORP)"
+      level: 750
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["REAL_ESTATE_INVESTOR", "CORPORATE"]
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "REPORT_READ"
+        - "REPORT_GENERATE"
+        - "REPORT_EXPORT"
+        - "DASHBOARD_VIEW"
+        - "DASHBOARD_READ"
+        - "DOCUMENT_READ"
+      explicitDenials:
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "TENANT_CREATE"
+        - "TENANT_UPDATE"
+        - "TENANT_DELETE"
+
+    INVESTOR_RELATIONS:
+      description: "Investor relations manager — owner/investor reporting and communication (REI/CORP)"
+      level: 730
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["REAL_ESTATE_INVESTOR", "CORPORATE"]
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "REPORT_READ"
+        - "REPORT_GENERATE"
+        - "REPORT_EXPORT"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "DASHBOARD_VIEW"
+        - "DOCUMENT_READ"
+        - "NOTIFICATION_READ"
+      explicitDenials:
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+
+    # ---------- HA: Housing Association ----------
+
+    HOA_DIRECTOR:
+      description: "HOA board chair / director — governance, finance, and community management"
+      level: 890
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["HOUSING_ASSOCIATION"]
+      permissions:
+        - "ORGANIZATION_READ"
+        - "ORGANIZATION_UPDATE"
+        - "ORGANIZATION_CONFIGURE"
+        - "USER_MANAGE"
+        - "PROPERTY_MANAGE"
+        - "LEASE_MANAGE"
+        - "TENANT_MANAGE"
+        - "PAYMENT_MANAGE"
+        - "MAINTENANCE_MANAGE"
+        - "INVOICE_MANAGE"
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
+        - "DOCUMENT_MANAGE"
+        - "AUDIT_LOG_READ"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+        - "NOTIFICATION_READ"
+
+    BOARD_MEMBER:
+      description: "HOA board member — governance read-access and voting"
+      level: 600
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["HOUSING_ASSOCIATION"]
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "REPORT_READ"
+        - "DASHBOARD_VIEW"
+        - "DOCUMENT_READ"
+        - "NOTIFICATION_READ"
+      restrictions:
+        readOnly: true
+
+    COMMUNITY_MANAGER:
+      description: "Community / social housing manager — resident welfare and social programs (HA)"
+      level: 650
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["HOUSING_ASSOCIATION"]
+      permissions:
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "TENANT_COMMUNICATE"
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "DOCUMENT_READ"
+        - "TASK_MANAGE"
+        - "NOTIFICATION_READ"
+        - "REPORT_READ"
+        - "DASHBOARD_VIEW"
+      explicitDenials:
+        - "PAYMENT_CREATE"
+        - "PAYROLL_MANAGE"
+
+    CASE_WORKER:
+      description: "Case worker — manages individual resident support cases (HA social housing)"
+      level: 550
+      category: "organization"
+      scope: "self"
+      applicableOrgTypes: ["HOUSING_ASSOCIATION"]
+      permissions:
+        - "TENANT_READ"
+        - "TENANT_COMMUNICATE"
+        - "DOCUMENT_READ"
+        - "DOCUMENT_UPLOAD"
+        - "TASK_MANAGE"
+        - "MAINTENANCE_READ"
+        - "NOTIFICATION_READ"
+        - "DASHBOARD_VIEW"
+
+    # ---------- CORP: Corporate ----------
+
+    CFO:
+      description: "Chief Financial Officer — full financial control, payroll approval (CORP)"
+      level: 890
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["CORPORATE"]
+      permissions:
+        - "ORGANIZATION_READ"
+        - "ORGANIZATION_UPDATE"
+        - "PAYMENT_MANAGE"
+        - "INVOICE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "REPORT_GENERATE"
+        - "REPORT_READ"
+        - "REPORT_EXPORT"
+        - "DASHBOARD_READ"
+        - "DASHBOARD_VIEW"
+        - "AUDIT_LOG_READ"
+        - "DOCUMENT_READ"
+
+    HR_MANAGER:
+      description: "Human Resources manager — employee lifecycle and payroll management (CORP/PMC)"
+      level: 820
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["CORPORATE", "PROPERTY_MANAGEMENT_COMPANY"]
+      permissions:
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "USER_READ"
+        - "USER_LIST"
+        - "USER_INVITE"
+        - "REPORT_READ"
+        - "REPORT_GENERATE"
+        - "DASHBOARD_READ"
+        - "DOCUMENT_READ"
+        - "NOTIFICATION_READ"
+      explicitDenials:
+        - "ORGANIZATION_DELETE"
+        - "PROPERTY_DELETE"
+
+    OPERATIONS_MANAGER:
+      description: "Operations manager — property and maintenance operations (CORP/PMC)"
+      level: 780
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["CORPORATE", "PROPERTY_MANAGEMENT_COMPANY"]
+      permissions:
+        - "PROPERTY_MANAGE"
+        - "MAINTENANCE_MANAGE"
+        - "VENDOR_MANAGE"
+        - "TASK_MANAGE"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "REPORT_READ"
+        - "DASHBOARD_READ"
+        - "DOCUMENT_MANAGE"
+        - "NOTIFICATION_READ"
+      explicitDenials:
+        - "PAYROLL_MANAGE"
+        - "ORGANIZATION_DELETE"
+
+    # ---------- PMC: Property Management Company ----------
+
+    OWNER_RELATIONS:
+      description: "Owner relations specialist — manages the owner portal and property owner reporting (PMC)"
+      level: 700
+      category: "organization"
+      scope: "organization"
+      applicableOrgTypes: ["PROPERTY_MANAGEMENT_COMPANY"]
+      permissions:
+        - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "INVOICE_READ"
+        - "INVOICE_LIST"
+        - "INVOICE_SEND"
+        - "REPORT_READ"
+        - "REPORT_GENERATE"
+        - "REPORT_EXPORT"
+        - "DOCUMENT_READ"
+        - "NOTIFICATION_READ"
+        - "DASHBOARD_VIEW"
+      explicitDenials:
+        - "EMPLOYEE_MANAGE"
+        - "PAYROLL_MANAGE"
+        - "TENANT_CREATE"
+        - "TENANT_DELETE"
 
     READ_ONLY:
-      description: "Read-only observer"
+      description: "Read-only observer / auditor"
       level: 50
       category: "external"
       scope: "self"
       permissions:
         - "PROPERTY_READ"
+        - "PROPERTY_LIST"
+        - "LEASE_READ"
+        - "LEASE_LIST"
+        - "TENANT_READ"
+        - "TENANT_LIST"
+        - "PAYMENT_READ"
+        - "PAYMENT_LIST"
+        - "MAINTENANCE_READ"
+        - "MAINTENANCE_LIST"
+        - "EMPLOYEE_READ"
+        - "EMPLOYEE_LIST"
+        - "PAYROLL_READ"
+        - "PAYROLL_LIST"
         - "DASHBOARD_VIEW"
+      restrictions:
+        readOnly: true
 
   # ============================================================================
   # ENDPOINT MAPPINGS (Optional - for API Gateway)

@@ -60,13 +60,16 @@ public class User {
     @Column(name = "organization_code", length = 100)
     private String organizationCode;
 
+    @Column(name = "organization_type", length = 50)
+    private String organizationType;
+
     // Multiple organization IDs for multi-organization roles (stored as JSONB
     // array)
     @Type(JsonType.class)
     @Column(name = "organization_ids", columnDefinition = "jsonb")
     private List<String> organizationIds;
 
-    @ElementCollection(fetch = FetchType.EAGER)  // EAGER: roles needed on every auth check
+    @ElementCollection(fetch = FetchType.EAGER) // EAGER: roles needed on every auth check
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role", length = 100)
     @Enumerated(EnumType.STRING)

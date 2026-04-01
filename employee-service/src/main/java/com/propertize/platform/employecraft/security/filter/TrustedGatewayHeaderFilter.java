@@ -56,10 +56,12 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
     public static final String X_TENANT_ID = "X-Tenant-Id";
     public static final String X_ROLES = "X-Roles";
     public static final String X_PRIMARY_ROLE = "X-Primary-Role";
+    public static final String X_PERMISSIONS = "X-Permissions";
     public static final String X_CORRELATION_ID = "X-Correlation-Id";
     public static final String X_SESSION_ID = "X-Session-Id";
     public static final String X_TOKEN_JTI = "X-Token-Jti";
     public static final String X_TOKEN_TYPE = "X-Token-Type";
+    public static final String X_ORG_TYPE = "X-Org-Type";
 
     @Value("${security.gateway.expected-value:api-gateway}")
     private String expectedGatewaySource;
@@ -88,28 +90,31 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         String tenantId = request.getHeader(X_TENANT_ID);
         String rolesHeader = request.getHeader(X_ROLES);
         String primaryRole = request.getHeader(X_PRIMARY_ROLE);
+        String permissionsHeader = request.getHeader(X_PERMISSIONS);
         String correlationId = request.getHeader(X_CORRELATION_ID);
         String sessionId = request.getHeader(X_SESSION_ID);
         String tokenJti = request.getHeader(X_TOKEN_JTI);
+        String orgType = request.getHeader(X_ORG_TYPE);
 
         if (userId == null || userId.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Parse roles
+        // Parse roles and permissions
         Set<String> roles = parseRoles(rolesHeader);
+        Set<String> permissions = parseRoles(permissionsHeader);
 
-        log.debug("Authenticating from gateway: {} with roles: {} [correlationId={}]",
-                username, roles, correlationId);
+        log.debug("Authenticating from gateway: {} with roles: {} permissions: {} [correlationId={}]",
+                username, roles, permissions.size(), correlationId);
 
-        // Create authorities
-        Collection<SimpleGrantedAuthority> authorities = createAuthorities(roles);
+        // Create authorities from roles + permissions
+        Collection<SimpleGrantedAuthority> authorities = createAuthorities(roles, permissions);
 
         // Create authentication with enhanced principal
         GatewayAuthenticatedUser principal = new GatewayAuthenticatedUser(
                 userId, username, email, organizationId, organizationCode,
-                tenantId, roles, primaryRole, sessionId, tokenJti);
+                tenantId, orgType, roles, permissions, primaryRole, sessionId, tokenJti);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal, null,
                 authorities);
@@ -126,8 +131,8 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
             }
         }
 
-        log.info("✅ Gateway auth: {} [org={}, roles={}, correlationId={}]",
-                username, organizationCode, roles.size(), correlationId);
+        log.info("✅ Gateway auth: {} [org={}, roles={}, permissions={}, correlationId={}]",
+                username, organizationCode, roles.size(), permissions.size(), correlationId);
 
         try {
             filterChain.doFilter(request, response);
@@ -136,22 +141,24 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         }
     }
 
-    private Set<String> parseRoles(String rolesHeader) {
-        if (rolesHeader == null || rolesHeader.isEmpty()) {
+    private Set<String> parseRoles(String header) {
+        if (header == null || header.isEmpty()) {
             return Collections.emptySet();
         }
-        return Arrays.stream(rolesHeader.split(","))
+        return Arrays.stream(header.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toSet());
     }
 
-    private Collection<SimpleGrantedAuthority> createAuthorities(Set<String> roles) {
+    private Collection<SimpleGrantedAuthority> createAuthorities(Set<String> roles, Set<String> permissions) {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         roles.forEach(role -> {
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
             authorities.add(new SimpleGrantedAuthority(role));
         });
+        permissions.forEach(permission ->
+                authorities.add(new SimpleGrantedAuthority(permission)));
         return authorities;
     }
 
@@ -166,80 +173,52 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         private final String organizationId;
         private final String organizationCode;
         private final String tenantId;
+        private final String orgType;
         private final Set<String> roles;
+        private final Set<String> permissions;
         private final String primaryRole;
         private final String sessionId;
         private final String tokenJti;
 
         public GatewayAuthenticatedUser(String userId, String username, String email,
                 String organizationId, String organizationCode,
-                String tenantId, Set<String> roles, String primaryRole,
-                String sessionId, String tokenJti) {
+                String tenantId, String orgType, Set<String> roles, Set<String> permissions,
+                String primaryRole, String sessionId, String tokenJti) {
             this.userId = userId;
             this.username = username;
             this.email = email;
             this.organizationId = organizationId;
             this.organizationCode = organizationCode;
             this.tenantId = tenantId;
-            this.roles = roles;
+            this.orgType = orgType != null ? orgType : "";
+            this.roles = roles != null ? roles : Collections.emptySet();
+            this.permissions = permissions != null ? permissions : Collections.emptySet();
             this.primaryRole = primaryRole;
             this.sessionId = sessionId;
             this.tokenJti = tokenJti;
         }
 
-        public String getUserId() {
-            return userId;
-        }
+        public String getUserId() { return userId; }
+        public String getUsername() { return username; }
+        public String getEmail() { return email; }
+        public String getOrganizationId() { return organizationId; }
+        public String getOrganizationCode() { return organizationCode; }
+        public String getTenantId() { return tenantId; }
+        public String getOrgType() { return orgType; }
+        public Set<String> getRoles() { return roles; }
+        public Set<String> getPermissions() { return permissions; }
+        public String getPrimaryRole() { return primaryRole; }
+        public String getSessionId() { return sessionId; }
+        public String getTokenJti() { return tokenJti; }
 
-        public String getUsername() {
-            return username;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public String getOrganizationId() {
-            return organizationId;
-        }
-
-        public String getOrganizationCode() {
-            return organizationCode;
-        }
-
-        public String getTenantId() {
-            return tenantId;
-        }
-
-        public Set<String> getRoles() {
-            return roles;
-        }
-
-        public String getPrimaryRole() {
-            return primaryRole;
-        }
-
-        public String getSessionId() {
-            return sessionId;
-        }
-
-        public String getTokenJti() {
-            return tokenJti;
-        }
-
-        public boolean hasRole(String role) {
-            return roles.contains(role);
-        }
+        public boolean hasRole(String role) { return roles.contains(role); }
+        public boolean hasPermission(String permission) { return permissions.contains(permission); }
 
         @Override
         public String toString() {
-            return "GatewayAuthenticatedUser{" +
-                    "userId='" + userId + '\'' +
-                    ", username='" + username + '\'' +
-                    ", email='" + email + '\'' +
-                    ", organizationId='" + organizationId + '\'' +
-                    ", roles=" + roles +
-                    '}';
+            return "GatewayAuthenticatedUser{userId='" + userId + "', username='" + username +
+                    "', email='" + email + "', organizationId='" + organizationId +
+                    "', roles=" + roles + ", orgType='" + orgType + "'}";
         }
     }
 }

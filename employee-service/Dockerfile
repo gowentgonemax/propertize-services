@@ -7,11 +7,14 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
-COPY pom.xml .
-RUN mvn dependency:go-offline -q
+# Install propertize-commons to local Maven repo
+COPY propertize-commons/ /tmp/commons/
+RUN mvn -f /tmp/commons/pom.xml install -DskipTests -q
 
-COPY src ./src
-RUN mvn package -DskipTests -q
+# Build employee-service
+COPY employee-service/pom.xml .
+COPY employee-service/src ./src
+RUN mvn package -Dmaven.test.skip=true -q
 
 # ---- Runtime Stage ----
 FROM eclipse-temurin:21-jre-alpine
@@ -22,7 +25,7 @@ RUN addgroup -S propertize && adduser -S propertize -G propertize
 COPY --from=build /app/target/employecraft-*.jar app.jar
 
 # Public RSA key for JWT validation
-COPY config/ ./config/
+COPY employee-service/config/ ./config/
 
 RUN chown -R propertize:propertize /app
 USER propertize

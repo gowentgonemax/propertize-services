@@ -1,6 +1,7 @@
 package com.propertize.platform.gateway.security;
 
 import com.propertize.platform.gateway.service.TokenBlacklistService;
+import com.propertize.platform.gateway.service.PermissionCacheService;
 import com.propertize.platform.gateway.metrics.AuthenticationMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,11 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.HexFormat;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -65,15 +71,24 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public static final String X_TENANT_ID = "X-Tenant-Id";
     public static final String X_ROLES = "X-Roles";
     public static final String X_PRIMARY_ROLE = "X-Primary-Role";
+    public static final String X_PERMISSIONS = "X-Permissions";
     public static final String X_GATEWAY_SOURCE = "X-Gateway-Source";
     public static final String X_CORRELATION_ID = "X-Correlation-Id";
     public static final String X_TOKEN_TYPE = "X-Token-Type";
     public static final String X_SERVICE_NAME = "X-Service-Name";
     public static final String X_SESSION_ID = "X-Session-Id";
     public static final String X_TOKEN_JTI = "X-Token-Jti";
+    public static final String X_ORG_TYPE = "X-Org-Type";
 
     @Value("${security.gateway.source-value:api-gateway}")
     private String gatewaySourceValue;
+
+    /**
+     * Shared HMAC secret for signing gateway-forwarded headers. Empty = feature
+     * disabled.
+     */
+    @Value("${security.gateway.hmac-secret:}")
+    private String hmacSecret;
 
     // Public endpoints that don't require authentication
     // Per Production-Ready Design: /api/v1/auth/validate should be admin-only
@@ -93,8 +108,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/rental-applications/track/**",
             "/api/v1/gateway/**",
             "/actuator/**",
+            "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
+            "/api-docs/**",
+            "/webjars/**",
             "/graphql",
             "/graphiql",
             "/fallback/**",
@@ -102,13 +120,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final EnhancedJwtTokenProvider jwtTokenProvider;
     private final TokenBlacklistService blacklistService;
+    private final PermissionCacheService permissionCacheService;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public JwtAuthenticationFilter(
             EnhancedJwtTokenProvider jwtTokenProvider,
-            TokenBlacklistService blacklistService) {
+            TokenBlacklistService blacklistService,
+            PermissionCacheService permissionCacheService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.blacklistService = blacklistService;
+        this.permissionCacheService = permissionCacheService;
     }
 
     @Override
@@ -190,12 +211,25 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String email = jwtTokenProvider.getEmail(token).orElse("");
         String organizationId = jwtTokenProvider.getOrganizationId(token).orElse("");
         String organizationCode = jwtTokenProvider.getOrganizationCode(token).orElse("");
+        String orgType = jwtTokenProvider.getOrgType(token).orElse("");
         String tenantId = jwtTokenProvider.getTenantId(token).orElse("");
         String sessionId = jwtTokenProvider.getSessionId(token).orElse("");
         String jti = jwtTokenProvider.getTokenId(token).orElse("");
         Set<String> roles = jwtTokenProvider.getRoles(token);
         String primaryRole = jwtTokenProvider.getPrimaryRole(token).orElse("");
         String tokenType = jwtTokenProvider.isAccessToken(token) ? "access" : "unknown";
+
+        // ── Permissions from Redis cache (JWT no longer embeds the full list) ───
+        // Auth-service stored permissions under perms:jti:{jti} at login/refresh time.
+        // This lookup adds ~1-2ms but keeps the JWT small (resolves HTTP 431 errors).
+        Set<String> permissions = jti.isBlank()
+                ? java.util.Collections.emptySet()
+                : permissionCacheService.getPermissions(jti);
+
+        if (permissions.isEmpty() && !jti.isBlank()) {
+            log.debug("⚠️ No cached permissions found for jti={} user={} — X-Permissions will be empty",
+                    jti, username);
+        }
 
         log.info("✅ Authenticated user: {} with roles: {} for {} {} [correlationId={}]",
                 username, roles, method, path, correlationId);
@@ -212,11 +246,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .header(X_USERNAME, username)
                 .header(X_ORGANIZATION_ID, organizationId)
                 .header(X_ORGANIZATION_CODE, organizationCode)
+                .header(X_ORG_TYPE, orgType)
                 .header(X_ROLES, String.join(",", roles))
                 .header(X_PRIMARY_ROLE, primaryRole)
                 .header(X_GATEWAY_SOURCE, gatewaySourceValue)
                 .header(X_CORRELATION_ID, correlationId)
                 .header(X_TOKEN_TYPE, tokenType);
+
+        // Forward JWT permissions so downstream RBAC checks can use them
+        if (!permissions.isEmpty()) {
+            requestBuilder.header(X_PERMISSIONS, String.join(",", permissions));
+        }
 
         // Add optional headers if present
         if (!email.isEmpty()) {
@@ -230,6 +270,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
         if (!jti.isEmpty()) {
             requestBuilder.header(X_TOKEN_JTI, jti);
+        }
+
+        // Sign forwarded user context so downstream services can reject spoofed headers
+        if (!hmacSecret.isBlank()) {
+            long epochMinutes = Instant.now().getEpochSecond() / 60;
+            String payload = username + ":" + String.join(",", roles) + ":" + epochMinutes;
+            requestBuilder.header("X-Gateway-Signature", computeHmacSignature(hmacSecret, payload));
         }
 
         ServerHttpRequest modifiedRequest = requestBuilder.build();
@@ -312,5 +359,15 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         // Run early in the filter chain, but after CORS
         return -100;
+    }
+
+    private static String computeHmacSignature(String secret, String payload) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("HMAC computation failed", e);
+        }
     }
 }

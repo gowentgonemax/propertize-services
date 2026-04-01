@@ -116,8 +116,10 @@ public class EnhancedJwtTokenProvider {
 
     /**
      * Builds a JwtParser using the correctly-typed verification key.
-     * verifyWith() is overloaded: one variant accepts SecretKey, the other PublicKey.
-     * Passing the raw Key interface causes "Cannot resolve method 'verifyWith(Key)'".
+     * verifyWith() is overloaded: one variant accepts SecretKey, the other
+     * PublicKey.
+     * Passing the raw Key interface causes "Cannot resolve method
+     * 'verifyWith(Key)'".
      */
     private JwtParser buildParser() {
         if (rsaVerificationKey != null) {
@@ -145,12 +147,15 @@ public class EnhancedJwtTokenProvider {
         Claims c = getClaims(token);
         return Optional.ofNullable(
                 Optional.ofNullable(c.get("organizationId", String.class))
-                        .orElse(c.get("org", String.class))
-        );
+                        .orElse(c.get("org", String.class)));
     }
 
     public Optional<String> getOrganizationCode(String token) {
         return Optional.ofNullable(getClaims(token).get("organizationCode", String.class));
+    }
+
+    public Optional<String> getOrgType(String token) {
+        return Optional.ofNullable(getClaims(token).get("orgType", String.class));
     }
 
     public Set<String> getRoles(String token) {
@@ -174,6 +179,32 @@ public class EnhancedJwtTokenProvider {
         return Optional.ofNullable(getClaims(token).get("role", String.class));
     }
 
+    /**
+     * Extract the {@code permissions} claim from the JWT.
+     *
+     * <p>
+     * Auth-service stores permissions as a {@code List<String>} or comma-separated
+     * {@code String}. Returns an empty set when the claim is absent.
+     * </p>
+     */
+    @SuppressWarnings("unchecked")
+    public Set<String> getPermissions(String token) {
+        Object permsObj = getClaims(token).get("permissions");
+
+        if (permsObj instanceof List<?> list) {
+            return new HashSet<>((List<String>) list);
+        }
+
+        if (permsObj instanceof String s && !s.isBlank()) {
+            return Arrays.stream(s.split(","))
+                    .map(String::trim)
+                    .filter(x -> !x.isEmpty())
+                    .collect(Collectors.toSet());
+        }
+
+        return Collections.emptySet();
+    }
+
     public Optional<String> getEmail(String token) {
         return Optional.ofNullable(getClaims(token).get("email", String.class));
     }
@@ -182,16 +213,14 @@ public class EnhancedJwtTokenProvider {
         Claims c = getClaims(token);
         return Optional.ofNullable(
                 Optional.ofNullable(c.get("tenant_id", String.class))
-                        .orElse(c.get("tenantId", String.class))
-        );
+                        .orElse(c.get("tenantId", String.class)));
     }
 
     public Optional<String> getSessionId(String token) {
         Claims c = getClaims(token);
         return Optional.ofNullable(
                 Optional.ofNullable(c.get("session_id", String.class))
-                        .orElse(c.get("sessionId", String.class))
-        );
+                        .orElse(c.get("sessionId", String.class)));
     }
 
     public Optional<String> getTokenId(String token) {
@@ -212,7 +241,7 @@ public class EnhancedJwtTokenProvider {
                 .subject(username)
                 .issuedAt(now)
                 .expiration(expiration)
-                .claim("type", "access")   // Bug fix: access tokens must carry explicit type
+                .claim("type", "access") // Bug fix: access tokens must carry explicit type
                 .claim("iss", "api-gateway");
 
         if (claims != null) {

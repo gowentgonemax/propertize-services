@@ -39,7 +39,7 @@ public class EmployeeEntityService {
         }
 
         Client client = clientRepository.findById(request.getClientId())
-            .orElseThrow(() -> new EntityNotFoundException("Client not found: " + request.getClientId()));
+                .orElseThrow(() -> new EntityNotFoundException("Client not found: " + request.getClientId()));
 
         EmployeeEntity employee = new EmployeeEntity();
         employee.setClient(client);
@@ -78,7 +78,8 @@ public class EmployeeEntityService {
         employee.setAnnualSalary(request.getAnnualSalary());
         employee.setHireDate(request.getHireDate());
         employee.setJobTitle(request.getJobTitle());
-        employee.setDepartmentId(request.getDepartmentId());
+        employee.setDepartmentId(
+                request.getDepartmentId() != null ? java.util.UUID.fromString(request.getDepartmentId()) : null);
         employee.setDepartmentName(request.getDepartmentName());
         employee.setManagerId(request.getManagerId());
         employee.setWorkLocation(request.getWorkLocation());
@@ -93,14 +94,14 @@ public class EmployeeEntityService {
     @Transactional(readOnly = true)
     public EmployeeDTO getEmployeeById(UUID id) {
         EmployeeEntity employee = employeeRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Employee not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found: " + id));
         return toDTO(employee);
     }
 
     @Transactional(readOnly = true)
     public EmployeeDTO getEmployeeByNumber(String employeeNumber) {
         EmployeeEntity employee = employeeRepository.findByEmployeeNumber(employeeNumber)
-            .orElseThrow(() -> new EntityNotFoundException("Employee not found with number: " + employeeNumber));
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found with number: " + employeeNumber));
         return toDTO(employee);
     }
 
@@ -112,9 +113,9 @@ public class EmployeeEntityService {
     @Transactional(readOnly = true)
     public List<EmployeeDTO> getActiveEmployeesByClient(UUID clientId) {
         return employeeRepository.findByClientIdAndStatus(clientId, EmployeeStatusEnum.ACTIVE)
-            .stream()
-            .map(this::toDTO)
-            .collect(Collectors.toList());
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
@@ -126,53 +127,84 @@ public class EmployeeEntityService {
         log.info("Updating employee: {}", id);
 
         EmployeeEntity employee = employeeRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Employee not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found: " + id));
 
-        if (request.getFirstName() != null) employee.setFirstName(request.getFirstName());
-        if (request.getMiddleName() != null) employee.setMiddleName(request.getMiddleName());
-        if (request.getLastName() != null) employee.setLastName(request.getLastName());
-        if (request.getPreferredName() != null) employee.setPreferredName(request.getPreferredName());
+        if (request.getFirstName() != null)
+            employee.setFirstName(request.getFirstName());
+        if (request.getMiddleName() != null)
+            employee.setMiddleName(request.getMiddleName());
+        if (request.getLastName() != null)
+            employee.setLastName(request.getLastName());
+        if (request.getPreferredName() != null)
+            employee.setPreferredName(request.getPreferredName());
 
         // Update contact info
         if (request.getEmail() != null || request.getPhone() != null || request.getMobile() != null) {
             ContactInfo contactInfo = employee.getContactInfo();
-            if (contactInfo == null) contactInfo = new ContactInfo();
-            if (request.getEmail() != null) contactInfo.setEmail(request.getEmail());
-            if (request.getPhone() != null) contactInfo.setPhone(request.getPhone());
-            if (request.getMobile() != null) contactInfo.setMobile(request.getMobile());
+            if (contactInfo == null)
+                contactInfo = new ContactInfo();
+            if (request.getEmail() != null)
+                contactInfo.setEmail(request.getEmail());
+            if (request.getPhone() != null)
+                contactInfo.setPhone(request.getPhone());
+            if (request.getMobile() != null)
+                contactInfo.setMobile(request.getMobile());
             employee.setContactInfo(contactInfo);
         }
 
         // Update address
         if (request.getStreet() != null || request.getCity() != null) {
             Address address = employee.getHomeAddress();
-            if (address == null) address = new Address();
-            if (request.getStreet() != null) address.setStreet(request.getStreet());
-            if (request.getCity() != null) address.setCity(request.getCity());
-            if (request.getState() != null) address.setState(request.getState());
-            if (request.getZipCode() != null) address.setZipCode(request.getZipCode());
-            if (request.getCountry() != null) address.setCountry(request.getCountry());
+            if (address == null)
+                address = new Address();
+            if (request.getStreet() != null)
+                address.setStreet(request.getStreet());
+            if (request.getCity() != null)
+                address.setCity(request.getCity());
+            if (request.getState() != null)
+                address.setState(request.getState());
+            if (request.getZipCode() != null)
+                address.setZipCode(request.getZipCode());
+            if (request.getCountry() != null)
+                address.setCountry(request.getCountry());
             employee.setHomeAddress(address);
         }
 
         // Update employment details
-        if (request.getStatus() != null) employee.setStatus(EmployeeStatusEnum.valueOf(request.getStatus()));
-        if (request.getEmploymentType() != null) employee.setEmploymentType(EmploymentTypeEnum.valueOf(request.getEmploymentType()));
-        if (request.getPayType() != null) employee.setPayType(PayTypeEnum.valueOf(request.getPayType()));
-        if (request.getPayFrequency() != null) employee.setPayFrequency(PayFrequencyEnum.valueOf(request.getPayFrequency()));
-        if (request.getHourlyRate() != null) employee.setHourlyRate(request.getHourlyRate());
-        if (request.getAnnualSalary() != null) employee.setAnnualSalary(request.getAnnualSalary());
-        if (request.getTerminationDate() != null) employee.setTerminationDate(request.getTerminationDate());
-        if (request.getJobTitle() != null) employee.setJobTitle(request.getJobTitle());
-        if (request.getDepartmentId() != null) employee.setDepartmentId(request.getDepartmentId());
-        if (request.getDepartmentName() != null) employee.setDepartmentName(request.getDepartmentName());
-        if (request.getManagerId() != null) employee.setManagerId(request.getManagerId());
-        if (request.getManagerName() != null) employee.setManagerName(request.getManagerName());
-        if (request.getWorkLocation() != null) employee.setWorkLocation(request.getWorkLocation());
-        if (request.getCostCenter() != null) employee.setCostCenter(request.getCostCenter());
-        if (request.getStandardHoursPerWeek() != null) employee.setStandardHoursPerWeek(request.getStandardHoursPerWeek());
-        if (request.getOvertimeMultiplier() != null) employee.setOvertimeMultiplier(request.getOvertimeMultiplier());
-        if (request.getOvertimeEligible() != null) employee.setOvertimeEligible(request.getOvertimeEligible());
+        if (request.getStatus() != null)
+            employee.setStatus(EmployeeStatusEnum.valueOf(request.getStatus()));
+        if (request.getEmploymentType() != null)
+            employee.setEmploymentType(EmploymentTypeEnum.valueOf(request.getEmploymentType()));
+        if (request.getPayType() != null)
+            employee.setPayType(PayTypeEnum.valueOf(request.getPayType()));
+        if (request.getPayFrequency() != null)
+            employee.setPayFrequency(PayFrequencyEnum.valueOf(request.getPayFrequency()));
+        if (request.getHourlyRate() != null)
+            employee.setHourlyRate(request.getHourlyRate());
+        if (request.getAnnualSalary() != null)
+            employee.setAnnualSalary(request.getAnnualSalary());
+        if (request.getTerminationDate() != null)
+            employee.setTerminationDate(request.getTerminationDate());
+        if (request.getJobTitle() != null)
+            employee.setJobTitle(request.getJobTitle());
+        if (request.getDepartmentId() != null)
+            employee.setDepartmentId(java.util.UUID.fromString(request.getDepartmentId()));
+        if (request.getDepartmentName() != null)
+            employee.setDepartmentName(request.getDepartmentName());
+        if (request.getManagerId() != null)
+            employee.setManagerId(request.getManagerId());
+        if (request.getManagerName() != null)
+            employee.setManagerName(request.getManagerName());
+        if (request.getWorkLocation() != null)
+            employee.setWorkLocation(request.getWorkLocation());
+        if (request.getCostCenter() != null)
+            employee.setCostCenter(request.getCostCenter());
+        if (request.getStandardHoursPerWeek() != null)
+            employee.setStandardHoursPerWeek(request.getStandardHoursPerWeek());
+        if (request.getOvertimeMultiplier() != null)
+            employee.setOvertimeMultiplier(request.getOvertimeMultiplier());
+        if (request.getOvertimeEligible() != null)
+            employee.setOvertimeEligible(request.getOvertimeEligible());
 
         EmployeeEntity saved = employeeRepository.save(employee);
         log.info("Employee updated: {}", saved.getId());
@@ -184,7 +216,7 @@ public class EmployeeEntityService {
         log.info("Terminating employee: {} effective {}", id, terminationDate);
 
         EmployeeEntity employee = employeeRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Employee not found: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found: " + id));
 
         employee.setStatus(EmployeeStatusEnum.TERMINATED);
         employee.setTerminationDate(terminationDate);
@@ -227,7 +259,7 @@ public class EmployeeEntityService {
         dto.setHireDate(entity.getHireDate());
         dto.setTerminationDate(entity.getTerminationDate());
         dto.setJobTitle(entity.getJobTitle());
-        dto.setDepartmentId(entity.getDepartmentId());
+        dto.setDepartmentId(entity.getDepartmentId() != null ? entity.getDepartmentId().toString() : null);
         dto.setDepartmentName(entity.getDepartmentName());
         dto.setManagerId(entity.getManagerId());
         dto.setManagerName(entity.getManagerName());

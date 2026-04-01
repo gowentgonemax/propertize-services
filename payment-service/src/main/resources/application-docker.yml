@@ -1,3 +1,6 @@
+server:
+  max-http-request-header-size: 65536
+
 spring:
   datasource:
     url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:propertize_db}?stringtype=unspecified

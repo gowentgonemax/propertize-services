@@ -39,6 +39,9 @@ public class CreateUserRequest {
 
     private String organizationCode;
 
+    /** Denormalized org-type so users get org-type in JWT on first login. */
+    private String organizationType;
+
     @NotNull(message = "At least one role is required")
     private Set<UserRoleEnum> roles;
 

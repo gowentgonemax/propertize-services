@@ -5,9 +5,10 @@ server:
   # Netty settings for better performance and large headers
   netty:
     connection-timeout: ${NETTY_CONNECTION_TIMEOUT:30s}
-    # Increase max header size to 64KB to handle large JWT tokens
+    # Increase max initial line length to 64KB to handle long request URIs
     max-initial-line-length: 65536 # 64KB for request line
-    max-header-size: 65536 # 64KB for headers (default is 8KB)
+  # Spring Boot 3.x correct property for Netty max request header size (replaces server.netty.max-header-size)
+  max-http-request-header-size: 65536 # 64KB for headers (default is 8KB)
 
 spring:
   profiles:
@@ -45,6 +46,10 @@ spring:
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
             - AddResponseHeader=X-Gateway-Version, 1.0.0
+            # Strip Cookie header — NextAuth session cookies are for the frontend only.
+            # Forwarding them to downstream Java services inflates header size and causes HTTP 431.
+            - RemoveRequestHeader=Cookie
+            - RemoveRequestHeader=Set-Cookie
           # Global CORS configuration
           globalcors:
             cors-configurations:
@@ -95,7 +100,7 @@ spring:
             - id: propertize-service
               uri: lb://propertize-service
               predicates:
-                - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**
+                - Path=/api/v1/properties/**,/api/v1/tenants/**,/api/v1/leases/**,/api/v1/invoices/**,/api/v1/maintenance/**,/api/v1/organizations/**,/api/v1/users/**,/api/v1/rental-applications/**,/api/v1/milestones/**,/api/v1/documents/**,/api/v1/approvals/**,/api/v1/reports/**,/api/v1/inspections/**,/api/v1/notifications/**,/api/v1/notification-preferences/**,/api/v1/tasks/**,/api/v1/vendors/**,/api/v1/analytics/**,/api/v1/expenses/**,/api/v1/messages/**,/api/v1/support/**,/api/v1/late-fees/**,/api/v1/metrics/**,/api/v1/audit/**,/api/v1/contacts/**,/api/v1/search/**,/api/v1/assets/**,/api/public/**,/api/v1/diagnostics/**
               filters:
                 - StripPrefix=0
             # Payment Service Routes
@@ -110,14 +115,14 @@ spring:
             - id: employee-service
               uri: lb://employee-service
               predicates:
-                - Path=/api/v1/employees/**,/api/v1/departments/**,/api/v1/attendance/**
+                - Path=/api/v1/employees/**,/api/v1/attendance/**
               filters:
                 - StripPrefix=0
             # Payroll Service Routes
             - id: payroll-service
               uri: lb://payroll-service
               predicates:
-                - Path=/api/v1/clients/*/payroll/**,/api/v1/clients/*/employees/**,/api/v1/timesheets/**,/api/v1/leaves/**,/api/v1/compensation/**,/api/v1/time-entries/**,/api/v1/payroll/**
+                - Path=/api/v1/clients/*/payroll/**,/api/v1/clients/*/employees/**,/api/v1/timesheets/**,/api/v1/leave/**,/api/v1/compensation/**,/api/v1/time-entries/**,/api/v1/payroll/**,/api/v1/departments/**
               filters:
                 - StripPrefix=0
             # Propertize catch-all (MUST be last - matches remaining /api/v1/** paths)
@@ -180,6 +185,9 @@ security:
     source-header: X-Gateway-Source
     source-value: ${GATEWAY_SOURCE:api-gateway}
     strict-mode: false
+    # HMAC secret for signing forwarded user-context headers.
+    # Set GATEWAY_HMAC_SECRET in every service to the same value.
+    hmac-secret: ${GATEWAY_HMAC_SECRET:}
 
 # =============================================================================
 # Actuator Management Endpoints
@@ -231,13 +239,14 @@ info:
 rate-limit:
   enabled: ${RATE_LIMIT_ENABLED:true}
   # Default requests per minute for anonymous users
-  default-requests-per-minute: ${RATE_LIMIT_DEFAULT:60}
-  # Requests per minute for authenticated users
-  authenticated-requests-per-minute: ${RATE_LIMIT_AUTHENTICATED:120}
+  default-requests-per-minute: ${RATE_LIMIT_DEFAULT:120}
+  # Requests per minute for authenticated users — raised to accommodate
+  # multi-API dashboard page loads (org, RBAC, analytics events, etc.)
+  authenticated-requests-per-minute: ${RATE_LIMIT_AUTHENTICATED:300}
   # Requests per minute for auth endpoints (stricter)
   auth-endpoint-requests-per-minute: ${RATE_LIMIT_AUTH:10}
   # Burst multiplier (allows short bursts above limit)
-  burst-multiplier: ${RATE_LIMIT_BURST:1.5}
+  burst-multiplier: ${RATE_LIMIT_BURST:2.0}
 
 # =============================================================================
 # Audit Logging Configuration

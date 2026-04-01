@@ -5,6 +5,7 @@
 # ============================================================================
 server:
   port: 8081
+  max-http-request-header-size: 65536
 
 spring:
   datasource:
@@ -56,6 +57,10 @@ eureka:
     instance-id: ${spring.application.name}:${server.port}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
+
+# Default admin user password (set via ADMIN_DEFAULT_PASSWORD env var)
+admin:
+  default-password: ${ADMIN_DEFAULT_PASSWORD:Admin@123}
 
 # RSA keys — Dockerfile copies keys/ → /app/keys/
 security:

@@ -7,12 +7,12 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
-# Cache dependencies separately (layer caching)
-COPY pom.xml .
-RUN mvn dependency:go-offline -q
+# Install propertize-commons to local Maven repo
+COPY propertize-commons/ /tmp/commons/
+RUN mvn -f /tmp/commons/pom.xml install -DskipTests -q
 
-# Build
-COPY src ./src
+COPY auth-service/pom.xml .
+COPY auth-service/src ./src
 RUN mvn package -DskipTests -q
 
 # ---- Runtime Stage ----
@@ -24,7 +24,7 @@ RUN addgroup -S propertize && adduser -S propertize -G propertize
 COPY --from=build /app/target/auth-service-*.jar app.jar
 
 # RSA keys for JWT signing/verification
-COPY keys/ ./keys/
+COPY auth-service/keys/ ./keys/
 
 RUN chown -R propertize:propertize /app
 USER propertize

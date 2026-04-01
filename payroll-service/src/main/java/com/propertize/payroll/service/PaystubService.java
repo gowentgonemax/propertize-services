@@ -37,7 +37,7 @@ public class PaystubService {
      */
     public Paystub getPaystubById(UUID id) {
         return paystubRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Paystub not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Paystub not found with id: " + id));
     }
 
     /**
@@ -80,12 +80,12 @@ public class PaystubService {
         log.info("Generating paystubs for payroll run: {}", payrollRunId);
 
         PayrollRun payrollRun = payrollRunRepository.findById(payrollRunId)
-            .orElseThrow(() -> new EntityNotFoundException("Payroll run not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Payroll run not found"));
 
         // Get all active employees for the client
         List<EmployeeEntity> employees = employeeRepository.findByClientIdAndStatus(
-            payrollRun.getClient().getId(),
-            com.propertize.payroll.enums.EmployeeStatusEnum.ACTIVE);
+                payrollRun.getClient().getId(),
+                com.propertize.payroll.enums.EmployeeStatusEnum.ACTIVE);
 
         List<Paystub> paystubs = new ArrayList<>();
 
@@ -95,7 +95,7 @@ public class PaystubService {
                 paystubs.add(paystub);
             } catch (Exception e) {
                 log.error("Failed to generate paystub for employee: {} - Error: {}",
-                    employee.getId(), e.getMessage());
+                        employee.getId(), e.getMessage());
             }
         }
 
@@ -109,15 +109,15 @@ public class PaystubService {
     @Transactional
     public Paystub generatePaystub(PayrollRun payrollRun, EmployeeEntity employee) {
         log.info("Generating paystub for employee: {} in payroll run: {}",
-            employee.getId(), payrollRun.getId());
+                employee.getId(), payrollRun.getId());
 
         // Check if paystub already exists
         Optional<Paystub> existingPaystub = getPaystubForEmployeeAndRun(
-            employee.getId().toString(), payrollRun.getId());
+                employee.getId().toString(), payrollRun.getId());
 
         if (existingPaystub.isPresent()) {
             log.warn("Paystub already exists for employee: {} in payroll run: {}",
-                employee.getId(), payrollRun.getId());
+                    employee.getId(), payrollRun.getId());
             return existingPaystub.get();
         }
 
@@ -240,7 +240,7 @@ public class PaystubService {
         content.append("===============================\n\n");
         content.append("Employee: ").append(paystub.getEmployee().getFullName()).append("\n");
         content.append("Pay Period: ").append(paystub.getPayPeriodStart())
-               .append(" - ").append(paystub.getPayPeriodEnd()).append("\n");
+                .append(" - ").append(paystub.getPayPeriodEnd()).append("\n");
         content.append("Pay Date: ").append(paystub.getPayDate()).append("\n\n");
 
         content.append("EARNINGS\n");
@@ -301,8 +301,8 @@ public class PaystubService {
 
         // Calculate gross earnings
         BigDecimal grossEarnings = paystub.getEarnings().stream()
-            .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(e -> e.getAmount() != null ? e.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         paystub.setGrossEarnings(grossEarnings);
     }
 
@@ -311,13 +311,13 @@ public class PaystubService {
         YtdSummary ytdSummary = getYtdSummary(employee.getId().toString(), paystub.getPayDate().getYear());
 
         TaxService.TaxCalculationContext context = TaxService.TaxCalculationContext.builder()
-            .employeeId(employee.getId().toString())
-            .grossPay(paystub.getGrossEarnings())
-            .ytdGross(ytdSummary.getGrossEarnings())
-            .payFrequency(employee.getPayFrequency().name())
-            .workState(employee.getHomeAddress() != null ? employee.getHomeAddress().getState() : null)
-            .payDate(paystub.getPayDate())
-            .build();
+                .employeeId(employee.getId().toString())
+                .grossPay(paystub.getGrossEarnings())
+                .ytdGross(ytdSummary.getGrossEarnings())
+                .payFrequency(employee.getPayFrequency() != null ? employee.getPayFrequency().name() : "SEMI_MONTHLY")
+                .workState(employee.getHomeAddress() != null ? employee.getHomeAddress().getState() : null)
+                .payDate(paystub.getPayDate())
+                .build();
 
         TaxService.TaxCalculationResult taxResult = taxService.calculateTaxes(context);
 
@@ -366,7 +366,7 @@ public class PaystubService {
 
         // Get active deductions for employee
         List<Deduction> deductions = deductionRepository.findByEmployeeIdAndStatus(
-            employee.getId(), com.propertize.payroll.enums.DeductionStatusEnum.ACTIVE);
+                employee.getId(), com.propertize.payroll.enums.DeductionStatusEnum.ACTIVE);
 
         BigDecimal totalDeductions = BigDecimal.ZERO;
 
@@ -403,7 +403,7 @@ public class PaystubService {
     private BigDecimal calculateDeductionAmount(Deduction deduction, BigDecimal grossPay) {
         if (deduction.getMethod() == com.propertize.payroll.enums.DeductionMethodEnum.PERCENTAGE) {
             return grossPay.multiply(deduction.getAmount().divide(new BigDecimal("100"), 4,
-                java.math.RoundingMode.HALF_UP));
+                    java.math.RoundingMode.HALF_UP));
         }
         return deduction.getAmount() != null ? deduction.getAmount() : BigDecimal.ZERO;
     }
@@ -431,10 +431,14 @@ public class PaystubService {
     }
 
     private String generateCheckNumber(PayrollRun payrollRun, EmployeeEntity employee) {
+        String runIdPrefix = payrollRun.getId() != null
+                ? payrollRun.getId().toString().substring(0, Math.min(8, payrollRun.getId().toString().length()))
+                        .toUpperCase()
+                : "UNKNOWN";
         return String.format("CHK-%s-%s-%d",
-            payrollRun.getId().toString().substring(0, 8).toUpperCase(),
-            employee.getEmployeeNumber(),
-            System.currentTimeMillis() % 10000);
+                runIdPrefix,
+                employee.getEmployeeNumber(),
+                System.currentTimeMillis() % 10000);
     }
 
     private BigDecimal safeGet(BigDecimal value) {

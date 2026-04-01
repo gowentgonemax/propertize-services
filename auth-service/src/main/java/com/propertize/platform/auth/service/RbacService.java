@@ -1,8 +1,11 @@
 package com.propertize.platform.auth.service;
 
 import com.propertize.platform.auth.config.RbacConfig;
+import com.propertize.platform.auth.entity.RbacRole;
+import com.propertize.platform.auth.repository.RbacRoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,7 +29,15 @@ public class RbacService {
     private final RbacConfig rbacConfig;
 
     /**
-     * Get BASE permissions for a role (only those defined in rbac.yml, no expansion).
+     * Injected after construction (optional to avoid circular dep during startup).
+     * Used to check system roles from the DB-backed catalog.
+     */
+    @Autowired(required = false)
+    private RbacRoleRepository rbacRoleRepository;
+
+    /**
+     * Get BASE permissions for a role (only those defined in rbac.yml, no
+     * expansion).
      * Use this for JWT token storage to keep token size small.
      */
     public Set<String> getBasePermissionsForRole(String role) {
@@ -61,6 +72,32 @@ public class RbacService {
 
         log.info("✅ Returning {} base permissions for role {} (for JWT storage)", permissions.size(), role);
         return Collections.unmodifiableSet(permissions);
+    }
+
+    /**
+     * Collects explicit denials across a set of role names.
+     * Permissions in this set MUST be removed from the final JWT permission set,
+     * even if granted via inheritance or custom roles.
+     *
+     * @param roles the role names assigned to the user
+     * @return union of all explicitDenials for the given roles (from rbac.yml)
+     */
+    public Set<String> getExplicitDenialsForRoles(Set<String> roles) {
+        if (roles == null || roles.isEmpty() || rbacConfig.getRoles() == null) {
+            return Collections.emptySet();
+        }
+        Set<String> denied = new LinkedHashSet<>();
+        for (String role : roles) {
+            RbacConfig.RoleConfig cfg = rbacConfig.getRoles().get(role);
+            if (cfg != null && cfg.getExplicitDenials() != null) {
+                cfg.getExplicitDenials().stream()
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .forEach(denied::add);
+            }
+        }
+        return Collections.unmodifiableSet(denied);
     }
 
     /**
@@ -156,6 +193,17 @@ public class RbacService {
         if (rbacConfig.getRoles() == null)
             return Collections.emptySet();
         return rbacConfig.getRoles().keySet();
+    }
+
+    /**
+     * Returns all system roles from the DB catalog ({@code rbac_roles} where
+     * {@code is_system=true}), falling back to YAML keys if the repository is
+     * not yet available.
+     */
+    public List<RbacRole> getSystemRolesFromDb() {
+        if (rbacRoleRepository == null)
+            return Collections.emptyList();
+        return rbacRoleRepository.findByIsSystemTrueAndIsActiveTrue();
     }
 
     /**

@@ -14,13 +14,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Trusted Gateway Header Filter for Wagecraft
  *
- * This filter authenticates users based on headers propagated by the API Gateway.
+ * This filter authenticates users based on headers propagated by the API
+ * Gateway.
  * It replaces the local JwtRequestFilter for gateway-authenticated requests.
  *
  * When X-Gateway-Source header is "api-gateway", this filter:
@@ -28,7 +33,8 @@ import java.util.stream.Collectors;
  * 2. Sets up Spring Security authentication
  * 3. Does NOT require local user database lookup
  *
- * For direct API access (e.g., internal service calls), the legacy JwtRequestFilter
+ * For direct API access (e.g., internal service calls), the legacy
+ * JwtRequestFilter
  * can still be used as fallback.
  */
 @Slf4j
@@ -42,15 +48,24 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
     public static final String X_ORGANIZATION_CODE = "X-Organization-Code";
     public static final String X_ROLES = "X-Roles";
     public static final String X_PRIMARY_ROLE = "X-Primary-Role";
+    public static final String X_PERMISSIONS = "X-Permissions";
     public static final String X_CORRELATION_ID = "X-Correlation-Id";
+    public static final String X_ORG_TYPE = "X-Org-Type";
 
     @Value("${security.gateway.expected-value:api-gateway}")
     private String expectedGatewaySource;
 
+    /**
+     * Shared secret for HMAC gateway header verification. Empty = verification
+     * skipped.
+     */
+    @Value("${security.gateway.hmac-secret:}")
+    private String hmacSecret;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
         String gatewaySource = request.getHeader(X_GATEWAY_SOURCE);
 
@@ -59,6 +74,22 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
             log.debug("Request not from gateway: {} {}", request.getMethod(), request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
+        }
+
+        // Verify HMAC signature when configured to prevent header-spoofing attacks
+        if (!hmacSecret.isBlank()) {
+            String userId = request.getHeader(X_USER_ID);
+            String rolesHeader = request.getHeader(X_ROLES);
+            String signature = request.getHeader("X-Gateway-Signature");
+            if (!isValidGatewaySignature(signature, userId, rolesHeader)) {
+                log.warn("Invalid or missing gateway HMAC signature for {} {}",
+                        request.getMethod(), request.getRequestURI());
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getOutputStream()
+                        .print("{\"error\":\"Unauthorized\",\"message\":\"Invalid gateway signature\"}");
+                return;
+            }
         }
 
         // Skip if already authenticated (e.g., by legacy filter)
@@ -75,38 +106,40 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         String rolesHeader = request.getHeader(X_ROLES);
         String primaryRole = request.getHeader(X_PRIMARY_ROLE);
         String correlationId = request.getHeader(X_CORRELATION_ID);
+        String permissionsHeader = request.getHeader(X_PERMISSIONS);
+        String orgType = request.getHeader(X_ORG_TYPE);
 
         if (userId == null || userId.isEmpty()) {
             log.debug("No user ID in gateway headers for: {} {}",
-                request.getMethod(), request.getRequestURI());
+                    request.getMethod(), request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Parse roles
+        // Parse roles and permissions
         Set<String> roles = parseRoles(rolesHeader);
+        Set<String> permissions = parseRoles(permissionsHeader);
 
-        log.debug("Gateway auth - user: {}, org: {}, roles: {} [correlationId={}]",
-            username, organizationCode, roles, correlationId);
+        log.debug("Gateway auth - user: {}, org: {}, roles: {}, permissions: {} [correlationId={}]",
+                username, organizationCode, roles, permissions.size(), correlationId);
 
-        // Create authorities from roles
-        Collection<SimpleGrantedAuthority> authorities = createAuthorities(roles);
+        // Create authorities from roles AND permissions
+        Collection<SimpleGrantedAuthority> authorities = createAuthorities(roles, permissions);
 
         // Create authentication principal
         GatewayAuthenticatedUser principal = new GatewayAuthenticatedUser(
-            userId, username, organizationId, organizationCode, roles, primaryRole
-        );
+                userId, username, organizationId, organizationCode, orgType, roles, primaryRole);
 
         // Create authentication token
-        UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(principal, null, authorities);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal, null,
+                authorities);
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         // Set authentication in security context
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         log.info("✅ Gateway authenticated: {} [org={}, roles={}, correlationId={}]",
-            username, organizationCode, roles.size(), correlationId);
+                username, organizationCode, roles.size(), correlationId);
 
         filterChain.doFilter(request, response);
     }
@@ -116,17 +149,21 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
             return Collections.emptySet();
         }
         return Arrays.stream(rolesHeader.split(","))
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toSet());
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
     }
 
-    private Collection<SimpleGrantedAuthority> createAuthorities(Set<String> roles) {
+    private Collection<SimpleGrantedAuthority> createAuthorities(Set<String> roles, Set<String> permissions) {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
         roles.forEach(role -> {
             // Add both ROLE_ prefixed and non-prefixed authorities
             authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
             authorities.add(new SimpleGrantedAuthority(role));
+        });
+        // Add permission-based authorities (e.g., "compensation:create")
+        permissions.forEach(permission -> {
+            authorities.add(new SimpleGrantedAuthority(permission));
         });
         return authorities;
     }
@@ -135,10 +172,39 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         return path.startsWith("/actuator/health") ||
-               path.startsWith("/actuator/info") ||
-               path.startsWith("/swagger-ui") ||
-               path.startsWith("/v3/api-docs") ||
-               path.startsWith("/auth/");
+                path.startsWith("/actuator/info") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/auth/");
+    }
+
+    /**
+     * Verifies the X-Gateway-Signature header using HMAC-SHA256.
+     * Accepts both the current minute and the previous minute to tolerate
+     * minor clock skew between gateway and service.
+     */
+    private boolean isValidGatewaySignature(String signature, String userId, String roles) {
+        if (signature == null || userId == null || roles == null) {
+            return false;
+        }
+        long epochMinutes = Instant.now().getEpochSecond() / 60;
+        return signature.equals(computeHmac(userId + ":" + roles + ":" + epochMinutes))
+                || signature.equals(computeHmac(userId + ":" + roles + ":" + (epochMinutes - 1)));
+    }
+
+    private String computeHmac(String payload) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(hmacSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] raw = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(raw.length * 2);
+            for (byte b : raw)
+                sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            log.error("HMAC computation failed", e);
+            return "";
+        }
     }
 
     /**
@@ -149,25 +215,48 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         private final String username;
         private final String organizationId;
         private final String organizationCode;
+        private final String orgType;
         private final Set<String> roles;
         private final String primaryRole;
 
         public GatewayAuthenticatedUser(String userId, String username, String organizationId,
-                                        String organizationCode, Set<String> roles, String primaryRole) {
+                String organizationCode, String orgType, Set<String> roles, String primaryRole) {
             this.userId = userId;
             this.username = username;
             this.organizationId = organizationId;
             this.organizationCode = organizationCode;
+            this.orgType = orgType != null ? orgType : "";
             this.roles = roles != null ? roles : Collections.emptySet();
             this.primaryRole = primaryRole;
         }
 
-        public String getUserId() { return userId; }
-        public String getUsername() { return username; }
-        public String getOrganizationId() { return organizationId; }
-        public String getOrganizationCode() { return organizationCode; }
-        public Set<String> getRoles() { return roles; }
-        public String getPrimaryRole() { return primaryRole; }
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getOrganizationId() {
+            return organizationId;
+        }
+
+        public String getOrganizationCode() {
+            return organizationCode;
+        }
+
+        public String getOrgType() {
+            return orgType;
+        }
+
+        public Set<String> getRoles() {
+            return roles;
+        }
+
+        public String getPrimaryRole() {
+            return primaryRole;
+        }
 
         public boolean hasRole(String role) {
             return roles.contains(role);
@@ -175,7 +264,8 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
 
         public boolean hasAnyRole(String... rolesToCheck) {
             for (String role : rolesToCheck) {
-                if (roles.contains(role)) return true;
+                if (roles.contains(role))
+                    return true;
             }
             return false;
         }
@@ -191,7 +281,7 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         @Override
         public String toString() {
             return "GatewayAuthenticatedUser{userId='" + userId + "', username='" + username +
-                   "', org='" + organizationCode + "', roles=" + roles + "}";
+                    "', org='" + organizationCode + "', roles=" + roles + "}";
         }
     }
 }

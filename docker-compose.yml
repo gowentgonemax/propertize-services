@@ -598,6 +598,12 @@ services:
       API_URL: http://api-gateway:8080
       # Browser-side URL — used by client components
       NEXT_PUBLIC_API_URL: http://localhost:8080
+      # Tell the diagnostics health-check route to use host.docker.internal
+      # (Node.js/musl-libc can't resolve Docker service names via 127.0.0.11)
+      DOCKER_INTERNAL: "true"
+    # Ensure host.docker.internal resolves to the Docker host on Linux too
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:3000 || exit 1"]
       interval: 30s

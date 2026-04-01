@@ -15,7 +15,6 @@ import java.io.IOException;
  * Filter to add correlation ID to all HTTP requests for tracking
  */
 @Slf4j
-@Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorrelationIdFilter implements Filter {
 

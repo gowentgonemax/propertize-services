@@ -54,7 +54,7 @@ public class PasswordResetService {
 
             // TODO: Send email via email service
             String resetLink = frontendUrl + resetPasswordPath + "?token=" + token;
-            log.info("Password reset link for {}: {}", email, resetLink);
+            log.info("Password reset link generated for user: {}", email);
         });
 
         if (userOpt.isEmpty()) {
@@ -98,6 +98,10 @@ public class PasswordResetService {
 
         resetToken.setUsed(true);
         tokenRepository.save(resetToken);
+
+        // Invalidate any remaining active tokens for this user so they cannot
+        // be replayed after a successful password change.
+        tokenRepository.deleteByUserId(user.getId());
 
         log.info("✅ Password reset successful for user: {}", user.getUsername());
     }

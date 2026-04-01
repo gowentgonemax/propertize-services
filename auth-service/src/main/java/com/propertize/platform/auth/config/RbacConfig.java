@@ -107,6 +107,11 @@ public class RbacConfig {
         private RoleRestrictions restrictions;
         private Map<String, Boolean> capabilities;
         private List<String> features;
+        /**
+         * Advisory list of org-types this role is designed for (e.g.
+         * INDIVIDUAL_PROPERTY_OWNER).
+         */
+        private List<String> applicableOrgTypes;
     }
 
     @Data

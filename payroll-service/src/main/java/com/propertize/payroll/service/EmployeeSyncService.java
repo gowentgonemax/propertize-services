@@ -181,7 +181,7 @@ public class EmployeeSyncService {
 
         // Map department
         if (dto.getDepartmentId() != null) {
-            employee.setDepartmentId(dto.getDepartmentId().toString());
+            employee.setDepartmentId(dto.getDepartmentId());
             employee.setDepartmentName(dto.getDepartmentName());
         }
 

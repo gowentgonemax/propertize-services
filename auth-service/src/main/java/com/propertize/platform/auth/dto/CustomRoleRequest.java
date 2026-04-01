@@ -70,6 +70,6 @@ public class CustomRoleRequest {
      * Cannot exceed the creator's own privilege level.
      */
     @Min(value = 0, message = "Max level must be at least 0")
-    @Max(value = 100, message = "Max level must not exceed 100")
+    @Max(value = 1000, message = "Max level must not exceed 1000")
     private int maxLevel;
 }

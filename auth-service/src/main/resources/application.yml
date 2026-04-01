@@ -2,6 +2,9 @@ server:
   port: ${SERVER_PORT:8081}
   # Graceful shutdown - wait for in-flight requests to complete
   shutdown: graceful
+  # Spring Boot 3.x — accept large headers forwarded by the API Gateway.
+  # The gateway adds X-Permissions + X-Roles + other context headers which can exceed 8 KB.
+  max-http-request-header-size: 65536
 
 spring:
   profiles:
@@ -98,6 +101,8 @@ security:
       enabled: ${KEY_ROTATION_ENABLED:false}
       interval-days: ${KEY_ROTATION_INTERVAL:90}
       grace-period-hours: ${KEY_ROTATION_GRACE:24}
+  gateway:
+    hmac-secret: ${GATEWAY_HMAC_SECRET:}
 
 # RBAC Configuration
 rbac:
@@ -225,3 +230,11 @@ tracing:
   enabled: ${TRACING_ENABLED:false}
   otlp:
     endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

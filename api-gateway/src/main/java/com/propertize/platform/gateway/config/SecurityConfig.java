@@ -68,9 +68,11 @@ public class SecurityConfig {
                                                 .pathMatchers("/api/v1/rental-applications/track/**").permitAll()
 
                                                 // API Documentation
+                                                .pathMatchers("/swagger-ui.html").permitAll()
                                                 .pathMatchers("/swagger-ui/**").permitAll()
                                                 .pathMatchers("/v3/api-docs/**").permitAll()
                                                 .pathMatchers("/api-docs/**").permitAll()
+                                                .pathMatchers("/webjars/**").permitAll()
 
                                                 // GraphQL (has internal auth check)
                                                 .pathMatchers("/graphql").permitAll()

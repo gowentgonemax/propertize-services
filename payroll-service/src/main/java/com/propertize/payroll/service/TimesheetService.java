@@ -32,6 +32,11 @@ public class TimesheetService {
     }
 
     @Transactional(readOnly = true)
+    public Page<TimesheetResponse> getAllTimesheets(Pageable pageable) {
+        return timesheetRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Page<TimesheetResponse> getEmployeeTimesheets(String employeeId, Pageable pageable) {
         return timesheetRepository.findByEmployeeId(employeeId, pageable)
                 .map(this::mapToResponse);

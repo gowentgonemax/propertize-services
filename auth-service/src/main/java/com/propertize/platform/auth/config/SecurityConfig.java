@@ -50,6 +50,11 @@ public class SecurityConfig {
                 .addFilterBefore(internalRequestAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
 
+                        // ── Swagger UI (accessible directly on port 8081) ─────────────────────
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/api-docs/**", "/webjars/**")
+                        .permitAll()
+
                         // ── Truly public authentication endpoints ──────────────────────────────
                         .requestMatchers(
                                 "/api/v1/auth/login",
@@ -65,14 +70,24 @@ public class SecurityConfig {
                         // ── Public read-only RBAC catalog (frontend fetches role/permission list) ─
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/rbac/roles",
+                                "/api/v1/rbac/roles/**",
                                 "/api/v1/rbac/permissions",
+                                "/api/v1/rbac/permissions/**",
                                 "/api/v1/rbac/config",
                                 "/api/v1/auth/rbac/roles",
                                 "/api/v1/auth/rbac/permissions",
                                 "/api/v1/auth/rbac/config",
+                                "/api/v1/auth/rbac/endpoints",
                                 "/api/v1/auth/roles",
+                                "/api/v1/auth/roles/**",
+                                "/api/v1/auth/permissions/**",
                                 "/api/v1/auth/permissions/all")
                         .permitAll()
+
+                        // ── Custom roles — GET list is authenticated; write ops are authenticated ─
+                        .requestMatchers("/api/v1/rbac/custom-roles/**",
+                                "/api/v1/rbac/users/**")
+                        .authenticated()
 
                         // ── Health: only the liveness probe is public; other actuator paths are not ──
                         .requestMatchers("/api/health", "/actuator/health", "/actuator/health/liveness")
@@ -101,7 +116,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean

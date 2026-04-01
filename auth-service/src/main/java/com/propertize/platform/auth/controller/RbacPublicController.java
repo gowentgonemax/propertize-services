@@ -2,6 +2,7 @@ package com.propertize.platform.auth.controller;
 
 import com.propertize.platform.auth.config.RbacConfig;
 import com.propertize.platform.auth.dto.RoleDto;
+import com.propertize.platform.auth.entity.RbacRole;
 import com.propertize.platform.auth.service.RbacService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,27 @@ public class RbacPublicController {
      */
     @GetMapping("/roles")
     public ResponseEntity<List<RoleDto>> getRoles() {
+        // Prefer DB-backed system roles (populated by RbacSeederService at startup)
+        List<RbacRole> dbRoles = rbacService.getSystemRolesFromDb();
+        if (!dbRoles.isEmpty()) {
+            List<RoleDto> roles = dbRoles.stream()
+                    .map(r -> RoleDto.builder()
+                            .name(r.getRoleName().toLowerCase())
+                            .label(r.getDisplayName())
+                            .description(r.getDescription())
+                            .scope(r.getScope())
+                            .level(r.getLevel())
+                            .category(r.getCategory())
+                            .permissions(new ArrayList<>(
+                                    rbacService.getPermissionsForRole(r.getRoleName())))
+                            .build())
+                    .sorted(Comparator.comparingInt(RoleDto::getLevel).reversed())
+                    .collect(Collectors.toList());
+            log.debug("📋 /api/v1/rbac/roles — returning {} roles (DB)", roles.size());
+            return ResponseEntity.ok(roles);
+        }
+
+        // Fallback: read directly from YAML config (e.g. first boot before seeder runs)
         if (rbacConfig.getRoles() == null) {
             log.warn("⚠️ RBAC roles config is null — returning empty list");
             return ResponseEntity.ok(Collections.emptyList());
@@ -59,11 +81,10 @@ public class RbacPublicController {
 
         List<RoleDto> roles = rbacConfig.getRoles().entrySet().stream()
                 .map(entry -> {
-                    String yamlKey = entry.getKey(); // e.g. "PLATFORM_OVERSIGHT"
-                    String name = yamlKey.toLowerCase(); // e.g. "platform_oversight"
-                    String label = toTitleCase(name); // e.g. "Platform Oversight"
+                    String yamlKey = entry.getKey();
+                    String name = yamlKey.toLowerCase();
+                    String label = toTitleCase(name);
                     RbacConfig.RoleConfig cfg = entry.getValue();
-
                     return RoleDto.builder()
                             .name(name)
                             .label(label)
@@ -77,7 +98,7 @@ public class RbacPublicController {
                 .sorted(Comparator.comparingInt(RoleDto::getLevel).reversed())
                 .collect(Collectors.toList());
 
-        log.debug("📋 /api/v1/rbac/roles — returning {} roles", roles.size());
+        log.debug("📋 /api/v1/rbac/roles — returning {} roles (YAML fallback)", roles.size());
         return ResponseEntity.ok(roles);
     }
 

@@ -185,3 +185,12 @@ logging:
     com.employecraft: DEBUG
     org.springframework.security: INFO
     org.hibernate.SQL: INFO
+
+# SpringDoc OpenAPI
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+  api-docs:
+    path: /v3/api-docs
+    enabled: ${SWAGGER_ENABLED:true}

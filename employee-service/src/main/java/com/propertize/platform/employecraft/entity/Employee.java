@@ -7,6 +7,8 @@ import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
 import com.propertize.platform.employecraft.enums.EmploymentTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -39,7 +41,8 @@ public class Employee extends AuditableEntity {
     /**
      * Organization ID from Propertize - required for multi-tenancy
      */
-    @Column(name = "organization_id", nullable = false)
+    @Column(name = "organization_id", nullable = false, columnDefinition = "uuid")
+    @JdbcTypeCode(SqlTypes.UUID)
     private UUID organizationId;
 
     /**

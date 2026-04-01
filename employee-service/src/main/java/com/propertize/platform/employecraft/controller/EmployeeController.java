@@ -30,8 +30,9 @@ public class EmployeeController {
 
     @GetMapping
     public ResponseEntity<Page<EmployeeResponse>> getAllEmployees(
+            @RequestParam(required = false) UUID organizationId,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(employeeService.getAllEmployees(pageable));
+        return ResponseEntity.ok(employeeService.getAllEmployees(organizationId, pageable));
     }
 
     @GetMapping("/{id}")
@@ -44,10 +45,18 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.getEmployeeByUserId(userId));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<EmployeeResponse> getMyEmployeeProfile() {
+        return employeeService.getMyEmployeeProfile()
+                .map(e -> ResponseEntity.ok(e))
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @PostMapping
     public ResponseEntity<EmployeeResponse> createEmployee(
-            @Valid @RequestBody EmployeeCreateRequest request) {
-        EmployeeResponse response = employeeService.createEmployee(request);
+            @Valid @RequestBody EmployeeCreateRequest request,
+            @RequestParam(required = false) UUID organizationId) {
+        EmployeeResponse response = employeeService.createEmployee(request, organizationId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

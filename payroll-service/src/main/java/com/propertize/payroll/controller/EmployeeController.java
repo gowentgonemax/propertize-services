@@ -11,19 +11,22 @@ import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Controller for Employee operations.
- * Uses EmployeeEntityService for local CRUD and EmployeeSyncService for Employecraft integration.
+ * Uses EmployeeEntityService for local CRUD and EmployeeSyncService for
+ * Employecraft integration.
  */
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping
+@RequestMapping("/api/v1")
 public class EmployeeController {
 
     private final EmployeeEntityService employeeService;
@@ -104,5 +107,33 @@ public class EmployeeController {
         String token = authHeader.replace("Bearer ", "");
         employeeSyncService.syncAllEmployees(clientId, organizationId, token);
         return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/employees")
+    public ResponseEntity<EmployeeDTO> createEmployeeDirect(@Valid @RequestBody CreateEmployeeRequest request) {
+        log.info("Creating employee: {}", request.getEmployeeNumber());
+        EmployeeDTO created = employeeService.createEmployee(request);
+        return ResponseEntity.created(URI.create("/employees/" + created.getId())).body(created);
+    }
+
+    @GetMapping("/employees/by-number/{employeeNumber}")
+    public ResponseEntity<EmployeeDTO> getEmployeeByNumber(@PathVariable String employeeNumber) {
+        log.info("Fetching employee by number: {}", employeeNumber);
+        return ResponseEntity.ok(employeeService.getEmployeeByNumber(employeeNumber));
+    }
+
+    @GetMapping("/employees/client/{clientId}/active")
+    public ResponseEntity<List<EmployeeDTO>> getActiveEmployeesByClient(@PathVariable UUID clientId) {
+        log.info("Fetching active employees for client: {}", clientId);
+        return ResponseEntity.ok(employeeService.getActiveEmployeesByClient(clientId));
+    }
+
+    @GetMapping("/employees/client/{clientId}/search")
+    public ResponseEntity<Page<EmployeeDTO>> searchEmployees(
+            @PathVariable UUID clientId,
+            @RequestParam String query,
+            Pageable pageable) {
+        log.info("Searching employees for client: {} with query: {}", clientId, query);
+        return ResponseEntity.ok(employeeService.searchEmployees(clientId, query, pageable));
     }
 }

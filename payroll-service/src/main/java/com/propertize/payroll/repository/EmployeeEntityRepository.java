@@ -16,31 +16,29 @@ import java.util.UUID;
 @Repository
 public interface EmployeeEntityRepository extends JpaRepository<EmployeeEntity, UUID> {
 
-    Optional<EmployeeEntity> findByEmployeeNumber(String employeeNumber);
+        Optional<EmployeeEntity> findByEmployeeNumber(String employeeNumber);
 
-    Optional<EmployeeEntity> findByExternalEmployeeId(UUID externalEmployeeId);
+        Optional<EmployeeEntity> findByExternalEmployeeId(UUID externalEmployeeId);
 
-    List<EmployeeEntity> findByClientId(UUID clientId);
+        Page<EmployeeEntity> findByClientId(UUID clientId, Pageable pageable);
 
-    Page<EmployeeEntity> findByClientId(UUID clientId, Pageable pageable);
+        List<EmployeeEntity> findByClientIdAndStatus(UUID clientId, EmployeeStatusEnum status);
 
-    List<EmployeeEntity> findByClientIdAndStatus(UUID clientId, EmployeeStatusEnum status);
+        @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.departmentId = :departmentId")
+        List<EmployeeEntity> findByClientIdAndDepartmentId(@Param("clientId") UUID clientId,
+                        @Param("departmentId") UUID departmentId);
 
-    @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.departmentId = :departmentId")
-    List<EmployeeEntity> findByClientIdAndDepartmentId(@Param("clientId") UUID clientId,
-            @Param("departmentId") String departmentId);
+        @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND " +
+                        "(LOWER(e.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(e.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+                        "LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
+        Page<EmployeeEntity> searchByClientId(@Param("clientId") UUID clientId, @Param("search") String search,
+                        Pageable pageable);
 
-    @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND " +
-            "(LOWER(e.firstName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(e.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(e.employeeNumber) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<EmployeeEntity> searchByClientId(@Param("clientId") UUID clientId, @Param("search") String search,
-            Pageable pageable);
+        @Query("SELECT COUNT(e) FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.status = :status")
+        long countByClientIdAndStatus(@Param("clientId") UUID clientId, @Param("status") EmployeeStatusEnum status);
 
-    @Query("SELECT COUNT(e) FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.status = :status")
-    long countByClientIdAndStatus(@Param("clientId") UUID clientId, @Param("status") EmployeeStatusEnum status);
+        boolean existsByEmployeeNumber(String employeeNumber);
 
-    boolean existsByEmployeeNumber(String employeeNumber);
-
-    boolean existsBySsnLastFour(String ssnLastFour);
+        boolean existsBySsnLastFour(String ssnLastFour);
 }

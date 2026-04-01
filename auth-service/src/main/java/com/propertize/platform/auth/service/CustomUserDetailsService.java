@@ -38,7 +38,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                     return new UsernameNotFoundException("User not found: " + username);
                 });
 
-        Collection<GrantedAuthority> authorities = user.getRoles().stream()
+        Collection<GrantedAuthority> authorities = (user.getRoles() != null ? user.getRoles()
+                : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
                 .collect(Collectors.toSet());
 

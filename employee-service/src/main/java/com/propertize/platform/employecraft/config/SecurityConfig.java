@@ -44,17 +44,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/api-docs/**", "/webjars/**")
+                        .permitAll()
 
                         // Employee management - Organization level
                         .requestMatchers(HttpMethod.GET, "/api/v1/employees/**")
-                        .hasAnyRole("ORGANIZATION_OWNER", "ORGANIZATION_ADMIN", "PROPERTY_MANAGER", "ACCOUNTANT")
+                        .hasAnyRole("PLATFORM_OVERSIGHT", "ORGANIZATION_OWNER", "ORGANIZATION_ADMIN", "PROPERTY_MANAGER", "ACCOUNTANT")
                         .requestMatchers(HttpMethod.POST, "/api/v1/employees/**")
-                        .hasAnyRole("ORGANIZATION_OWNER", "ORGANIZATION_ADMIN")
+                        .hasAnyRole("PLATFORM_OVERSIGHT", "ORGANIZATION_OWNER", "ORGANIZATION_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/employees/**")
-                        .hasAnyRole("ORGANIZATION_OWNER", "ORGANIZATION_ADMIN")
+                        .hasAnyRole("PLATFORM_OVERSIGHT", "ORGANIZATION_OWNER", "ORGANIZATION_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/employees/**")
-                        .hasAnyRole("ORGANIZATION_OWNER")
+                        .hasAnyRole("PLATFORM_OVERSIGHT", "ORGANIZATION_OWNER")
 
                         // Department management
                         .requestMatchers("/api/v1/departments/**")
