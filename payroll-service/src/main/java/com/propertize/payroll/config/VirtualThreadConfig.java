@@ -1,12 +1,10 @@
 package com.propertize.payroll.config;
 
-import org.springframework.boot.web.embedded.tomcat.TomcatProtocolHandlerCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executors;
 
@@ -51,17 +49,6 @@ import java.util.concurrent.Executors;
 @Configuration
 @EnableAsync
 public class VirtualThreadConfig {
-
-    /**
-     * Replace the Tomcat request handler thread pool with virtual threads.
-     * Each incoming HTTP request runs on its own virtual thread.
-     *
-     * Spring Boot 3.2+ equivalent: {@code spring.threads.virtual.enabled=true}
-     */
-    @Bean
-    public TomcatProtocolHandlerCustomizer<?> virtualThreadTomcatCustomizer() {
-        return protocolHandler -> protocolHandler.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
-    }
 
     /**
      * Virtual-thread-backed executor for {@code @Async} methods and

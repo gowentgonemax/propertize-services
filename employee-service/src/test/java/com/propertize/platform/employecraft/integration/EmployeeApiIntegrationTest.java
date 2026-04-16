@@ -5,7 +5,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -34,7 +34,7 @@ class EmployeeApiIntegrationTest {
     private int port;
 
     /** Prevent real Kafka connections during integration tests. */
-    @MockBean
+    @MockitoBean
     private EmployeeEventPublisher eventPublisher;
 
     private static final String ORG_ID = "00000000-0000-0000-0000-000000000001";

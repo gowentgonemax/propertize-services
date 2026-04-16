@@ -92,7 +92,7 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
 
-        ContentCachingRequestWrapper  wrappedReq  = new ContentCachingRequestWrapper(request);
+        ContentCachingRequestWrapper  wrappedReq  = new ContentCachingRequestWrapper(request, Integer.MAX_VALUE);
         ContentCachingResponseWrapper wrappedResp = new ContentCachingResponseWrapper(response);
 
         String correlationId = resolveCorrelationId(request);
