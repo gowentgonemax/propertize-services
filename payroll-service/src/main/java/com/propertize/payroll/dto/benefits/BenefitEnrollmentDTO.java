@@ -1,5 +1,7 @@
 package com.propertize.payroll.dto.benefits;
 
+import com.propertize.payroll.enums.BenefitTypeEnum;
+
 import com.propertize.payroll.enums.CoverageLevelEnum;
 import com.propertize.payroll.enums.EnrollmentStatusEnum;
 import jakarta.validation.constraints.NotNull;
@@ -29,7 +31,7 @@ public class BenefitEnrollmentDTO {
     private UUID benefitPlanId;
 
     private String benefitPlanName;
-    private String benefitType;
+    private BenefitTypeEnum benefitType;
 
     @NotNull(message = "Enrollment date is required")
     private LocalDate enrollmentDate;

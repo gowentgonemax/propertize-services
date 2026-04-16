@@ -1,5 +1,8 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.LeaveStatusEnum;
+import com.propertize.payroll.enums.LeaveTypeEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -17,7 +20,7 @@ public class LeaveRequestDTO {
     private Long employeeId;
 
     @NotNull
-    private String leaveType; // VACATION, SICK, PTO, BEREAVEMENT, JURY_DUTY, FMLA, MILITARY
+    private LeaveTypeEnum leaveType;
 
     @FutureOrPresent
     private LocalDate startDate;
@@ -29,7 +32,7 @@ public class LeaveRequestDTO {
 
     private Double totalHours;
 
-    private String status; // PENDING, APPROVED, REJECTED, CANCELLED
+    private LeaveStatusEnum status;
 
     private Long approverId;
 

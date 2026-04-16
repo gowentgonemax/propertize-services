@@ -155,6 +155,71 @@ public class UserManagementService {
         log.info("✅ Password updated for user: {}", userId);
     }
 
+    @Transactional
+    public void disableUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setEnabled(false);
+        userRepository.save(user);
+        log.info("✅ User disabled: {}", userId);
+    }
+
+    @Transactional
+    public void enableUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setEnabled(true);
+        userRepository.save(user);
+        log.info("✅ User enabled: {}", userId);
+    }
+
+    @Transactional
+    public void lockUserAccount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setAccountNonLocked(false);
+        userRepository.save(user);
+        log.info("✅ User account locked: {}", userId);
+    }
+
+    @Transactional
+    public void unlockUserAccount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setAccountNonLocked(true);
+        userRepository.save(user);
+        log.info("✅ User account unlocked: {}", userId);
+    }
+
+    @Transactional
+    public boolean toggleStatus(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        boolean newStatus = !Boolean.TRUE.equals(user.getEnabled());
+        user.setEnabled(newStatus);
+        userRepository.save(user);
+        log.info("✅ User status toggled to {} for user: {}", newStatus, userId);
+        return newStatus;
+    }
+
+    @Transactional
+    public void resetPassword(Long userId, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        log.info("✅ Password reset for user: {}", userId);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found: " + userId);
+        }
+        userRepository.deleteById(userId);
+        log.info("✅ User deleted: {}", userId);
+    }
+
     private UserInfoResponse mapToUserInfoResponse(User user) {
         Set<String> roleNames = new HashSet<>();
         if (user.getRoles() != null) {

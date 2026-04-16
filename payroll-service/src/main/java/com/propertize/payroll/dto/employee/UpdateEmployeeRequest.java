@@ -1,5 +1,13 @@
 package com.propertize.payroll.dto.employee;
 
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
+import com.propertize.commons.enums.employee.PayTypeEnum;
+
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,10 +39,10 @@ public class UpdateEmployeeRequest {
     private String zipCode;
     private String country;
 
-    private String status;
-    private String employmentType;
-    private String payType;
-    private String payFrequency;
+    private EmployeeStatusEnum status;
+    private EmploymentTypeEnum employmentType;
+    private PayTypeEnum payType;
+    private PayFrequencyEnum payFrequency;
 
     private BigDecimal hourlyRate;
     private BigDecimal annualSalary;

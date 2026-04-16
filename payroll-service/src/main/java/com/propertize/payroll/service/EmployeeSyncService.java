@@ -4,10 +4,11 @@ import com.propertize.payroll.client.EmployecraftFeignClient;
 import com.propertize.payroll.client.dto.EmployeeDto;
 import com.propertize.payroll.entity.Client;
 import com.propertize.payroll.entity.EmployeeEntity;
-import com.propertize.payroll.enums.EmployeeStatusEnum;
-import com.propertize.payroll.enums.EmploymentTypeEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
-import com.propertize.payroll.enums.PayTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayTypeEnum;
+import com.propertize.commons.constants.GatewayHeaders;
 import com.propertize.payroll.repository.ClientRepository;
 import com.propertize.payroll.repository.EmployeeEntityRepository;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +90,7 @@ public class EmployeeSyncService {
                         page,
                         pageSize,
                         null,
-                        "Bearer " + authToken);
+                        GatewayHeaders.BEARER_PREFIX + authToken);
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     var employeePage = response.getBody();
@@ -142,38 +143,22 @@ public class EmployeeSyncService {
 
         // Map status
         if (dto.getStatus() != null) {
-            try {
-                employee.setStatus(EmployeeStatusEnum.valueOf(dto.getStatus()));
-            } catch (IllegalArgumentException e) {
-                employee.setStatus(EmployeeStatusEnum.ACTIVE);
-            }
+            employee.setStatus(dto.getStatus());
         }
 
         // Map employment type
         if (dto.getEmploymentType() != null) {
-            try {
-                employee.setEmploymentType(EmploymentTypeEnum.valueOf(dto.getEmploymentType()));
-            } catch (IllegalArgumentException e) {
-                employee.setEmploymentType(EmploymentTypeEnum.FULL_TIME);
-            }
+            employee.setEmploymentType(dto.getEmploymentType());
         }
 
         // Map compensation
         if (dto.getCompensation() != null) {
             var comp = dto.getCompensation();
             if (comp.getPayType() != null) {
-                try {
-                    employee.setPayType(PayTypeEnum.valueOf(comp.getPayType()));
-                } catch (IllegalArgumentException e) {
-                    employee.setPayType(PayTypeEnum.HOURLY);
-                }
+                employee.setPayType(comp.getPayType());
             }
             if (comp.getPayFrequency() != null) {
-                try {
-                    employee.setPayFrequency(PayFrequencyEnum.valueOf(comp.getPayFrequency()));
-                } catch (IllegalArgumentException e) {
-                    employee.setPayFrequency(PayFrequencyEnum.BI_WEEKLY);
-                }
+                employee.setPayFrequency(comp.getPayFrequency());
             }
             employee.setHourlyRate(comp.getHourlyRate());
             employee.setAnnualSalary(comp.getAnnualSalary());
@@ -223,7 +208,7 @@ public class EmployeeSyncService {
         try {
             ResponseEntity<Boolean> response = employecraftClient.employeeExists(
                     employeeId,
-                    "Bearer " + authToken);
+                    GatewayHeaders.BEARER_PREFIX + authToken);
             return Boolean.TRUE.equals(response.getBody());
         } catch (Exception e) {
             log.error("Error validating employee {}: {}", employeeId, e.getMessage());

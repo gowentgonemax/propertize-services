@@ -1,7 +1,7 @@
 package com.propertize.payroll.dto.compensation.request;
 
 import com.propertize.payroll.enums.CompensationTypeEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

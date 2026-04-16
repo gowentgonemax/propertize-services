@@ -2,9 +2,12 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY vendor-matching/requirements.txt .
+# Install PyTorch CPU-only first to avoid downloading multi-GB CUDA packages
+RUN pip install --no-cache-dir \
+  torch --index-url https://download.pytorch.org/whl/cpu
 # sentence-transformers downloads model on first run; cache it at build time
 RUN pip install --no-cache-dir -r requirements.txt && \
-    python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+  python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 COPY shared ./shared
 COPY vendor-matching/ .

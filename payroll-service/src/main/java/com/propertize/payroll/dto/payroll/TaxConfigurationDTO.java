@@ -1,5 +1,7 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.FilingStatusEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -23,7 +25,7 @@ public class TaxConfigurationDTO {
     private String state;
     private String localityCode;
 
-    private String filingStatus; // SINGLE, MARRIED_FILING_JOINTLY, MARRIED_FILING_SEPARATELY, HEAD_OF_HOUSEHOLD
+    private FilingStatusEnum filingStatus;
 
     @PositiveOrZero
     private Integer allowances;

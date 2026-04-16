@@ -7,7 +7,10 @@ import com.propertize.payroll.entity.Client;
 import com.propertize.payroll.entity.EmployeeEntity;
 import com.propertize.payroll.entity.embedded.Address;
 import com.propertize.payroll.entity.embedded.ContactInfo;
-import com.propertize.payroll.enums.*;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayTypeEnum;
 import com.propertize.payroll.repository.ClientRepository;
 import com.propertize.payroll.repository.EmployeeEntityRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -71,9 +74,9 @@ public class EmployeeEntityService {
 
         // Set employment details
         employee.setStatus(EmployeeStatusEnum.ACTIVE);
-        employee.setEmploymentType(EmploymentTypeEnum.valueOf(request.getEmploymentType()));
-        employee.setPayType(PayTypeEnum.valueOf(request.getPayType()));
-        employee.setPayFrequency(PayFrequencyEnum.valueOf(request.getPayFrequency()));
+        employee.setEmploymentType(request.getEmploymentType());
+        employee.setPayType(request.getPayType());
+        employee.setPayFrequency(request.getPayFrequency());
         employee.setHourlyRate(request.getHourlyRate());
         employee.setAnnualSalary(request.getAnnualSalary());
         employee.setHireDate(request.getHireDate());
@@ -172,13 +175,13 @@ public class EmployeeEntityService {
 
         // Update employment details
         if (request.getStatus() != null)
-            employee.setStatus(EmployeeStatusEnum.valueOf(request.getStatus()));
+            employee.setStatus(request.getStatus());
         if (request.getEmploymentType() != null)
-            employee.setEmploymentType(EmploymentTypeEnum.valueOf(request.getEmploymentType()));
+            employee.setEmploymentType(request.getEmploymentType());
         if (request.getPayType() != null)
-            employee.setPayType(PayTypeEnum.valueOf(request.getPayType()));
+            employee.setPayType(request.getPayType());
         if (request.getPayFrequency() != null)
-            employee.setPayFrequency(PayFrequencyEnum.valueOf(request.getPayFrequency()));
+            employee.setPayFrequency(request.getPayFrequency());
         if (request.getHourlyRate() != null)
             employee.setHourlyRate(request.getHourlyRate());
         if (request.getAnnualSalary() != null)

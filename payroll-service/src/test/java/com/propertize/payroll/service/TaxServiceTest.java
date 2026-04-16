@@ -302,7 +302,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(new BigDecimal("1500"))
                                 .ytdGross(BigDecimal.ZERO)
-                                .payFrequency(PayFrequencyEnum.WEEKLY)
+                                .payFrequency(PayFrequencyEnum.WEEKLY.name())
                                 .workState("CA")
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();

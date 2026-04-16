@@ -70,10 +70,20 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
-        <!-- Spring Data Redis for Token Blacklist -->
+        <!-- Spring Data Redis for Token Blacklist + distributed cache L2 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Caffeine for in-process L1 cache -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
 
         <!-- PostgreSQL Driver -->

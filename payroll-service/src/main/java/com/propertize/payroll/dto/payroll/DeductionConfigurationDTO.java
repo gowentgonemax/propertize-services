@@ -1,5 +1,11 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.GarnishmentTypeEnum;
+
+import com.propertize.payroll.enums.BenefitTypeEnum;
+
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -26,14 +32,14 @@ public class DeductionConfigurationDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class BenefitDeduction {
-        private String benefitType; // HEALTH, DENTAL, VISION, LIFE, DISABILITY
+        private BenefitTypeEnum benefitType;
         private String planCode;
         private String coverageLevel; // EMPLOYEE_ONLY, EMPLOYEE_SPOUSE, FAMILY
         @PositiveOrZero
         private BigDecimal employeeContribution;
         @PositiveOrZero
         private BigDecimal employerContribution;
-        private String frequency; // PER_PAY_PERIOD, MONTHLY, ANNUALLY
+        private PayFrequencyEnum frequency; // PER_PAY_PERIOD, MONTHLY, ANNUALLY
         private LocalDate effectiveDate;
         private LocalDate endDate;
         private Boolean isCafeteriaPlan;
@@ -62,14 +68,14 @@ public class DeductionConfigurationDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class GarnishmentDeduction {
-        private String garnishmentType; // CHILD_SUPPORT, TAX_LEVY, WAGE_ASSIGNMENT
+        private GarnishmentTypeEnum garnishmentType;
         private String caseNumber;
         @PositiveOrZero
         private BigDecimal amount;
         private String calculation; // FLAT_AMOUNT, PERCENTAGE
         @PositiveOrZero
         private BigDecimal maxPercentage;
-        private String frequency;
+        private PayFrequencyEnum frequency;
         private LocalDate startDate;
         private LocalDate endDate;
         private String priority;

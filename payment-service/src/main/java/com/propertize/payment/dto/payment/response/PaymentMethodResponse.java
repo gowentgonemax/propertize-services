@@ -1,6 +1,8 @@
 package com.propertize.payment.dto.payment.response;
 
-import com.propertize.payment.enums.*;
+import com.propertize.commons.enums.payment.BankAccountTypeEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
+import com.propertize.payment.enums.CardBrandEnum;
 import lombok.Data;
 
 import java.time.LocalDateTime;

@@ -7,11 +7,13 @@ import com.propertize.payroll.repository.TimesheetRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +26,7 @@ public class TimesheetService {
 
     private final TimesheetRepository timesheetRepository;
 
+    @Cacheable(value = "timesheets", key = "'id-' + #id")
     @Transactional(readOnly = true)
     public TimesheetResponse getTimesheet(UUID id) {
         TimesheetEntity timesheet = timesheetRepository.findById(id)
@@ -81,6 +84,32 @@ public class TimesheetService {
     @Transactional(readOnly = true)
     public List<TimesheetResponse> getPendingApprovals(UUID clientId) {
         return timesheetRepository.findPendingApprovalsForClient(clientId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Batch retrieval of timesheets for a single employee within a date range.
+     * Avoids N calls for a date-range summary — returns all at once.
+     */
+    @Cacheable(value = "timesheets", key = "'range-' + #employeeId + '-' + #startDate + '-' + #endDate")
+    @Transactional(readOnly = true)
+    public List<TimesheetResponse> getTimesheetsByDateRange(String employeeId, LocalDate startDate, LocalDate endDate) {
+        return timesheetRepository.findByEmployeeIdAndDateRange(employeeId, startDate, endDate)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Batch retrieval of timesheets for multiple employees within a date range.
+     * Use this instead of calling getTimesheetsByDateRange per-employee in a loop.
+     */
+    @Transactional(readOnly = true)
+    public List<TimesheetResponse> getTimesheetsByEmployeesAndDateRange(
+            List<String> employeeIds, LocalDate startDate, LocalDate endDate) {
+        return timesheetRepository.findByEmployeeIdInAndDateRange(employeeIds, startDate, endDate)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

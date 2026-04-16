@@ -271,7 +271,7 @@ public class TrustedGatewayHeaderFilter extends OncePerRequestFilter {
         }
 
         public boolean isPlatformAdmin() {
-            return hasRole("PLATFORM_OVERSIGHT") || hasRole("PLATFORM_ADMIN");
+            return hasRole("PLATFORM_OVERSIGHT") || hasRole("PLATFORM_OPERATIONS");
         }
 
         public boolean isOrganizationOwner() {

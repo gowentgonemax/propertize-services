@@ -1,5 +1,15 @@
 package com.propertize.payroll.client.dto;
 
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
+import com.propertize.commons.enums.employee.PayTypeEnum;
+
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+
+import com.propertize.commons.enums.common.RelationshipTypeEnum;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,8 +48,8 @@ public class EmployeeDto {
     private String ssnEncrypted;
 
     // Employment Details
-    private String employmentType;
-    private String status;
+    private EmploymentTypeEnum employmentType;
+    private EmployeeStatusEnum status;
     private LocalDate hireDate;
     private LocalDate terminationDate;
     private String terminationReason;
@@ -80,8 +90,8 @@ public class EmployeeDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CompensationDto {
-        private String payType;           // HOURLY, SALARIED
-        private String payFrequency;      // WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
+        private PayTypeEnum payType;           // HOURLY, SALARIED
+        private PayFrequencyEnum payFrequency;      // WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
         private BigDecimal hourlyRate;
         private BigDecimal annualSalary;
         private String currency;
@@ -107,7 +117,7 @@ public class EmployeeDto {
     @AllArgsConstructor
     public static class EmergencyContactDto {
         private String name;
-        private String relationship;
+        private RelationshipTypeEnum relationship;
         private String phone;
         private String email;
     }

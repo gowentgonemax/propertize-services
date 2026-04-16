@@ -5,8 +5,8 @@ import com.propertize.platform.employecraft.dto.employee.request.EmployeeCreateR
 import com.propertize.platform.employecraft.dto.employee.response.EmployeePayrollSummary;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeeResponse;
 import com.propertize.platform.employecraft.entity.Employee;
-import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
-import com.propertize.platform.employecraft.enums.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
 import com.propertize.platform.employecraft.event.EmployeeEvent;
 import com.propertize.platform.employecraft.event.EmployeeEventPublisher;
 import com.propertize.platform.employecraft.exception.EmployeeNotFoundException;
@@ -55,11 +55,15 @@ class EmployeeServiceTest {
 
     UUID orgId;
     UUID empId;
+    String orgIdStr;
+    String empIdStr;
 
     @BeforeEach
     void setUp() {
         orgId = UUID.randomUUID();
         empId = UUID.randomUUID();
+        orgIdStr = orgId.toString();
+        empIdStr = empId.toString();
         OrganizationContext.setOrganizationId(orgId);
     }
 
@@ -94,19 +98,40 @@ class EmployeeServiceTest {
     void getAllEmployees_returnsMappedPage() {
         Employee emp = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
         Page<Employee> page = new PageImpl<>(List.of(emp));
-        when(employeeRepository.findByOrganizationId(eq(orgId), any(Pageable.class))).thenReturn(page);
+        when(employeeRepository.findByOrganizationId(eq(orgIdStr), any(Pageable.class))).thenReturn(page);
 
         Page<EmployeeResponse> result = employeeService.getAllEmployees(orgId, Pageable.unpaged());
+
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).getEmail()).isEqualTo("jane.doe@example.com");
     }
 
     @Test
     void getAllEmployees_returnsEmptyPage_whenNoEmployees() {
-        when(employeeRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
+        when(employeeRepository.findByOrganizationId(eq(orgIdStr), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
         Page<EmployeeResponse> result = employeeService.getAllEmployees(orgId, Pageable.unpaged());
+
+        assertThat(result.getTotalElements()).isZero();
+    }
+
+    @Test
+    void getAllEmployees_usesContextOrg_whenParamIsNull() {
+        Employee emp = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
+        Page<Employee> page = new PageImpl<>(List.of(emp));
+        when(employeeRepository.findByOrganizationId(eq(orgIdStr), any(Pageable.class))).thenReturn(page);
+
+        Page<EmployeeResponse> result = employeeService.getAllEmployees(null, Pageable.unpaged());
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void getAllEmployees_returnsEmptyPage_whenNoOrgContext() {
+        OrganizationContext.clear();
+
+        Page<EmployeeResponse> result = employeeService.getAllEmployees(null, Pageable.unpaged());
 
         assertThat(result.getTotalElements()).isZero();
     }
@@ -118,7 +143,7 @@ class EmployeeServiceTest {
     @Test
     void getEmployee_returnsEmployee_whenFound() {
         Employee emp = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
-        when(employeeRepository.findByIdAndOrganizationId(empId, orgId)).thenReturn(Optional.of(emp));
+        when(employeeRepository.findByIdAndOrganizationId(empIdStr, orgIdStr)).thenReturn(Optional.of(emp));
 
         EmployeeResponse result = employeeService.getEmployee(empId);
 
@@ -128,10 +153,21 @@ class EmployeeServiceTest {
 
     @Test
     void getEmployee_throwsEmployeeNotFoundException_whenNotFound() {
-        when(employeeRepository.findByIdAndOrganizationId(empId, orgId)).thenReturn(Optional.empty());
+        when(employeeRepository.findByIdAndOrganizationId(empIdStr, orgIdStr)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> employeeService.getEmployee(empId))
                 .isInstanceOf(EmployeeNotFoundException.class);
+    }
+
+    @Test
+    void getEmployee_fallsBackToFindById_whenNoOrgContext() {
+        OrganizationContext.clear();
+        Employee emp = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
+        when(employeeRepository.findById(empId)).thenReturn(Optional.of(emp));
+
+        EmployeeResponse result = employeeService.getEmployee(empId);
+
+        assertThat(result.getId()).isEqualTo(empId);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -142,7 +178,7 @@ class EmployeeServiceTest {
     void getEmployeeByUserId_returnsEmployee_whenFound() {
         Employee emp = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
         emp.setUserId(42L);
-        when(employeeRepository.findByUserIdAndOrganizationId(42L, orgId)).thenReturn(Optional.of(emp));
+        when(employeeRepository.findByUserIdAndOrganizationId(42L, orgIdStr)).thenReturn(Optional.of(emp));
 
         EmployeeResponse result = employeeService.getEmployeeByUserId(42L);
 
@@ -151,7 +187,7 @@ class EmployeeServiceTest {
 
     @Test
     void getEmployeeByUserId_throwsEmployeeNotFoundException_whenNotFound() {
-        when(employeeRepository.findByUserIdAndOrganizationId(anyLong(), eq(orgId))).thenReturn(Optional.empty());
+        when(employeeRepository.findByUserIdAndOrganizationId(anyLong(), eq(orgIdStr))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> employeeService.getEmployeeByUserId(99L))
                 .isInstanceOf(EmployeeNotFoundException.class);
@@ -170,7 +206,7 @@ class EmployeeServiceTest {
         req.setEmploymentType(EmploymentTypeEnum.FULL_TIME);
         req.setHireDate(LocalDate.now());
 
-        when(employeeRepository.existsByEmailAndOrganizationId("alice@example.com", orgId)).thenReturn(false);
+        when(employeeRepository.countByEmailAndOrganizationId("alice@example.com", orgIdStr)).thenReturn(0L);
         when(employeeNumberGenerator.generate(orgId)).thenReturn("EMP-002");
 
         Employee saved = Employee.builder()
@@ -202,7 +238,7 @@ class EmployeeServiceTest {
         req.setEmploymentType(EmploymentTypeEnum.FULL_TIME);
         req.setHireDate(LocalDate.now());
 
-        when(employeeRepository.existsByEmailAndOrganizationId("duplicate@example.com", orgId)).thenReturn(true);
+        when(employeeRepository.countByEmailAndOrganizationId("duplicate@example.com", orgIdStr)).thenReturn(1L);
 
         assertThatThrownBy(() -> employeeService.createEmployee(req))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -216,7 +252,7 @@ class EmployeeServiceTest {
     @Test
     void activateEmployee_setsStatusActive() {
         Employee emp = buildEmployee(empId, EmployeeStatusEnum.PENDING);
-        when(employeeRepository.findByIdAndOrganizationId(empId, orgId)).thenReturn(Optional.of(emp));
+        when(employeeRepository.findByIdAndOrganizationId(empIdStr, orgIdStr)).thenReturn(Optional.of(emp));
         when(employeeRepository.save(emp)).thenReturn(emp);
 
         EmployeeResponse result = employeeService.activateEmployee(empId);
@@ -227,7 +263,7 @@ class EmployeeServiceTest {
 
     @Test
     void activateEmployee_throwsNotFound_whenMissing() {
-        when(employeeRepository.findByIdAndOrganizationId(empId, orgId)).thenReturn(Optional.empty());
+        when(employeeRepository.findByIdAndOrganizationId(empIdStr, orgIdStr)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> employeeService.activateEmployee(empId))
                 .isInstanceOf(EmployeeNotFoundException.class);
@@ -240,7 +276,7 @@ class EmployeeServiceTest {
     @Test
     void terminateEmployee_setsStatusTerminated() {
         Employee emp = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
-        when(employeeRepository.findByIdAndOrganizationId(empId, orgId)).thenReturn(Optional.of(emp));
+        when(employeeRepository.findByIdAndOrganizationId(empIdStr, orgIdStr)).thenReturn(Optional.of(emp));
         when(employeeRepository.save(emp)).thenReturn(emp);
 
         EmployeeResponse result = employeeService.terminateEmployee(empId, "Resignation");
@@ -251,7 +287,7 @@ class EmployeeServiceTest {
 
     @Test
     void terminateEmployee_throwsNotFound_whenMissing() {
-        when(employeeRepository.findByIdAndOrganizationId(empId, orgId)).thenReturn(Optional.empty());
+        when(employeeRepository.findByIdAndOrganizationId(empIdStr, orgIdStr)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> employeeService.terminateEmployee(empId, "Resignation"))
                 .isInstanceOf(EmployeeNotFoundException.class);
@@ -265,7 +301,7 @@ class EmployeeServiceTest {
     void getPayrollSummaries_returnsActiveAndOnLeaveEmployees() {
         Employee active = buildEmployee(empId, EmployeeStatusEnum.ACTIVE);
         Employee onLeave = buildEmployee(UUID.randomUUID(), EmployeeStatusEnum.ON_LEAVE);
-        when(employeeRepository.findByOrganizationIdAndStatusIn(eq(orgId), anyList()))
+        when(employeeRepository.findByOrganizationIdAndStatusIn(eq(orgIdStr), anyList()))
                 .thenReturn(List.of(active, onLeave));
 
         List<EmployeePayrollSummary> result = employeeService.getPayrollSummaries();
@@ -275,7 +311,7 @@ class EmployeeServiceTest {
 
     @Test
     void getPayrollSummaries_returnsEmptyList_whenNoEligibleEmployees() {
-        when(employeeRepository.findByOrganizationIdAndStatusIn(eq(orgId), anyList()))
+        when(employeeRepository.findByOrganizationIdAndStatusIn(eq(orgIdStr), anyList()))
                 .thenReturn(List.of());
 
         List<EmployeePayrollSummary> result = employeeService.getPayrollSummaries();

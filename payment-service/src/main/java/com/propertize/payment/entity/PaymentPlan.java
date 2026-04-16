@@ -1,6 +1,7 @@
 package com.propertize.payment.entity;
 
 import com.propertize.payment.entity.base.OrganizationScopedEntity;
+import com.propertize.payment.enums.PaymentFrequencyEnum;
 import com.propertize.payment.enums.PaymentPlanStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,8 +47,9 @@ public class PaymentPlan extends OrganizationScopedEntity {
     @Column(name = "number_of_installments", nullable = false)
     private Integer numberOfInstallments;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "frequency", length = 20)
-    private String frequency;
+    private PaymentFrequencyEnum frequency;
 
     @Column(name = "start_date")
     private LocalDate startDate;

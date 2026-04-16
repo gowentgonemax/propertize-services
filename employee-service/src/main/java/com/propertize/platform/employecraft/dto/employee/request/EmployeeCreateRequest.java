@@ -1,6 +1,12 @@
 package com.propertize.platform.employecraft.dto.employee.request;
 
-import com.propertize.platform.employecraft.enums.EmploymentTypeEnum;
+import com.propertize.commons.enums.common.RelationshipTypeEnum;
+
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
+import com.propertize.commons.enums.employee.PayTypeEnum;
+
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -58,16 +64,16 @@ public class EmployeeCreateRequest {
     private String country;
 
     // Compensation
-    private String payType;
+    private PayTypeEnum payType;
     private BigDecimal payRate;
-    private String payFrequency;
+    private PayFrequencyEnum payFrequency;
     private String bankName;
     private String bankAccountNumber;
     private String bankRoutingNumber;
 
     // Emergency Contact
     private String emergencyContactName;
-    private String emergencyContactRelationship;
+    private RelationshipTypeEnum emergencyContactRelationship;
     private String emergencyContactPhone;
     private String emergencyContactEmail;
 

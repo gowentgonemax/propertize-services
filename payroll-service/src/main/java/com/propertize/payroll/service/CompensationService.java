@@ -7,13 +7,16 @@ import com.propertize.payroll.dto.compensation.response.CompensationResponse;
 import com.propertize.payroll.entity.CompensationEntity;
 import com.propertize.payroll.entity.EmployeeEntity;
 import com.propertize.payroll.enums.CompensationStatusEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import com.propertize.payroll.exception.ResourceNotFoundException;
 import com.propertize.payroll.exception.ValidationException;
 import com.propertize.payroll.repository.CompensationRepository;
 import com.propertize.payroll.repository.EmployeeEntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -215,9 +218,9 @@ public class CompensationService {
     /**
      * Deactivate a compensation record.
      *
-     * @param id        Compensation ID
-     * @param endDate   End date for the compensation
-     * @param reason    Reason for deactivation
+     * @param id      Compensation ID
+     * @param endDate End date for the compensation
+     * @param reason  Reason for deactivation
      */
     public void deactivateCompensation(UUID id, LocalDate endDate, String reason) {
         log.info("Deactivating compensation: {}", id);
@@ -253,6 +256,24 @@ public class CompensationService {
         compensationRepository.save(compensation);
 
         log.info("Compensation deleted successfully: {}", id);
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * Get paginated compensation records for a client.
+     *
+     * @param clientId Client UUID
+     * @param page     0-based page number
+     * @param size     Page size
+     * @return Page of compensation responses
+     */
+    @Transactional(readOnly = true)
+    public Page<CompensationResponse> getCompensationsByClientId(UUID clientId, int page, int size) {
+        log.debug("Fetching compensations for client: {}, page={}, size={}", clientId, page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        return compensationRepository.findByEmployeeClientId(clientId, pageable)
+                .map(this::mapToResponse);
     }
 
     // ==================== Private Helper Methods ====================
@@ -384,11 +405,11 @@ public class CompensationService {
     private CompensationHistoryResponse mapToHistoryResponse(CompensationEntity entity) {
         return CompensationHistoryResponse.builder()
                 .id(entity.getId())
-                .compensationType(entity.getCompensationType().name())
-                .status(entity.getStatus().name())
+                .compensationType(entity.getCompensationType())
+                .status(entity.getStatus())
                 .hourlyRate(entity.getHourlyRate())
                 .annualSalary(entity.getAnnualSalary())
-                .payFrequency(entity.getPayFrequency().name())
+                .payFrequency(entity.getPayFrequency())
                 .effectiveDate(entity.getEffectiveDate())
                 .endDate(entity.getEndDate())
                 .changeReason(entity.getChangeReason())

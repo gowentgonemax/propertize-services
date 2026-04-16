@@ -1,5 +1,7 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -25,7 +27,7 @@ public class PayrollPeriodDTO {
 
     private String payrollType; // REGULAR, OFF_CYCLE, BONUS, COMMISSION
 
-    private String frequency; // WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
+    private PayFrequencyEnum frequency; // WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
 
     private Integer periodNumber;
 

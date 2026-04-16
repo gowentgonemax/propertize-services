@@ -34,6 +34,9 @@ eureka:
     enable-self-preservation: ${EUREKA_SELF_PRESERVATION:false}
     # Response cache update interval (in ms)
     response-cache-update-interval-ms: 5000
+    # Use read-only response cache (Guava-backed) for fast client reads
+    use-read-only-response-cache: true
+    response-cache-auto-expiration-in-seconds: 180
     # How long to wait before removing expired instances
     eviction-interval-timer-in-ms: 10000
     # Wait time for peer synchronization

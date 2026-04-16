@@ -1,6 +1,9 @@
 package com.propertize.payroll.entity;
 
 import com.propertize.payroll.entity.base.BaseEntity;
+import com.propertize.payroll.enums.BankAccountTypeEnum;
+import com.propertize.payroll.enums.DirectDepositAllocationTypeEnum;
+import com.propertize.payroll.enums.DirectDepositStatusEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,10 +40,11 @@ public class DirectDepositAccountEntity extends BaseEntity {
     private String accountNumber;
 
     /**
-     * Account type (CHECKING, SAVINGS)
+     * Account type.
      */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String accountType;
+    private BankAccountTypeEnum accountType;
 
     /**
      * Account holder name
@@ -67,10 +71,11 @@ public class DirectDepositAccountEntity extends BaseEntity {
     private BigDecimal percentage;
 
     /**
-     * Allocation type (FIXED_AMOUNT, PERCENTAGE, REMAINDER)
+     * Allocation strategy for this account.
      */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String allocationType = "REMAINDER";
+    private DirectDepositAllocationTypeEnum allocationType = DirectDepositAllocationTypeEnum.REMAINDER;
 
     /**
      * Priority order (lower = deposited first)
@@ -79,10 +84,11 @@ public class DirectDepositAccountEntity extends BaseEntity {
     private Integer priority = 1;
 
     /**
-     * Account status (ACTIVE, PRENOTE, INACTIVE)
+     * Account verification/lifecycle status.
      */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "PRENOTE";
+    private DirectDepositStatusEnum status = DirectDepositStatusEnum.PRENOTE;
 
     /**
      * Date prenote was sent

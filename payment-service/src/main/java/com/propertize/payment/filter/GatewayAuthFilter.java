@@ -1,5 +1,6 @@
 package com.propertize.payment.filter;
 
+import com.propertize.commons.constants.GatewayHeaders;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,8 +16,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
+/** X-Gateway-Source header name — not in GatewayHeaders as it is payment-internal. */
 /**
  * Authenticates requests based on trusted headers forwarded by the API Gateway.
  * The gateway validates JWTs and propagates user context via X-* headers.
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 public class GatewayAuthFilter extends OncePerRequestFilter {
+
+    private static final String X_GATEWAY_SOURCE = "X-Gateway-Source";
+    private static final String X_ROLES = "X-Roles";
 
     @Value("${security.gateway.expected-value:api-gateway}")
     private String expectedGatewaySource;
@@ -33,15 +37,15 @@ public class GatewayAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        String gatewaySource = request.getHeader("X-Gateway-Source");
+        String gatewaySource = request.getHeader(X_GATEWAY_SOURCE);
 
         if (!expectedGatewaySource.equals(gatewaySource)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String userId = request.getHeader("X-User-Id");
-        String rolesHeader = request.getHeader("X-Roles");
+        String userId = request.getHeader(GatewayHeaders.X_USER_ID);
+        String rolesHeader = request.getHeader(X_ROLES);
 
         if (userId == null || userId.isEmpty()) {
             filterChain.doFilter(request, response);

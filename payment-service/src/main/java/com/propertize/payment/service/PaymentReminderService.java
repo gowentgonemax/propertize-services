@@ -1,7 +1,7 @@
 package com.propertize.payment.service;
 
 import com.propertize.payment.entity.PaymentReminder;
-import com.propertize.payment.enums.ReminderStatusEnum;
+import com.propertize.commons.enums.payment.ReminderStatusEnum;
 import com.propertize.payment.repository.PaymentReminderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -46,6 +46,19 @@ spring:
           min-idle: 10
         shutdown-timeout: 100ms
 
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 32
+        queue-capacity: 500
+        keep-alive: 60s
+      thread-name-prefix: auth-async-
+    scheduling:
+      pool:
+        size: 4
+      thread-name-prefix: auth-sched-
+
 # Eureka Client Configuration
 eureka:
   client:
@@ -96,3 +109,7 @@ management:
   endpoint:
     health:
       show-details: never
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true

@@ -1,5 +1,6 @@
 package com.propertize.platform.employecraft.event;
 
+import com.propertize.commons.constants.KafkaTopics;
 import com.propertize.platform.employecraft.entity.Employee;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,14 +10,18 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 /**
- * Publishes employee lifecycle events to the "employee-events" Kafka topic.
+ * Publishes employee lifecycle events to the
+ * {@value KafkaTopics#EMPLOYEE_EVENTS} Kafka topic.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class EmployeeEventPublisher {
 
-    public static final String TOPIC = "employee-events";
+    /**
+     * Canonical topic name — use {@link KafkaTopics#EMPLOYEE_EVENTS} in new code.
+     */
+    public static final String TOPIC = KafkaTopics.EMPLOYEE_EVENTS;
 
     private final KafkaTemplate<String, EmployeeEvent> kafkaTemplate;
 
@@ -29,17 +34,17 @@ public class EmployeeEventPublisher {
                 .firstName(employee.getFirstName())
                 .lastName(employee.getLastName())
                 .email(employee.getEmail())
-                .status(employee.getStatus().name())
-                .employmentType(employee.getEmploymentType().name())
+                .status(employee.getStatus())
+                .employmentType(employee.getEmploymentType())
                 .hireDate(employee.getHireDate())
                 .terminationDate(employee.getTerminationDate())
                 .occurredAt(LocalDateTime.now());
 
         if (employee.getCompensation() != null) {
             var comp = employee.getCompensation();
-            builder.payType(comp.getPayType() != null ? comp.getPayType().name() : null)
+            builder.payType(comp.getPayType())
                     .payRate(comp.getPayRate())
-                    .payFrequency(comp.getPayFrequency() != null ? comp.getPayFrequency().name() : null);
+                    .payFrequency(comp.getPayFrequency());
         }
 
         EmployeeEvent event = builder.build();

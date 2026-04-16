@@ -2,7 +2,10 @@ package com.propertize.payment.service;
 
 import com.propertize.payment.dto.payment.request.*;
 import com.propertize.payment.entity.Payment;
-import com.propertize.payment.enums.*;
+import com.propertize.commons.enums.payment.PaymentCategoryEnum;
+import com.propertize.commons.enums.payment.PaymentContextEnum;
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
+import com.propertize.payment.enums.PaymentGatewayEnum;
 import com.propertize.payment.repository.PaymentRepository;
 import com.propertize.payment.service.payment.StripePaymentService;
 import lombok.RequiredArgsConstructor;

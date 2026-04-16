@@ -3,7 +3,7 @@ package com.propertize.payment.entity;
 import com.propertize.payment.config.PaymentConstants;
 import com.propertize.payment.entity.base.OrganizationScopedEntity;
 import com.propertize.payment.enums.PaymentIntentStatus;
-import com.propertize.payment.enums.PaymentMethodEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.*;

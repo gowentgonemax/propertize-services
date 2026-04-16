@@ -1,5 +1,6 @@
 package com.propertize.platform.employecraft.security.filter;
 
+import com.propertize.commons.constants.GatewayHeaders;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.annotation.PostConstruct;
@@ -87,9 +88,9 @@ public class ZeroTrustJwtValidationFilter extends OncePerRequestFilter {
 
         // If request claims to be from gateway, validate the token
         if (expectedGatewaySource.equals(gatewaySource)) {
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+            String authHeader = request.getHeader(GatewayHeaders.AUTHORIZATION);
+            if (authHeader != null && authHeader.startsWith(GatewayHeaders.BEARER_PREFIX)) {
+                String token = authHeader.substring(GatewayHeaders.BEARER_PREFIX.length());
                 try {
                     Claims claims = Jwts.parser()
                             .verifyWith((java.security.interfaces.RSAPublicKey) publicKey)

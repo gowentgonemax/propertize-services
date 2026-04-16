@@ -1,5 +1,8 @@
 package com.propertize.payroll.service;
 
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
+
 import com.propertize.payroll.entity.*;
 import com.propertize.payroll.enums.FilingStatusEnum;
 import com.propertize.payroll.enums.TaxTypeEnum;
@@ -31,7 +34,8 @@ public class TaxService {
     private final PayrollTaxDepositRepository payrollTaxDepositRepository;
     private final EmployeeEntityRepository employeeRepository;
 
-    // 2026 Tax Constants - These should ideally come from a configuration or tax table
+    // 2026 Tax Constants - These should ideally come from a configuration or tax
+    // table
     private static final BigDecimal SOCIAL_SECURITY_RATE = new BigDecimal("0.062");
     private static final BigDecimal SOCIAL_SECURITY_WAGE_BASE = new BigDecimal("176100"); // 2026 estimate
     private static final BigDecimal MEDICARE_RATE = new BigDecimal("0.0145");
@@ -84,13 +88,13 @@ public class TaxService {
      */
     public TaxCalculationResult calculateTaxes(TaxCalculationContext context) {
         log.info("Calculating taxes for employee: {}, gross pay: {}",
-            context.getEmployeeId(), context.getGrossPay());
+                context.getEmployeeId(), context.getGrossPay());
 
         TaxCalculationResult result = new TaxCalculationResult();
 
         // Get employee and their withholding info
         EmployeeEntity employee = employeeRepository.findById(UUID.fromString(context.getEmployeeId()))
-            .orElseThrow(() -> new EntityNotFoundException("Employee not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Employee not found"));
 
         Optional<TaxWithholdingEntity> withholdingOpt = getActiveWithholding(context.getEmployeeId());
 
@@ -121,7 +125,7 @@ public class TaxService {
         result.setNetPay(context.getGrossPay().subtract(totalEmployeeTax));
 
         log.info("Tax calculation complete. Employee total: {}, Net pay: {}",
-            totalEmployeeTax, result.getNetPay());
+                totalEmployeeTax, result.getNetPay());
 
         return result;
     }
@@ -136,9 +140,10 @@ public class TaxService {
         BigDecimal taxableIncome = annualizedGross;
         if (withholding != null && withholding.getTaxInfo() != null) {
             // Get standard deduction based on filing status
-            String filingStatusStr = withholding.getTaxInfo().getFilingStatus() != null ?
-                withholding.getTaxInfo().getFilingStatus().name() : FilingStatusEnum.SINGLE.toString();
-            BigDecimal standardDeduction = getStandardDeduction(filingStatusStr);
+            FilingStatusEnum filingStatus = withholding.getTaxInfo().getFilingStatus() != null
+                    ? withholding.getTaxInfo().getFilingStatus()
+                    : FilingStatusEnum.SINGLE;
+            BigDecimal standardDeduction = getStandardDeduction(filingStatus);
             taxableIncome = annualizedGross.subtract(standardDeduction);
 
             // Apply additional withholding adjustments
@@ -162,7 +167,7 @@ public class TaxService {
 
         // Add any additional withholding requested
         if (withholding != null && withholding.getTaxInfo() != null
-            && withholding.getTaxInfo().getAdditionalWithholding() != null) {
+                && withholding.getTaxInfo().getAdditionalWithholding() != null) {
             periodTax = periodTax.add(withholding.getTaxInfo().getAdditionalWithholding());
         }
 
@@ -214,7 +219,8 @@ public class TaxService {
     }
 
     /**
-     * Calculate State Income Tax (simplified - state-specific implementation needed)
+     * Calculate State Income Tax (simplified - state-specific implementation
+     * needed)
      */
     public BigDecimal calculateStateIncomeTax(TaxCalculationContext context, TaxWithholdingEntity withholding) {
         // This is a simplified placeholder
@@ -266,7 +272,7 @@ public class TaxService {
      */
     public List<PayrollTaxDepositEntity> getOverdueTaxDeposits(UUID clientId) {
         return payrollTaxDepositRepository.findByClientIdAndDueDateBeforeAndPaidDateIsNull(
-            clientId, LocalDate.now());
+                clientId, LocalDate.now());
     }
 
     /**
@@ -274,9 +280,9 @@ public class TaxService {
      */
     @Transactional
     public PayrollTaxDepositEntity recordTaxDepositPayment(UUID depositId, LocalDate paidDate,
-            String paymentReference, String paymentMethod) {
+            String paymentReference, PaymentMethodEnum paymentMethod) {
         PayrollTaxDepositEntity deposit = payrollTaxDepositRepository.findById(depositId)
-            .orElseThrow(() -> new EntityNotFoundException("Tax deposit not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Tax deposit not found"));
 
         log.info("Recording tax deposit payment: {}", depositId);
 
@@ -289,32 +295,32 @@ public class TaxService {
 
     // ==================== Helper Methods ====================
 
-    private BigDecimal annualizePayment(BigDecimal amount, String payFrequency) {
-        return switch (payFrequency != null ? payFrequency.toUpperCase() : "BI_WEEKLY") {
-            case "WEEKLY" -> amount.multiply(new BigDecimal("52"));
-            case "BI_WEEKLY" -> amount.multiply(new BigDecimal("26"));
-            case "SEMI_MONTHLY" -> amount.multiply(new BigDecimal("24"));
-            case "MONTHLY" -> amount.multiply(new BigDecimal("12"));
-            default -> amount.multiply(new BigDecimal("26")); // Default to bi-weekly
+    private BigDecimal annualizePayment(BigDecimal amount, PayFrequencyEnum payFrequency) {
+        return switch (payFrequency != null ? payFrequency : PayFrequencyEnum.BI_WEEKLY) {
+            case WEEKLY -> amount.multiply(new BigDecimal("52"));
+            case BI_WEEKLY -> amount.multiply(new BigDecimal("26"));
+            case SEMI_MONTHLY -> amount.multiply(new BigDecimal("24"));
+            case MONTHLY -> amount.multiply(new BigDecimal("12"));
+            default -> amount.multiply(new BigDecimal("26"));
         };
     }
 
-    private BigDecimal deAnnualizePayment(BigDecimal amount, String payFrequency) {
-        return switch (payFrequency != null ? payFrequency.toUpperCase() : "BI_WEEKLY") {
-            case "WEEKLY" -> amount.divide(new BigDecimal("52"), 2, RoundingMode.HALF_UP);
-            case "BI_WEEKLY" -> amount.divide(new BigDecimal("26"), 2, RoundingMode.HALF_UP);
-            case "SEMI_MONTHLY" -> amount.divide(new BigDecimal("24"), 2, RoundingMode.HALF_UP);
-            case "MONTHLY" -> amount.divide(new BigDecimal("12"), 2, RoundingMode.HALF_UP);
+    private BigDecimal deAnnualizePayment(BigDecimal amount, PayFrequencyEnum payFrequency) {
+        return switch (payFrequency != null ? payFrequency : PayFrequencyEnum.BI_WEEKLY) {
+            case WEEKLY -> amount.divide(new BigDecimal("52"), 2, RoundingMode.HALF_UP);
+            case BI_WEEKLY -> amount.divide(new BigDecimal("26"), 2, RoundingMode.HALF_UP);
+            case SEMI_MONTHLY -> amount.divide(new BigDecimal("24"), 2, RoundingMode.HALF_UP);
+            case MONTHLY -> amount.divide(new BigDecimal("12"), 2, RoundingMode.HALF_UP);
             default -> amount.divide(new BigDecimal("26"), 2, RoundingMode.HALF_UP);
         };
     }
 
-    private BigDecimal getStandardDeduction(String filingStatus) {
+    private BigDecimal getStandardDeduction(FilingStatusEnum filingStatus) {
         // 2026 Standard Deductions (estimated)
-        return switch (filingStatus != null ? filingStatus.toUpperCase() : "SINGLE") {
-            case "MARRIED_FILING_JOINTLY" -> new BigDecimal("30000");
-            case "MARRIED_FILING_SEPARATELY" -> new BigDecimal("15000");
-            case "HEAD_OF_HOUSEHOLD" -> new BigDecimal("22500");
+        return switch (filingStatus) {
+            case MARRIED -> new BigDecimal("30000");
+            case MARRIED_SEPARATE -> new BigDecimal("15000");
+            case HEAD_OF_HOUSEHOLD -> new BigDecimal("22500");
             default -> new BigDecimal("15000"); // Single or default
         };
     }
@@ -325,22 +331,22 @@ public class TaxService {
         BigDecimal tax = BigDecimal.ZERO;
 
         BigDecimal[] brackets = {
-            new BigDecimal("11600"),
-            new BigDecimal("47150"),
-            new BigDecimal("100525"),
-            new BigDecimal("191950"),
-            new BigDecimal("243725"),
-            new BigDecimal("609350")
+                new BigDecimal("11600"),
+                new BigDecimal("47150"),
+                new BigDecimal("100525"),
+                new BigDecimal("191950"),
+                new BigDecimal("243725"),
+                new BigDecimal("609350")
         };
 
         BigDecimal[] rates = {
-            new BigDecimal("0.10"),
-            new BigDecimal("0.12"),
-            new BigDecimal("0.22"),
-            new BigDecimal("0.24"),
-            new BigDecimal("0.32"),
-            new BigDecimal("0.35"),
-            new BigDecimal("0.37")
+                new BigDecimal("0.10"),
+                new BigDecimal("0.12"),
+                new BigDecimal("0.22"),
+                new BigDecimal("0.24"),
+                new BigDecimal("0.32"),
+                new BigDecimal("0.35"),
+                new BigDecimal("0.37")
         };
 
         BigDecimal remaining = taxableIncome;
@@ -375,7 +381,7 @@ public class TaxService {
         private String employeeId;
         private BigDecimal grossPay;
         private BigDecimal ytdGross;
-        private String payFrequency;
+        private PayFrequencyEnum payFrequency;
         private String workState;
         private String workCity;
         private LocalDate payDate;

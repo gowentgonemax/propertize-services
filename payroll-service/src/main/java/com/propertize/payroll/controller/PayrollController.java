@@ -1,7 +1,7 @@
 package com.propertize.payroll.controller;
 
 import com.propertize.payroll.entity.PayrollRun;
-import com.propertize.payroll.enums.PayrollStatusEnum;
+import com.propertize.commons.enums.employee.PayrollStatusEnum;
 import com.propertize.payroll.security.TrustedGatewayHeaderFilter;
 import com.propertize.payroll.service.PayrollService;
 import jakarta.validation.Valid;
@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/clients/{clientId}/payroll")
@@ -26,7 +28,7 @@ public class PayrollController {
     private final PayrollService payrollService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
     public ResponseEntity<Page<PayrollRun>> getPayrollRuns(
             @PathVariable UUID clientId,
             @RequestParam(defaultValue = "0") int page,
@@ -45,7 +47,7 @@ public class PayrollController {
     }
 
     @GetMapping("/{payrollId}")
-    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
     public ResponseEntity<PayrollRun> getPayrollRun(
             @PathVariable UUID clientId,
             @PathVariable UUID payrollId) {
@@ -53,7 +55,7 @@ public class PayrollController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
     public ResponseEntity<PayrollRun> createPayrollRun(
             @PathVariable UUID clientId,
             @Valid @RequestBody PayrollRun payrollRun) {
@@ -62,7 +64,7 @@ public class PayrollController {
     }
 
     @PostMapping("/{payrollId}/process")
-    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
     public ResponseEntity<PayrollRun> processPayrollRun(
             @PathVariable UUID clientId,
             @PathVariable UUID payrollId) {
@@ -70,7 +72,7 @@ public class PayrollController {
     }
 
     @PostMapping("/{payrollId}/approve")
-    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','CFO')")
     public ResponseEntity<PayrollRun> approvePayrollRun(
             @PathVariable UUID clientId,
             @PathVariable UUID payrollId,
@@ -79,5 +81,27 @@ public class PayrollController {
                 ? gau.getUsername()
                 : "system";
         return ResponseEntity.ok(payrollService.approvePayrollRun(payrollId, approverName));
+    }
+
+    /**
+     * Batch-process multiple payroll runs for a client in parallel.
+     *
+     * <p>
+     * {@code POST /api/v1/clients/{clientId}/payroll/batch/process}
+     * </p>
+     * <p>
+     * Request body: {@code ["uuid1", "uuid2", ...]}
+     * </p>
+     * <p>
+     * Response: list of per-run results with status and any error messages.
+     * </p>
+     */
+    @PostMapping("/batch/process")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
+    public CompletableFuture<ResponseEntity<List<Map<String, Object>>>> batchProcessPayrollRuns(
+            @PathVariable UUID clientId,
+            @Valid @RequestBody List<UUID> payrollRunIds) {
+        return payrollService.batchProcessPayrollRuns(payrollRunIds)
+                .thenApply(ResponseEntity::ok);
     }
 }

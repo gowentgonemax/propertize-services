@@ -1,5 +1,7 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -44,7 +46,7 @@ public class CompensationHistoryDTO {
     public static class CompensationComponent {
         private String componentType; // BASE_PAY, BONUS, COMMISSION, ALLOWANCE
         private BigDecimal amount;
-        private String frequency;
+        private PayFrequencyEnum frequency;
         private String currency;
         private Boolean isProrated;
         private String paymentSchedule;

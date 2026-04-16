@@ -1,7 +1,7 @@
 package com.propertize.payment.dto.payment.response;
 
-import com.propertize.payment.enums.TransactionStatusEnum;
-import com.propertize.payment.enums.TransactionTypeEnum;
+import com.propertize.commons.enums.payment.TransactionStatusEnum;
+import com.propertize.commons.enums.payment.TransactionTypeEnum;
 import lombok.Data;
 
 import java.math.BigDecimal;

@@ -1,7 +1,12 @@
 package com.propertize.payment.entity;
 
 import com.propertize.payment.entity.base.OrganizationScopedEntity;
-import com.propertize.payment.enums.*;
+import com.propertize.commons.enums.payment.PaymentCategoryEnum;
+import com.propertize.commons.enums.payment.PaymentContextEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
+import com.propertize.commons.enums.payment.PaymentTypeEnum;
+import com.propertize.payment.enums.PaymentGatewayEnum;
 import jakarta.persistence.*;
 import lombok.*;
 

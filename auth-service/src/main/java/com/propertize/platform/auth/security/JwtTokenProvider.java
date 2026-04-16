@@ -51,18 +51,22 @@ public class JwtTokenProvider {
      * Permissions are stored separately in Redis (keyed by JTI) via
      * {@link com.propertize.platform.auth.service.PermissionCacheService}.
      *
-     * <p>This keeps the JWT small (no 50+ permission strings) and resolves
-     * HTTP 431 "Request Header Fields Too Large" errors caused by large tokens.</p>
+     * <p>
+     * This keeps the JWT small (no 50+ permission strings) and resolves
+     * HTTP 431 "Request Header Fields Too Large" errors caused by large tokens.
+     * </p>
      *
      * @return the compact JWT string (permissions NOT included in payload)
      */
     public String generateAccessTokenWithPermissions(String username, Set<String> roles,
             String organizationId, String organizationCode,
-            Set<String> permissions, String organizationType) {
+            Set<String> permissions, String organizationType,
+            String firstName, String lastName) {
         Instant now = Instant.now();
         Instant expiration = now.plus(15, ChronoUnit.MINUTES);
 
-        // Derive the primary role as the first alphabetically-sorted entry (deterministic)
+        // Derive the primary role as the first alphabetically-sorted entry
+        // (deterministic)
         String primaryRole = roles != null && !roles.isEmpty()
                 ? roles.stream().sorted().findFirst().orElse("")
                 : "";
@@ -75,8 +79,13 @@ public class JwtTokenProvider {
         claims.put("organizationCode", organizationCode);
         claims.put("orgType", organizationType != null ? organizationType : "");
         claims.put("tokenType", "access");
+        if (firstName != null && !firstName.isBlank())
+            claims.put("firstName", firstName);
+        if (lastName != null && !lastName.isBlank())
+            claims.put("lastName", lastName);
         // NOTE: "permissions" intentionally NOT included in JWT payload.
-        // Permissions are cached in Redis under key perms:jti:{jti} by PermissionCacheService.
+        // Permissions are cached in Redis under key perms:jti:{jti} by
+        // PermissionCacheService.
         // The API Gateway fetches them from Redis using the jti claim on every request.
 
         return Jwts.builder()

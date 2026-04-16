@@ -1,8 +1,8 @@
 package com.propertize.platform.employecraft.dto.employee.response;
 
 import com.propertize.platform.employecraft.dto.*;
-import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
-import com.propertize.platform.employecraft.enums.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,11 +1,11 @@
 package com.propertize.payment.controller;
 
 import com.propertize.payment.config.ApiVersion;
-import com.propertize.payment.dto.common.ApiResponse;
+import com.propertize.commons.dto.ApiResponse;
 import com.propertize.payment.dto.promo.*;
 import com.propertize.payment.entity.PromoCode;
 import com.propertize.payment.service.PromoCodeService;
-import com.propertize.payment.util.ResponseHandler;
+import com.propertize.commons.dto.ResponseHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

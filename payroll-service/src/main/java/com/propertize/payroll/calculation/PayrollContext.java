@@ -1,5 +1,7 @@
 package com.propertize.payroll.calculation;
 
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+
 import java.math.BigDecimal;
 
 /**
@@ -22,7 +24,7 @@ import java.math.BigDecimal;
  */
 public record PayrollContext(
         Long employeeId,
-        String employmentType, // FULL_TIME, PART_TIME, CONTRACTOR
+        EmploymentTypeEnum employmentType,
         BigDecimal grossPay,
         BigDecimal ytdEarnings,
         int regularHours,

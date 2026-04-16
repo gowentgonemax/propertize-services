@@ -31,6 +31,19 @@ spring:
   kafka:
     bootstrap-servers: kafka:29092
 
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 16
+        queue-capacity: 200
+        keep-alive: 60s
+      thread-name-prefix: auth-async-
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: auth-sched-
+
   data:
     redis:
       host: redis
@@ -112,6 +125,10 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
 
 logging:
   level:

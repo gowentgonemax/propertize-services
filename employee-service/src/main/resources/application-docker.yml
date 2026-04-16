@@ -11,6 +11,23 @@ spring:
   application:
     name: employee-service
 
+  threads:
+    virtual:
+      enabled: true
+
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 16
+        queue-capacity: 200
+        keep-alive: 60s
+      thread-name-prefix: employee-async-
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: employee-sched-
+
   datasource:
     url: jdbc:postgresql://postgres:5432/propertize_db?stringtype=unspecified
     username: dbuser
@@ -37,6 +54,12 @@ spring:
       port: 6379
       password: ${REDIS_PASSWORD:redis_secure_pass}
       timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
 
   kafka:
     bootstrap-servers: kafka:29092
@@ -76,6 +99,10 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
 
 logging:
   level:

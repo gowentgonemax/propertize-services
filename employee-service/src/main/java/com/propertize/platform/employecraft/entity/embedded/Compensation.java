@@ -1,7 +1,7 @@
 package com.propertize.platform.employecraft.entity.embedded;
 
-import com.propertize.platform.employecraft.enums.PayFrequencyEnum;
-import com.propertize.platform.employecraft.enums.PayTypeEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayTypeEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;

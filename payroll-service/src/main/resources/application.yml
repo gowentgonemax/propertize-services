@@ -91,12 +91,20 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.propertize.*
+        session.timeout.ms: 30000
+        max.poll.interval.ms: 300000
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:redis_secure_pass}
       timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
   refresh-token:
     expiration: ${JWT_REFRESH_EXPIRATION:86400}
 # =============================================================================

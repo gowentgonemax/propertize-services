@@ -156,3 +156,4 @@ services:
       KAFKA_BOOTSTRAP: kafka:9092
     networks:
       - propertize-net
+

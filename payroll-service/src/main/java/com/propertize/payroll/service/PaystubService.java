@@ -1,5 +1,6 @@
 package com.propertize.payroll.service;
 
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import com.propertize.payroll.entity.*;
 import com.propertize.payroll.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -10,9 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -35,6 +37,8 @@ public class PaystubService {
     /**
      * Get a paystub by ID
      */
+    @Cacheable(value = "paystubs", key = "#id")
+    @Transactional(readOnly = true)
     public Paystub getPaystubById(UUID id) {
         return paystubRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Paystub not found with id: " + id));
@@ -43,6 +47,7 @@ public class PaystubService {
     /**
      * Get paystubs for an employee
      */
+    @Transactional(readOnly = true)
     public Page<Paystub> getEmployeePaystubs(String employeeId, Pageable pageable) {
         log.info("Fetching paystubs for employee: {}", employeeId);
         return paystubRepository.findByEmployeeIdOrderByPayDateDesc(employeeId, pageable);
@@ -51,6 +56,7 @@ public class PaystubService {
     /**
      * Get paystubs for a payroll run
      */
+    @Transactional(readOnly = true)
     public List<Paystub> getPaystubsByPayrollRun(UUID payrollRunId) {
         log.info("Fetching paystubs for payroll run: {}", payrollRunId);
         return paystubRepository.findByPayrollRunId(payrollRunId);
@@ -59,6 +65,7 @@ public class PaystubService {
     /**
      * Get paystub for specific employee and payroll run
      */
+    @Transactional(readOnly = true)
     public Optional<Paystub> getPaystubForEmployeeAndRun(String employeeId, UUID payrollRunId) {
         return paystubRepository.findByEmployeeIdAndPayrollRunId(employeeId, payrollRunId);
     }
@@ -66,6 +73,7 @@ public class PaystubService {
     /**
      * Get paystubs for a date range
      */
+    @Transactional(readOnly = true)
     public List<Paystub> getEmployeePaystubsForDateRange(String employeeId, LocalDate startDate, LocalDate endDate) {
         return paystubRepository.findByEmployeeIdAndPayDateBetween(employeeId, startDate, endDate);
     }
@@ -85,7 +93,7 @@ public class PaystubService {
         // Get all active employees for the client
         List<EmployeeEntity> employees = employeeRepository.findByClientIdAndStatus(
                 payrollRun.getClient().getId(),
-                com.propertize.payroll.enums.EmployeeStatusEnum.ACTIVE);
+                com.propertize.commons.enums.employee.EmployeeStatusEnum.ACTIVE);
 
         List<Paystub> paystubs = new ArrayList<>();
 
@@ -152,6 +160,7 @@ public class PaystubService {
     /**
      * Regenerate a paystub (e.g., after correction)
      */
+    @CacheEvict(value = { "paystubs", "paystubsYtd" }, allEntries = true)
     @Transactional
     public Paystub regeneratePaystub(UUID paystubId) {
         Paystub existingPaystub = getPaystubById(paystubId);
@@ -167,7 +176,9 @@ public class PaystubService {
         calculateTaxes(existingPaystub, existingPaystub.getEmployee());
         calculateDeductions(existingPaystub, existingPaystub.getEmployee());
         calculateTotals(existingPaystub);
-        calculateYtdTotals(existingPaystub, existingPaystub.getEmployee());
+        // Exclude this paystub's ID so its old DB values aren't double-counted
+        // alongside the freshly-recalculated amounts.
+        calculateYtdTotals(existingPaystub, existingPaystub.getEmployee(), existingPaystub.getId());
 
         return paystubRepository.save(existingPaystub);
     }
@@ -175,15 +186,26 @@ public class PaystubService {
     // ==================== YTD Summary ====================
 
     /**
-     * Get YTD summary for an employee
+     * Get YTD summary for an employee, optionally excluding one paystub ID from
+     * the sum. Pass a non-null {@code excludeId} when recalculating YTD for an
+     * existing paystub (regenerate flow) so the old values in the DB are not
+     * double-counted alongside the freshly-calculated amounts.
      */
+    @Cacheable(value = "paystubsYtd", key = "#employeeId + '-' + #year")
     public YtdSummary getYtdSummary(String employeeId, Integer year) {
-        log.info("Calculating YTD summary for employee: {} year: {}", employeeId, year);
+        return getYtdSummary(employeeId, year, null);
+    }
+
+    public YtdSummary getYtdSummary(String employeeId, Integer year, UUID excludePaystubId) {
+        log.info("Calculating YTD summary for employee: {} year: {} excludeId: {}", employeeId, year, excludePaystubId);
 
         LocalDate startOfYear = LocalDate.of(year, 1, 1);
         LocalDate endOfYear = LocalDate.of(year, 12, 31);
 
-        List<Paystub> paystubs = getEmployeePaystubsForDateRange(employeeId, startOfYear, endOfYear);
+        List<Paystub> paystubs = (excludePaystubId != null)
+                ? paystubRepository.findByEmployeeIdAndPayDateBetweenExcluding(employeeId, startOfYear, endOfYear,
+                        excludePaystubId)
+                : paystubRepository.findByEmployeeIdAndPayDateBetween(employeeId, startOfYear, endOfYear);
 
         YtdSummary summary = new YtdSummary();
         summary.setEmployeeId(employeeId);
@@ -338,7 +360,8 @@ public class PaystubService {
                 .employeeId(employee.getId().toString())
                 .grossPay(paystub.getGrossEarnings())
                 .ytdGross(ytdSummary.getGrossEarnings())
-                .payFrequency(employee.getPayFrequency() != null ? employee.getPayFrequency().name() : "SEMI_MONTHLY")
+                .payFrequency(
+                        employee.getPayFrequency() != null ? employee.getPayFrequency() : PayFrequencyEnum.SEMI_MONTHLY)
                 .workState(employee.getHomeAddress() != null ? employee.getHomeAddress().getState() : null)
                 .payDate(paystub.getPayDate())
                 .build();
@@ -442,7 +465,17 @@ public class PaystubService {
     }
 
     private void calculateYtdTotals(Paystub paystub, EmployeeEntity employee) {
-        YtdSummary ytdSummary = getYtdSummary(employee.getId().toString(), paystub.getPayDate().getYear());
+        calculateYtdTotals(paystub, employee, null);
+    }
+
+    /**
+     * @param excludePaystubId when non-null, the paystub with this ID is excluded
+     *                         from the DB sum to avoid double-counting (used on
+     *                         regenerate).
+     */
+    private void calculateYtdTotals(Paystub paystub, EmployeeEntity employee, UUID excludePaystubId) {
+        YtdSummary ytdSummary = getYtdSummary(employee.getId().toString(), paystub.getPayDate().getYear(),
+                excludePaystubId);
 
         paystub.setYtdGrossEarnings(ytdSummary.getGrossEarnings().add(paystub.getGrossEarnings()));
         paystub.setYtdNetPay(ytdSummary.getNetPay().add(paystub.getNetPay()));

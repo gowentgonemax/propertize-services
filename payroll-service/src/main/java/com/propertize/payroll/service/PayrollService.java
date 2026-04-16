@@ -1,8 +1,8 @@
 package com.propertize.payroll.service;
 
 import com.propertize.payroll.config.CorrelationIdUtil;
-import com.propertize.payroll.enums.EmployeeStatusEnum;
-import com.propertize.payroll.enums.PayrollStatusEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.PayrollStatusEnum;
 import com.propertize.payroll.entity.EmployeeEntity;
 import com.propertize.payroll.entity.PayrollRun;
 
@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,8 +20,11 @@ import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -29,15 +33,18 @@ public class PayrollService {
     private final PayrollRunRepository payrollRunRepository;
     private final EmployeeEntityRepository employeeRepository;
 
+    @Transactional(readOnly = true)
     public Page<PayrollRun> getPayrollRunsByClient(UUID clientId, Pageable pageable) {
         return payrollRunRepository.findByClientId(clientId, pageable);
     }
 
+    @Transactional(readOnly = true)
     public List<PayrollRun> getPayrollRunsByDateRange(UUID clientId, LocalDate startDate, LocalDate endDate) {
         return payrollRunRepository.findByClientIdAndPayPeriodStartBetweenAndPayPeriodEndBetween(
                 clientId, startDate, endDate, startDate, endDate);
     }
 
+    @Transactional(readOnly = true)
     public PayrollRun getPayrollRunById(UUID id) {
         return payrollRunRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Payroll run not found with id: " + id));
@@ -93,6 +100,36 @@ public class PayrollService {
         payrollRun.setApprovedAt(LocalDateTime.now());
 
         return payrollRun; // No need to call save() - managed entity will auto-update
+    }
+
+    /**
+     * Batch-process multiple payroll runs in parallel using virtual threads.
+     * Each run is processed in its own transaction via {@code processPayrollRun}.
+     *
+     * @param payrollRunIds list of payroll run IDs to process
+     * @return map of runId → processed PayrollRun (failures are reported via
+     *         exception in the returned CompletableFuture)
+     */
+    @Async("virtualThreadExecutor")
+    public CompletableFuture<List<Map<String, Object>>> batchProcessPayrollRuns(List<UUID> payrollRunIds) {
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        for (UUID runId : payrollRunIds) {
+            Map<String, Object> result = new java.util.LinkedHashMap<>();
+            result.put("payrollRunId", runId.toString());
+            try {
+                PayrollRun processed = processPayrollRun(runId);
+                result.put("status", PayrollStatusEnum.COMPLETED.name());
+                result.put("payrollStatus", processed.getStatus().name());
+            } catch (Exception e) {
+                log.error("Batch: failed to process payroll run {}: {}", runId, e.getMessage());
+                result.put("status", "FAILED"); // terminal error state — no enum constant for batch-level failure
+                result.put("error", e.getMessage());
+            }
+            results.add(result);
+        }
+
+        return CompletableFuture.completedFuture(results);
     }
 
     private void validatePayrollDates(PayrollRun payrollRun) {

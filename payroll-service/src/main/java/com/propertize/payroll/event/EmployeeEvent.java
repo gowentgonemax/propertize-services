@@ -1,5 +1,13 @@
 package com.propertize.payroll.event;
 
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
+import com.propertize.commons.enums.employee.PayTypeEnum;
+
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,15 +40,15 @@ public class EmployeeEvent implements Serializable {
     private String firstName;
     private String lastName;
     private String email;
-    private String status;
-    private String employmentType;
+    private EmployeeStatusEnum status;
+    private EmploymentTypeEnum employmentType;
     private LocalDate hireDate;
     private LocalDate terminationDate;
 
     // Compensation snapshot
-    private String payType;
+    private PayTypeEnum payType;
     private BigDecimal payRate;
-    private String payFrequency;
+    private PayFrequencyEnum payFrequency;
 
     private LocalDateTime occurredAt;
 }

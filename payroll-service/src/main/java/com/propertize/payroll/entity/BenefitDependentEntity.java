@@ -1,5 +1,8 @@
 package com.propertize.payroll.entity;
 
+import com.propertize.commons.enums.common.GenderEnum;
+import com.propertize.commons.enums.common.RelationshipTypeEnum;
+import com.propertize.commons.enums.common.RelationshipTypeEnumConverter;
 import com.propertize.payroll.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,8 +15,8 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(name = "benefit_dependents", indexes = {
-    @Index(name = "idx_dependent_enrollment", columnList = "enrollment_id"),
-    @Index(name = "idx_dependent_ssn", columnList = "ssnLastFour")
+        @Index(name = "idx_dependent_enrollment", columnList = "enrollment_id"),
+        @Index(name = "idx_dependent_ssn", columnList = "ssnLastFour")
 })
 @Getter
 @Setter
@@ -35,8 +38,9 @@ public class BenefitDependentEntity extends BaseEntity {
     /**
      * Relationship to employee (e.g., SPOUSE, CHILD, DOMESTIC_PARTNER)
      */
+    @Convert(converter = RelationshipTypeEnumConverter.class)
     @Column(nullable = false, length = 30)
-    private String relationship;
+    private RelationshipTypeEnum relationship;
 
     @Column
     private LocalDate dateOfBirth;
@@ -50,8 +54,9 @@ public class BenefitDependentEntity extends BaseEntity {
     /**
      * Gender (M/F/X)
      */
-    @Column(length = 1)
-    private String gender;
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private GenderEnum gender;
 
     /**
      * Whether dependent is disabled
@@ -95,6 +100,6 @@ public class BenefitDependentEntity extends BaseEntity {
     public boolean isActive() {
         LocalDate today = LocalDate.now();
         return !today.isBefore(coverageStartDate) &&
-               (coverageEndDate == null || !today.isAfter(coverageEndDate));
+                (coverageEndDate == null || !today.isAfter(coverageEndDate));
     }
 }

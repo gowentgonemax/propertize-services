@@ -1,5 +1,11 @@
 package com.propertize.payroll.dto.employee;
 
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
+import com.propertize.commons.enums.employee.PayTypeEnum;
+
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -51,14 +57,14 @@ public class CreateEmployeeRequest {
     private String zipCode;
     private String country;
 
-    @NotBlank(message = "Employment type is required")
-    private String employmentType;
+    @NotNull(message = "Employment type is required")
+    private EmploymentTypeEnum employmentType;
 
-    @NotBlank(message = "Pay type is required")
-    private String payType;
+    @NotNull(message = "Pay type is required")
+    private PayTypeEnum payType;
 
-    @NotBlank(message = "Pay frequency is required")
-    private String payFrequency;
+    @NotNull(message = "Pay frequency is required")
+    private PayFrequencyEnum payFrequency;
 
     private BigDecimal hourlyRate;
     private BigDecimal annualSalary;

@@ -69,6 +69,20 @@ spring:
           max-active: 10
           max-idle: 5
           min-idle: 2
+          max-wait: -1ms
+
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 16
+        queue-capacity: 200
+        keep-alive: 60s
+      thread-name-prefix: auth-async-
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: auth-sched-
 
 # Eureka Client Configuration
 eureka:
@@ -182,6 +196,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
 
 # Application Info
 info:

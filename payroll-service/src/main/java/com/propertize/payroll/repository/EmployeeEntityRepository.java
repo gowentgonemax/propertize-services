@@ -1,9 +1,10 @@
 package com.propertize.payroll.repository;
 
 import com.propertize.payroll.entity.EmployeeEntity;
-import com.propertize.payroll.enums.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,8 +21,10 @@ public interface EmployeeEntityRepository extends JpaRepository<EmployeeEntity, 
 
         Optional<EmployeeEntity> findByExternalEmployeeId(UUID externalEmployeeId);
 
+        @EntityGraph(attributePaths = { "client" })
         Page<EmployeeEntity> findByClientId(UUID clientId, Pageable pageable);
 
+        @EntityGraph(attributePaths = { "client" })
         List<EmployeeEntity> findByClientIdAndStatus(UUID clientId, EmployeeStatusEnum status);
 
         @Query("SELECT e FROM EmployeeEntity e WHERE e.client.id = :clientId AND e.departmentId = :departmentId")

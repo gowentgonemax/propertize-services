@@ -35,7 +35,7 @@ public class AuthenticatedUserContext {
      * Check if user is platform admin
      */
     public boolean isPlatformAdmin() {
-        return hasRole("PLATFORM_OVERSIGHT") || hasRole("PLATFORM_ADMIN");
+        return hasRole("PLATFORM_OVERSIGHT") || hasRole("PLATFORM_OPERATIONS");
     }
 
     /**
@@ -49,9 +49,11 @@ public class AuthenticatedUserContext {
      * Check if user has any of the specified roles
      */
     public boolean hasAnyRole(String... rolesToCheck) {
-        if (roles == null) return false;
+        if (roles == null)
+            return false;
         for (String role : rolesToCheck) {
-            if (roles.contains(role)) return true;
+            if (roles.contains(role))
+                return true;
         }
         return false;
     }

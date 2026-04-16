@@ -1,11 +1,12 @@
 package com.propertize.payroll.event;
 
+import com.propertize.commons.constants.KafkaTopics;
 import com.propertize.payroll.entity.Client;
 import com.propertize.payroll.entity.EmployeeEntity;
-import com.propertize.payroll.enums.EmployeeStatusEnum;
-import com.propertize.payroll.enums.EmploymentTypeEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
-import com.propertize.payroll.enums.PayTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayTypeEnum;
 import com.propertize.payroll.repository.ClientRepository;
 import com.propertize.payroll.repository.EmployeeEntityRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class EmployeeEventConsumer {
     private final EmployeeEntityRepository employeeRepository;
     private final ClientRepository clientRepository;
 
-    @KafkaListener(topics = "employee-events", groupId = "payroll-service")
+    @KafkaListener(topics = KafkaTopics.EMPLOYEE_EVENTS, groupId = "payroll-service")
     @Transactional
     @CacheEvict(value = "employees", key = "#event.employeeId", condition = "#event.employeeId != null")
     public void handleEmployeeEvent(EmployeeEvent event) {
@@ -69,32 +70,18 @@ public class EmployeeEventConsumer {
         employee.setTerminationDate(event.getTerminationDate());
 
         if (event.getStatus() != null) {
-            try {
-                employee.setStatus(EmployeeStatusEnum.valueOf(event.getStatus()));
-            } catch (IllegalArgumentException e) {
-                employee.setStatus(EmployeeStatusEnum.ACTIVE);
-            }
+            employee.setStatus(event.getStatus());
         }
 
         if (event.getEmploymentType() != null) {
-            try {
-                employee.setEmploymentType(EmploymentTypeEnum.valueOf(event.getEmploymentType()));
-            } catch (IllegalArgumentException e) {
-                employee.setEmploymentType(EmploymentTypeEnum.FULL_TIME);
-            }
+            employee.setEmploymentType(event.getEmploymentType());
         }
 
         if (event.getPayType() != null) {
-            try {
-                employee.setPayType(PayTypeEnum.valueOf(event.getPayType()));
-            } catch (IllegalArgumentException ignored) {
-            }
+            employee.setPayType(event.getPayType());
         }
         if (event.getPayFrequency() != null) {
-            try {
-                employee.setPayFrequency(PayFrequencyEnum.valueOf(event.getPayFrequency()));
-            } catch (IllegalArgumentException ignored) {
-            }
+            employee.setPayFrequency(event.getPayFrequency());
         }
         if (event.getPayRate() != null) {
             employee.setHourlyRate(event.getPayRate());

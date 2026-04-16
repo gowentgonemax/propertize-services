@@ -1,9 +1,13 @@
 package com.propertize.platform.employecraft.controller;
 
+import com.propertize.platform.employecraft.dto.DepartmentSummary;
+import com.propertize.platform.employecraft.dto.PositionSummary;
 import com.propertize.platform.employecraft.dto.employee.request.EmployeeCreateRequest;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeePayrollSummary;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeeResponse;
+import com.propertize.platform.employecraft.service.DepartmentService;
 import com.propertize.platform.employecraft.service.EmployeeService;
+import com.propertize.platform.employecraft.service.PositionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,12 +31,32 @@ import java.util.UUID;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final DepartmentService departmentService;
+    private final PositionService positionService;
 
     @GetMapping
     public ResponseEntity<Page<EmployeeResponse>> getAllEmployees(
             @RequestParam(required = false) UUID organizationId,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(employeeService.getAllEmployees(organizationId, pageable));
+    }
+
+    /**
+     * Returns all active departments for the current organization.
+     * Used to populate department dropdowns in the employee creation/edit UI.
+     */
+    @GetMapping("/departments")
+    public ResponseEntity<List<DepartmentSummary>> getDepartments() {
+        return ResponseEntity.ok(departmentService.getActiveDepartments());
+    }
+
+    /**
+     * Returns all active positions for the current organization.
+     * Used to populate position dropdowns in the employee creation/edit UI.
+     */
+    @GetMapping("/positions")
+    public ResponseEntity<List<PositionSummary>> getPositions() {
+        return ResponseEntity.ok(positionService.getActivePositions());
     }
 
     @GetMapping("/{id}")
@@ -48,7 +72,7 @@ public class EmployeeController {
     @GetMapping("/me")
     public ResponseEntity<EmployeeResponse> getMyEmployeeProfile() {
         return employeeService.getMyEmployeeProfile()
-                .map(e -> ResponseEntity.ok(e))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.noContent().build());
     }
 

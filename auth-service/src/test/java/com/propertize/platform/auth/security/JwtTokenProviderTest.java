@@ -52,7 +52,7 @@ class JwtTokenProviderTest {
         void testPrimaryRoleClaimIsSet() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
                     "alice", Set.of("ORGANIZATION_OWNER", "ACCOUNTANT"), "42", "ORG-001",
-                    Set.of("PROPERTY_READ"), "INDIVIDUAL_PROPERTY_OWNER");
+                    Set.of("PROPERTY_READ"), "INDIVIDUAL_PROPERTY_OWNER", null, null);
 
             Claims claims = parseClaims(token);
             // Alphabetically first: "ACCOUNTANT" < "ORGANIZATION_OWNER"
@@ -64,7 +64,7 @@ class JwtTokenProviderTest {
         void testRolesClaimContainsAll() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
                     "bob", Set.of("PORTFOLIO_OWNER"), "99", "ORG-002",
-                    Set.of("PROPERTY_MANAGE"), "PROPERTY_MANAGEMENT_COMPANY");
+                    Set.of("PROPERTY_MANAGE"), "PROPERTY_MANAGEMENT_COMPANY", null, null);
 
             Claims claims = parseClaims(token);
             List<?> roles = claims.get("roles", List.class);
@@ -73,16 +73,15 @@ class JwtTokenProviderTest {
         }
 
         @Test
-        @DisplayName("Should include 'permissions' claim with all supplied permissions")
+        @DisplayName("Should NOT include 'permissions' in JWT (permissions cached in Redis by PermissionCacheService)")
         void testPermissionsClaimContainsAll() {
             Set<String> perms = Set.of("PROPERTY_READ", "LEASE_CREATE", "TENANT_READ");
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "carol", Set.of("PROPERTY_MANAGER"), "7", "ORG-003", perms, "CORPORATE");
+                    "carol", Set.of("PROPERTY_MANAGER"), "7", "ORG-003", perms, "CORPORATE", null, null);
 
             Claims claims = parseClaims(token);
             List<?> permissions = claims.get("permissions", List.class);
-            assertNotNull(permissions);
-            assertTrue(permissions.containsAll(perms));
+            assertNull(permissions, "Permissions should not be in JWT — they are cached in Redis");
         }
 
         @Test
@@ -90,7 +89,7 @@ class JwtTokenProviderTest {
         void testOrgTypeClaimIsSet() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
                     "dave", Set.of("SOLO_OWNER"), "1", "ORG-004",
-                    Set.of("PROPERTY_READ"), "INDIVIDUAL_PROPERTY_OWNER");
+                    Set.of("PROPERTY_READ"), "INDIVIDUAL_PROPERTY_OWNER", null, null);
 
             Claims claims = parseClaims(token);
             assertEquals("INDIVIDUAL_PROPERTY_OWNER", claims.get("orgType", String.class));
@@ -100,7 +99,7 @@ class JwtTokenProviderTest {
         @DisplayName("Should set orgType to empty string when null is supplied")
         void testNullOrgTypeBecomesEmptyString() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "eve", Set.of("TENANT"), "2", "ORG-005", Set.of("TENANT_READ"), null);
+                    "eve", Set.of("TENANT"), "2", "ORG-005", Set.of("TENANT_READ"), null, null, null);
 
             Claims claims = parseClaims(token);
             assertEquals("", claims.get("orgType", String.class));
@@ -111,7 +110,7 @@ class JwtTokenProviderTest {
         void testOrgClaimsAreSet() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
                     "frank", Set.of("ORGANIZATION_ADMIN"), "55", "ORG-ALPHA",
-                    Set.of("USER_READ"), "HOUSING_ASSOCIATION");
+                    Set.of("USER_READ"), "HOUSING_ASSOCIATION", null, null);
 
             Claims claims = parseClaims(token);
             assertEquals("55", claims.get("organizationId", String.class));
@@ -122,7 +121,7 @@ class JwtTokenProviderTest {
         @DisplayName("Should set tokenType to 'access'")
         void testTokenTypeIsAccess() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "grace", Set.of("TEAM_MEMBER"), "3", "ORG-006", Set.of(), "CORPORATE");
+                    "grace", Set.of("TEAM_MEMBER"), "3", "ORG-006", Set.of(), "CORPORATE", null, null);
 
             Claims claims = parseClaims(token);
             assertEquals("access", claims.get("tokenType", String.class));
@@ -132,7 +131,7 @@ class JwtTokenProviderTest {
         @DisplayName("Subject (sub) should be the username")
         void testSubjectIsUsername() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "henry", Set.of("INSPECTOR"), "4", "ORG-007", Set.of(), "CORPORATE");
+                    "henry", Set.of("INSPECTOR"), "4", "ORG-007", Set.of(), "CORPORATE", null, null);
 
             Claims claims = parseClaims(token);
             assertEquals("henry", claims.getSubject());
@@ -142,7 +141,7 @@ class JwtTokenProviderTest {
         @DisplayName("Should handle empty roles set — primaryRole should be empty string")
         void testEmptyRolesPrimaryRoleEmpty() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "ivan", null, "5", "ORG-008", Set.of(), "CORPORATE");
+                    "ivan", null, "5", "ORG-008", Set.of(), "CORPORATE", null, null);
 
             Claims claims = parseClaims(token);
             assertEquals("", claims.get("role", String.class));
@@ -159,7 +158,7 @@ class JwtTokenProviderTest {
         @DisplayName("Should return true for a valid token")
         void testValidToken() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "user1", Set.of("TENANT"), "10", "T-001", Set.of(), "HOUSING_ASSOCIATION");
+                    "user1", Set.of("TENANT"), "10", "T-001", Set.of(), "HOUSING_ASSOCIATION", null, null);
 
             assertTrue(jwtTokenProvider.validateToken(token));
         }
@@ -188,7 +187,7 @@ class JwtTokenProviderTest {
         @DisplayName("Should extract username from a valid token")
         void testExtractUsername() {
             String token = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    "myuser", Set.of("VENDOR"), "20", "V-001", Set.of(), "CORPORATE");
+                    "myuser", Set.of("VENDOR"), "20", "V-001", Set.of(), "CORPORATE", null, null);
 
             assertEquals("myuser", jwtTokenProvider.getUsernameFromToken(token));
         }

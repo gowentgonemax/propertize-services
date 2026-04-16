@@ -2,6 +2,8 @@ package com.propertize.platform.gateway.security;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +44,13 @@ import java.util.*;
 public class RbacAuthorizationFilter implements GlobalFilter, Ordered {
 
     private final RbacConfig rbacConfig;
+    private final MeterRegistry meterRegistry;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Value("${rbac.cache.ttl-minutes:60}")
     private int cacheTtlMinutes;
+
+    private Counter deniedRequestsCounter;
 
     // TTL-bounded Caffeine cache — permissions expire to pick up rbac.yml reloads
     // (or future DB-backed permission changes) without requiring a service restart.
@@ -59,6 +64,9 @@ public class RbacAuthorizationFilter implements GlobalFilter, Ordered {
                 .expireAfterWrite(Duration.ofMinutes(cacheTtlMinutes))
                 .recordStats() // exposes hit/miss metrics via Micrometer
                 .build();
+        deniedRequestsCounter = Counter.builder("rbac.requests.denied")
+                .description("Number of requests denied by RBAC filter")
+                .register(meterRegistry);
         log.info("RBAC permission cache initialised: ttl={}min, maxSize=100", cacheTtlMinutes);
     }
 
@@ -376,13 +384,15 @@ public class RbacAuthorizationFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> onForbidden(ServerWebExchange exchange, String requiredPermission) {
+        deniedRequestsCounter.increment();
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.FORBIDDEN);
         response.getHeaders().add(HttpHeaders.CONTENT_TYPE, "application/json");
 
+        // Do NOT expose internal permission names to the caller — log them server-side
+        // only.
         String body = String.format(
-                "{\"status\":403,\"error\":\"Forbidden\",\"message\":\"Access denied. Required permission: %s\",\"path\":\"%s\"}",
-                requiredPermission,
+                "{\"status\":403,\"error\":\"Forbidden\",\"message\":\"You do not have permission to access this resource.\",\"path\":\"%s\"}",
                 exchange.getRequest().getPath().value());
 
         return response.writeWith(

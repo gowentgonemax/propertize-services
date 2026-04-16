@@ -1,6 +1,6 @@
 package com.propertize.payment.dto.payment.request;
 
-import com.propertize.payment.enums.PaymentMethodEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
 import lombok.Data;
 
 import java.math.BigDecimal;

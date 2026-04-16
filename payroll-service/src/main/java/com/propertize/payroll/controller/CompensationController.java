@@ -8,6 +8,7 @@ import com.propertize.payroll.service.CompensationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -161,5 +162,27 @@ public class CompensationController {
 
         compensationService.deleteCompensation(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * List compensation records for a client (organization) with pagination.
+     *
+     * GET /api/v1/compensation?clientId={uuid}&page=0&size=20
+     *
+     * @param clientId Client (organization) UUID
+     * @param page     0-based page number
+     * @param size     Page size
+     * @return Paginated list of compensation responses
+     */
+    @GetMapping
+    @PreAuthorize("hasAuthority('compensation:read')")
+    public ResponseEntity<Page<CompensationResponse>> getCompensationsByClient(
+            @RequestParam UUID clientId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        log.info("Fetching compensations for client: {}, page={}, size={}", clientId, page, size);
+
+        Page<CompensationResponse> result = compensationService.getCompensationsByClientId(clientId, page, size);
+        return ResponseEntity.ok(result);
     }
 }

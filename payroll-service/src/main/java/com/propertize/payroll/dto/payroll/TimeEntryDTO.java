@@ -1,5 +1,7 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.TimeEntryStatusEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -32,7 +34,7 @@ public class TimeEntryDTO {
 
     private BigDecimal hoursWorked;
 
-    private String status; // PENDING, APPROVED, REJECTED
+    private TimeEntryStatusEnum status;
 
     private String approverNotes;
 

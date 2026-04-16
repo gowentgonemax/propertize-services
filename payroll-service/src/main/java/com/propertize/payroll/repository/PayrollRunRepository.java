@@ -1,7 +1,7 @@
 package com.propertize.payroll.repository;
 
 import com.propertize.payroll.entity.PayrollRun;
-import com.propertize.payroll.enums.PayrollStatusEnum;
+import com.propertize.commons.enums.employee.PayrollStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;

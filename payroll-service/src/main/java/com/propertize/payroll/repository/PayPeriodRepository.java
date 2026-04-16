@@ -1,7 +1,7 @@
 package com.propertize.payroll.repository;
 
 import com.propertize.payroll.entity.PayPeriodEntity;
-import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import com.propertize.payroll.enums.PayPeriodStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

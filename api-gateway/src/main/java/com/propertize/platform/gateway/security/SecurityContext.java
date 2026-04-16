@@ -68,8 +68,7 @@ public class SecurityContext {
      */
     public boolean isPlatformAdmin() {
         return hasRole("PLATFORM_OVERSIGHT") ||
-               hasRole("PLATFORM_ADMIN") ||
-               hasRole("SUPER_ADMIN");
+                hasRole("PLATFORM_OPERATIONS");
     }
 
     /**
@@ -97,9 +96,11 @@ public class SecurityContext {
      * Check if user has any of the specified roles
      */
     public boolean hasAnyRole(String... rolesToCheck) {
-        if (roles == null) return false;
+        if (roles == null)
+            return false;
         for (String role : rolesToCheck) {
-            if (roles.contains(role)) return true;
+            if (roles.contains(role))
+                return true;
         }
         return false;
     }
@@ -108,9 +109,11 @@ public class SecurityContext {
      * Check if user has all of the specified roles
      */
     public boolean hasAllRoles(String... rolesToCheck) {
-        if (roles == null) return false;
+        if (roles == null)
+            return false;
         for (String role : rolesToCheck) {
-            if (!roles.contains(role)) return false;
+            if (!roles.contains(role))
+                return false;
         }
         return true;
     }
@@ -120,7 +123,8 @@ public class SecurityContext {
      */
     public boolean hasAnyPermission(String... permissionsToCheck) {
         for (String permission : permissionsToCheck) {
-            if (hasPermission(permission)) return true;
+            if (hasPermission(permission))
+                return true;
         }
         return false;
     }
@@ -130,7 +134,8 @@ public class SecurityContext {
      */
     public boolean hasAllPermissions(String... permissionsToCheck) {
         for (String permission : permissionsToCheck) {
-            if (!hasPermission(permission)) return false;
+            if (!hasPermission(permission))
+                return false;
         }
         return true;
     }
@@ -147,12 +152,12 @@ public class SecurityContext {
      */
     public static SecurityContext anonymous() {
         return SecurityContext.builder()
-            .userId("anonymous")
-            .username("anonymous")
-            .roles(Collections.emptySet())
-            .permissions(Collections.emptySet())
-            .isAuthenticated(false)
-            .build();
+                .userId("anonymous")
+                .username("anonymous")
+                .roles(Collections.emptySet())
+                .permissions(Collections.emptySet())
+                .isAuthenticated(false)
+                .build();
     }
 
     /**
@@ -160,23 +165,23 @@ public class SecurityContext {
      */
     public static SecurityContext system() {
         return SecurityContext.builder()
-            .userId("system")
-            .username("system")
-            .roles(Set.of("SYSTEM"))
-            .permissions(Set.of("*"))
-            .isAuthenticated(true)
-            .authenticatedAt(System.currentTimeMillis())
-            .build();
+                .userId("system")
+                .username("system")
+                .roles(Set.of("SYSTEM"))
+                .permissions(Set.of("*"))
+                .isAuthenticated(true)
+                .authenticatedAt(System.currentTimeMillis())
+                .build();
     }
 
     @Override
     public String toString() {
         return "SecurityContext{" +
-            "userId='" + userId + '\'' +
-            ", username='" + username + '\'' +
-            ", organizationId='" + organizationId + '\'' +
-            ", roles=" + roles +
-            ", isAuthenticated=" + isAuthenticated +
-            '}';
+                "userId='" + userId + '\'' +
+                ", username='" + username + '\'' +
+                ", organizationId='" + organizationId + '\'' +
+                ", roles=" + roles +
+                ", isAuthenticated=" + isAuthenticated +
+                '}';
     }
 }

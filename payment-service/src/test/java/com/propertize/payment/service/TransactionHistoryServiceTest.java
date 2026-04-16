@@ -1,7 +1,7 @@
 package com.propertize.payment.service;
 
 import com.propertize.payment.entity.TransactionHistory;
-import com.propertize.payment.exception.ResourceNotFoundException;
+import com.propertize.commons.exception.ResourceNotFoundException;
 import com.propertize.payment.repository.TransactionHistoryRepository;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;

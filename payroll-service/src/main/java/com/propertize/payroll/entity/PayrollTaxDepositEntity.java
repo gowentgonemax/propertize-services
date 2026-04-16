@@ -1,5 +1,6 @@
 package com.propertize.payroll.entity;
 
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
 import com.propertize.payroll.entity.base.BaseEntity;
 import com.propertize.payroll.enums.TaxDepositStatusEnum;
 import com.propertize.payroll.enums.TaxTypeEnum;
@@ -15,9 +16,9 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(name = "payroll_tax_deposits", indexes = {
-    @Index(name = "idx_tax_deposit_client", columnList = "client_id"),
-    @Index(name = "idx_tax_deposit_due_date", columnList = "due_date"),
-    @Index(name = "idx_tax_deposit_status", columnList = "status")
+        @Index(name = "idx_tax_deposit_client", columnList = "client_id"),
+        @Index(name = "idx_tax_deposit_due_date", columnList = "due_date"),
+        @Index(name = "idx_tax_deposit_status", columnList = "status")
 })
 @Getter
 @Setter
@@ -47,8 +48,9 @@ public class PayrollTaxDepositEntity extends BaseEntity {
     @Column(name = "payment_reference", length = 100)
     private String paymentReference;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", length = 50)
-    private String paymentMethod;
+    private PaymentMethodEnum paymentMethod;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20)

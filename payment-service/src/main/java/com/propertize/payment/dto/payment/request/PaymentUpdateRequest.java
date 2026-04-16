@@ -1,6 +1,6 @@
 package com.propertize.payment.dto.payment.request;
 
-import com.propertize.payment.enums.PaymentStatusEnum;
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
 import lombok.Data;
 
 @Data

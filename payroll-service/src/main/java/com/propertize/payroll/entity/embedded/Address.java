@@ -1,6 +1,6 @@
 package com.propertize.payroll.entity.embedded;
 
-import com.propertize.payroll.enums.AddressTypeEnum;
+import com.propertize.commons.enums.common.AddressTypeEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
@@ -44,11 +44,16 @@ public class Address {
      */
     public String getFormattedAddress() {
         StringBuilder sb = new StringBuilder();
-        if (street != null) sb.append(street).append(", ");
-        if (city != null) sb.append(city).append(", ");
-        if (state != null) sb.append(state).append(" ");
-        if (zipCode != null) sb.append(zipCode).append(", ");
-        if (country != null) sb.append(country);
+        if (street != null)
+            sb.append(street).append(", ");
+        if (city != null)
+            sb.append(city).append(", ");
+        if (state != null)
+            sb.append(state).append(" ");
+        if (zipCode != null)
+            sb.append(zipCode).append(", ");
+        if (country != null)
+            sb.append(country);
         return sb.toString().replaceAll(", $", "");
     }
 }

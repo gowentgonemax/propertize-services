@@ -14,10 +14,10 @@ spring:
 
 eureka:
   instance:
-    hostname: service-registry       # Docker service name = DNS entry
+    hostname: service-registry # Docker service name = DNS entry
     prefer-ip-address: false
   client:
-    register-with-eureka: false      # Standalone server — never self-registers
+    register-with-eureka: false # Standalone server — never self-registers
     fetch-registry: false
     service-url:
       defaultZone: http://service-registry:8761/eureka/
@@ -25,6 +25,12 @@ eureka:
     enable-self-preservation: false
     response-cache-update-interval-ms: 3000
     eviction-interval-timer-in-ms: 5000
+    # Use the read-only response cache (Guava-backed) for fast client reads
+    use-read-only-response-cache: true
+    response-cache-auto-expiration-in-seconds: 180
+    # Peer node connection settings
+    peer-node-connect-timeout-ms: 200
+    peer-node-read-timeout-ms: 200
 
 management:
   endpoints:
@@ -42,4 +48,3 @@ logging:
     com.netflix.discovery: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [DOCKER][registry] %-5level %logger{30} - %msg%n"
-

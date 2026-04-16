@@ -1,9 +1,9 @@
 package com.propertize.payment.controller;
 
 import com.propertize.payment.config.ApiVersion;
-import com.propertize.payment.dto.common.ApiResponse;
+import com.propertize.commons.dto.ApiResponse;
 import com.propertize.payment.service.payment.StripeWebhookService;
-import com.propertize.payment.util.ResponseHandler;
+import com.propertize.commons.dto.ResponseHandler;
 import com.stripe.model.Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

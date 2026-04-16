@@ -1,9 +1,9 @@
 package com.propertize.payroll.dto.employee;
 
-import com.propertize.payroll.enums.EmployeeStatusEnum;
-import com.propertize.payroll.enums.EmploymentTypeEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
-import com.propertize.payroll.enums.PayTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayTypeEnum;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

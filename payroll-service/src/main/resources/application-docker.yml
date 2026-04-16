@@ -11,6 +11,23 @@ spring:
   application:
     name: payroll-service
 
+  threads:
+    virtual:
+      enabled: true
+
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 16
+        queue-capacity: 200
+        keep-alive: 60s
+      thread-name-prefix: payroll-async-
+    scheduling:
+      pool:
+        size: 2
+      thread-name-prefix: payroll-sched-
+
   datasource:
     url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:propertize_db}?stringtype=unspecified
     username: ${POSTGRES_USER:propertize}
@@ -36,6 +53,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: com.propertize.*
+        session.timeout.ms: 30000
+        max.poll.interval.ms: 300000
 
   data:
     redis:
@@ -43,6 +62,12 @@ spring:
       port: 6379
       password: ${REDIS_PASSWORD:redis_secure_pass}
       timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
 
 eureka:
   client:
@@ -70,6 +95,10 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
 
 logging:
   level:

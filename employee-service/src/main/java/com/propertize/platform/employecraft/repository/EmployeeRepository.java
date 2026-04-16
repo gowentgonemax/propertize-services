@@ -1,9 +1,10 @@
 package com.propertize.platform.employecraft.repository;
 
 import com.propertize.platform.employecraft.entity.Employee;
-import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,9 +18,11 @@ import java.util.UUID;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
 
+        @EntityGraph(attributePaths = { "department", "position", "manager" })
         @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid)")
         Page<Employee> findByOrganizationId(@Param("orgId") String orgId, Pageable pageable);
 
+        @EntityGraph(attributePaths = { "department", "position", "manager" })
         @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.status = :status")
         List<Employee> findByOrganizationIdAndStatus(@Param("orgId") String orgId,
                         @Param("status") EmployeeStatusEnum status);
@@ -50,10 +53,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
         long countByOrganizationIdAndStatus(@Param("orgId") String orgId,
                         @Param("status") EmployeeStatusEnum status);
 
+        @EntityGraph(attributePaths = { "department", "position", "manager" })
         @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.department.id = CAST(:deptId AS uuid)")
         List<Employee> findByOrganizationIdAndDepartmentId(@Param("orgId") String orgId,
                         @Param("deptId") String departmentId);
 
+        @EntityGraph(attributePaths = { "department", "position", "manager" })
         @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.manager.id = CAST(:managerId AS uuid)")
         List<Employee> findByOrganizationIdAndManagerId(@Param("orgId") String orgId,
                         @Param("managerId") String managerId);
@@ -62,6 +67,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
         Page<Employee> findByOrganizationIdAndUpdatedAtAfter(@Param("orgId") String orgId,
                         @Param("since") LocalDateTime since, Pageable pageable);
 
+        @EntityGraph(attributePaths = { "department", "position", "manager" })
         @Query("SELECT e FROM Employee e WHERE e.organizationId = CAST(:orgId AS uuid) AND e.status IN :statuses")
         List<Employee> findByOrganizationIdAndStatusIn(@Param("orgId") String orgId,
                         @Param("statuses") List<EmployeeStatusEnum> statuses);

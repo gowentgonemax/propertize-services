@@ -7,6 +7,7 @@ import com.propertize.platform.auth.repository.UserRepository;
 import com.propertize.platform.auth.security.JwtTokenProvider;
 import com.propertize.platform.auth.service.*;
 import com.propertize.platform.auth.util.HttpRequestUtil;
+import com.propertize.commons.constants.GatewayHeaders;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -167,7 +168,8 @@ public class AuthController {
             // Generate tokens
             String accessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
                     username, roles, organizationId,
-                    organizationCode, permissions, user.getOrganizationType());
+                    organizationCode, permissions, user.getOrganizationType(),
+                    user.getFirstName(), user.getLastName());
             String refreshToken = jwtTokenProvider.generateRefreshToken(user);
 
             // Cache permissions in Redis (JWT no longer carries permissions list)
@@ -192,6 +194,8 @@ public class AuthController {
                     .tokenType("Bearer")
                     .expiresIn(900L)
                     .username(username)
+                    .firstName(user.getFirstName())
+                    .lastName(user.getLastName())
                     .roles(roles)
                     .sessionId(sessionId)
                     .build());
@@ -280,7 +284,8 @@ public class AuthController {
             // Generate new tokens (rotation: old refresh token is revoked, new one issued)
             String newAccessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
                     username, roles, organizationId,
-                    organizationCode, permissions, user.getOrganizationType());
+                    organizationCode, permissions, user.getOrganizationType(),
+                    user.getFirstName(), user.getLastName());
             String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
 
             // ── Token Rotation: Revoke old refresh token, store new one ──────
@@ -322,9 +327,9 @@ public class AuthController {
             HttpServletRequest httpRequest) {
 
         String username = "unknown";
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        if (authHeader != null && authHeader.startsWith(GatewayHeaders.BEARER_PREFIX)) {
             try {
-                String token = authHeader.substring(7);
+                String token = authHeader.substring(GatewayHeaders.BEARER_PREFIX.length());
                 username = jwtTokenProvider.getUsernameFromToken(token);
                 tokenBlacklistService.blacklistToken(token, 86400); // 24 hours
 
@@ -690,13 +695,15 @@ public class AuthController {
             Set<String> deniedPermsSwitch = rbacService.getExplicitDenialsForRoles(roles);
             permissions.removeAll(deniedPermsSwitch);
 
-            // Determine org code — use existing if same org, otherwise use orgId as fallback
+            // Determine org code — use existing if same org, otherwise use orgId as
+            // fallback
             String organizationCode = (user.getOrganizationCode() != null && !user.getOrganizationCode().isBlank())
                     ? user.getOrganizationCode()
                     : targetOrgId;
 
             String newAccessToken = jwtTokenProvider.generateAccessTokenWithPermissions(
-                    username, roles, targetOrgId, organizationCode, permissions, user.getOrganizationType());
+                    username, roles, targetOrgId, organizationCode, permissions, user.getOrganizationType(),
+                    user.getFirstName(), user.getLastName());
             String newRefreshToken = jwtTokenProvider.generateRefreshToken(user);
 
             // Cache permissions for new access token (permissions excluded from JWT)

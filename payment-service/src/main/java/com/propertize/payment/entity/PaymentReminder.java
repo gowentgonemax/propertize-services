@@ -1,8 +1,8 @@
 package com.propertize.payment.entity;
 
 import com.propertize.payment.entity.base.AuditableEntity;
-import com.propertize.payment.enums.ReminderStatusEnum;
-import com.propertize.payment.enums.ReminderTypeEnum;
+import com.propertize.commons.enums.payment.ReminderStatusEnum;
+import com.propertize.commons.enums.payment.ReminderTypeEnum;
 import jakarta.persistence.*;
 import lombok.*;
 

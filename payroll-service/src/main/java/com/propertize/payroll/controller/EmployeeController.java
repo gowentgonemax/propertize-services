@@ -3,9 +3,10 @@ package com.propertize.payroll.controller;
 import com.propertize.payroll.dto.employee.CreateEmployeeRequest;
 import com.propertize.payroll.dto.employee.EmployeeDTO;
 import com.propertize.payroll.dto.employee.UpdateEmployeeRequest;
-import com.propertize.payroll.enums.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
 import com.propertize.payroll.service.EmployeeEntityService;
 import com.propertize.payroll.service.EmployeeSyncService;
+import com.propertize.commons.constants.GatewayHeaders;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.Valid;
@@ -90,7 +91,7 @@ public class EmployeeController {
             @RequestParam UUID clientId,
             @RequestHeader("Authorization") String authHeader) {
         log.info("Syncing employee {} from Employecraft", id);
-        String token = authHeader.replace("Bearer ", "");
+        String token = authHeader.replace(GatewayHeaders.BEARER_PREFIX, "");
         employeeSyncService.syncEmployee(id, clientId, token);
         return ResponseEntity.ok().build();
     }
@@ -104,7 +105,7 @@ public class EmployeeController {
             @RequestParam UUID organizationId,
             @RequestHeader("Authorization") String authHeader) {
         log.info("Syncing all employees for client {} from Employecraft", clientId);
-        String token = authHeader.replace("Bearer ", "");
+        String token = authHeader.replace(GatewayHeaders.BEARER_PREFIX, "");
         employeeSyncService.syncAllEmployees(clientId, organizationId, token);
         return ResponseEntity.accepted().build();
     }

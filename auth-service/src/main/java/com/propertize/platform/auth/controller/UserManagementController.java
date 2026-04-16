@@ -209,4 +209,89 @@ public class UserManagementController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @PostMapping("/{id}/disable")
+    public ResponseEntity<java.util.Map<String, Object>> disableUser(@PathVariable Long id) {
+        log.info("API: Disabling user: {}", id);
+        try {
+            userManagementService.disableUser(id);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User disabled"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PostMapping("/{id}/enable")
+    public ResponseEntity<java.util.Map<String, Object>> enableUser(@PathVariable Long id) {
+        log.info("API: Enabling user: {}", id);
+        try {
+            userManagementService.enableUser(id);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User enabled"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PostMapping("/{id}/lock")
+    public ResponseEntity<java.util.Map<String, Object>> lockUser(@PathVariable Long id) {
+        log.info("API: Locking user account: {}", id);
+        try {
+            userManagementService.lockUserAccount(id);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User account locked"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PostMapping("/{id}/unlock")
+    public ResponseEntity<java.util.Map<String, Object>> unlockUser(@PathVariable Long id) {
+        log.info("API: Unlocking user account: {}", id);
+        try {
+            userManagementService.unlockUserAccount(id);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "User account unlocked"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PatchMapping("/{id}/toggle-status")
+    public ResponseEntity<java.util.Map<String, Object>> toggleStatus(@PathVariable Long id) {
+        log.info("API: Toggling status for user: {}", id);
+        try {
+            boolean newStatus = userManagementService.toggleStatus(id);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message",
+                    newStatus ? "User enabled" : "User disabled", "enabled", newStatus));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PostMapping("/{id}/reset-password")
+    public ResponseEntity<java.util.Map<String, Object>> resetPassword(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, String> requestBody) {
+        String newPassword = requestBody.get("password");
+        if (newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("success", false, "message", "Password is required"));
+        }
+        log.info("API: Resetting password for user: {}", id);
+        try {
+            userManagementService.resetPassword(id, newPassword);
+            return ResponseEntity.ok(java.util.Map.of("success", true, "message", "Password reset successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        log.info("API: Deleting user: {}", id);
+        try {
+            userManagementService.deleteUser(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
 }

@@ -2,7 +2,7 @@ package com.propertize.payroll.dto.compensation.response;
 
 import com.propertize.payroll.enums.CompensationStatusEnum;
 import com.propertize.payroll.enums.CompensationTypeEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -2,7 +2,7 @@ package com.propertize.payroll.entity;
 
 import com.propertize.payroll.entity.base.BaseEntity;
 import com.propertize.payroll.entity.embedded.DatePeriod;
-import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import com.propertize.payroll.enums.PayPeriodStatusEnum;
 import jakarta.persistence.*;
 import lombok.Getter;

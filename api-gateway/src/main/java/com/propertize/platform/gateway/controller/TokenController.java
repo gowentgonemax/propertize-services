@@ -39,6 +39,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class TokenController {
 
+    private static final String BEARER_PREFIX = "Bearer ";
     private final EnhancedJwtTokenProvider jwtTokenProvider;
 
     /**
@@ -227,8 +228,8 @@ public class TokenController {
      * correctly instead of receiving a silent JwtException.
      */
     private static String stripBearer(String token) {
-        if (token.startsWith("Bearer ")) {
-            return token.substring(7).trim();
+        if (token.startsWith(BEARER_PREFIX)) {
+            return token.substring(BEARER_PREFIX.length()).trim();
         }
         return token;
     }

@@ -1,5 +1,6 @@
 package com.propertize.payroll.calculation;
 
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +31,7 @@ class DeductionStrategyTest {
 
         PayrollContext sampleContext(BigDecimal grossPay) {
             return new PayrollContext(
-                    1L, "FULL_TIME", grossPay,
+                    1L, EmploymentTypeEnum.FULL_TIME, grossPay,
                     BigDecimal.valueOf(5000), 80, 0,
                     "CA", true, true, new BigDecimal("0.05"));
         }
@@ -45,7 +46,7 @@ class DeductionStrategyTest {
         @Test
         void rejectsNegativeYtdEarnings() {
             assertThatThrownBy(() -> new PayrollContext(
-                    1L, "FULL_TIME", BigDecimal.valueOf(1000),
+                    1L, EmploymentTypeEnum.FULL_TIME, BigDecimal.valueOf(1000),
                     new BigDecimal("-1"), 80, 0,
                     "CA", false, false, BigDecimal.ZERO)).isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("ytdEarnings");
@@ -63,14 +64,14 @@ class DeductionStrategyTest {
 
         private PayrollContext ctx(String employmentType, double grossPay) {
             return new PayrollContext(
-                    1L, employmentType, BigDecimal.valueOf(grossPay),
+                    1L, EmploymentTypeEnum.valueOf(employmentType), BigDecimal.valueOf(grossPay),
                     BigDecimal.valueOf(10000), 80, 0,
                     "TX", false, false, BigDecimal.ZERO);
         }
 
         @Test
         void contractorPaysNoFederalTax() {
-            PayrollContext ctx = ctx("CONTRACTOR", 5000.00);
+            PayrollContext ctx = ctx("CONTRACT", 5000.00);
             assertThat(strategy.calculate(ctx)).isEqualByComparingTo(BigDecimal.ZERO);
         }
 
@@ -83,7 +84,7 @@ class DeductionStrategyTest {
         @CsvSource({ "500.00", "1000.00", "3000.00", "7000.00", "20000.00" })
         void taxIsNonNegativeForCommonPayAmounts(BigDecimal grossPay) {
             PayrollContext ctx = new PayrollContext(
-                    1L, "FULL_TIME", grossPay,
+                    1L, EmploymentTypeEnum.FULL_TIME, grossPay,
                     BigDecimal.valueOf(10000), 80, 0,
                     "CA", false, false, BigDecimal.ZERO);
             assertThat(strategy.calculate(ctx)).isGreaterThanOrEqualTo(BigDecimal.ZERO);
@@ -108,7 +109,7 @@ class DeductionStrategyTest {
 
         private PayrollContext ctx(boolean has401k, double grossPay, double ytdEarnings, double rate) {
             return new PayrollContext(
-                    1L, "FULL_TIME", BigDecimal.valueOf(grossPay),
+                    1L, EmploymentTypeEnum.FULL_TIME, BigDecimal.valueOf(grossPay),
                     BigDecimal.valueOf(ytdEarnings), 80, 0,
                     "TX", false, has401k, BigDecimal.valueOf(rate));
         }
@@ -141,7 +142,7 @@ class DeductionStrategyTest {
 
         private PayrollContext ctx() {
             return new PayrollContext(
-                    1L, "FULL_TIME", new BigDecimal("5000.00"),
+                    1L, EmploymentTypeEnum.FULL_TIME, new BigDecimal("5000.00"),
                     new BigDecimal("20000.00"), 80, 0,
                     "CA", false, true, new BigDecimal("0.06"));
         }

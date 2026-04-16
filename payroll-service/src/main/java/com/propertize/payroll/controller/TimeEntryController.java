@@ -1,6 +1,6 @@
 package com.propertize.payroll.controller;
 
-import com.propertize.payroll.dto.common.ApiResponse;
+import com.propertize.commons.dto.ApiResponse;
 import com.propertize.payroll.dto.timeentry.CreateTimeEntryRequest;
 import com.propertize.payroll.dto.timeentry.TimeEntryDTO;
 import com.propertize.payroll.service.TimeEntryService;

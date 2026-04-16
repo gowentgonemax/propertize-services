@@ -1,5 +1,9 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.CompensationTypeEnum;
+
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -18,12 +22,12 @@ public class CompensationDTO {
     @NotNull
     private Long employeeId;
 
-    private String compensationType; // SALARY, HOURLY, COMMISSION, HYBRID
+    private CompensationTypeEnum compensationType;
 
     @PositiveOrZero
     private BigDecimal basePayRate;
 
-    private String payFrequency; // WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
+    private PayFrequencyEnum payFrequency; // WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
 
     private LocalDate effectiveDate;
 
@@ -61,7 +65,7 @@ public class CompensationDTO {
     public static class BonusStructure {
         private String bonusType; // PERFORMANCE, RETENTION, SIGNING, SPOT
         private BigDecimal amount;
-        private String frequency;
+        private PayFrequencyEnum frequency;
         private String criteria;
         private LocalDate targetDate;
     }
@@ -73,7 +77,7 @@ public class CompensationDTO {
         private String type; // SHIFT_DIFFERENTIAL, HAZARD, ON_CALL, LANGUAGE
         private BigDecimal amount;
         private String calculation; // FLAT, PERCENTAGE
-        private String frequency;
+        private PayFrequencyEnum frequency;
         private String conditions;
     }
 }

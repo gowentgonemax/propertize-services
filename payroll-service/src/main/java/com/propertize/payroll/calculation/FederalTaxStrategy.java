@@ -1,5 +1,6 @@
 package com.propertize.payroll.calculation;
 
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -29,7 +30,7 @@ public class FederalTaxStrategy implements DeductionStrategy {
 
     @Override
     public BigDecimal calculate(PayrollContext context) {
-        if ("CONTRACTOR".equals(context.employmentType())) {
+        if (EmploymentTypeEnum.CONTRACT == context.employmentType()) {
             return BigDecimal.ZERO; // contractors self-withhold
         }
 

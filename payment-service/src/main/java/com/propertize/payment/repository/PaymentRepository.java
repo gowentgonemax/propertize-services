@@ -1,9 +1,9 @@
 package com.propertize.payment.repository;
 
 import com.propertize.payment.entity.Payment;
-import com.propertize.payment.enums.PaymentCategoryEnum;
-import com.propertize.payment.enums.PaymentContextEnum;
-import com.propertize.payment.enums.PaymentStatusEnum;
+import com.propertize.commons.enums.payment.PaymentCategoryEnum;
+import com.propertize.commons.enums.payment.PaymentContextEnum;
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

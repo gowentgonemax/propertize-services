@@ -9,6 +9,11 @@ server:
     max-initial-line-length: 65536 # 64KB for request line
   # Spring Boot 3.x correct property for Netty max request header size (replaces server.netty.max-header-size)
   max-http-request-header-size: 65536 # 64KB for headers (default is 8KB)
+  # GZIP compression for external API responses
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml
+    min-response-size: 1024
 
 spring:
   profiles:
@@ -216,7 +221,7 @@ management:
     diskspace:
       enabled: true
     redis:
-      enabled: false # Gateway doesn't use Redis
+      enabled: true
   metrics:
     tags:
       application: ${spring.application.name}

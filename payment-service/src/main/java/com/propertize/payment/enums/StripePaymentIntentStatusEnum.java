@@ -1,5 +1,6 @@
 package com.propertize.payment.enums;
 
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
 import lombok.Getter;
 
 /**
@@ -7,7 +8,9 @@ import lombok.Getter;
  *
  * Represents the lifecycle status of a Stripe Payment Intent.
  *
- * @see <a href="https://stripe.com/docs/api/payment_intents/object#payment_intent_object-status">Stripe API Documentation</a>
+ * @see <a href=
+ *      "https://stripe.com/docs/api/payment_intents/object#payment_intent_object-status">Stripe
+ *      API Documentation</a>
  */
 @Getter
 public enum StripePaymentIntentStatusEnum {
@@ -15,49 +18,49 @@ public enum StripePaymentIntentStatusEnum {
      * Payment Intent created, requires payment method
      */
     REQUIRES_PAYMENT_METHOD("requires_payment_method", "Requires Payment Method",
-        "Customer must provide a payment method"),
+            "Customer must provide a payment method"),
 
     /**
      * Payment method provided, requires customer confirmation
      */
     REQUIRES_CONFIRMATION("requires_confirmation", "Requires Confirmation",
-        "Customer must confirm the payment"),
+            "Customer must confirm the payment"),
 
     /**
      * Requires additional customer action (e.g., 3D Secure authentication)
      */
     REQUIRES_ACTION("requires_action", "Requires Action",
-        "Customer must complete additional authentication"),
+            "Customer must complete additional authentication"),
 
     /**
      * Payment is being processed by the payment provider
      */
     PROCESSING("processing", "Processing",
-        "Payment is being processed"),
+            "Payment is being processed"),
 
     /**
      * Payment requires customer to be present
      */
     REQUIRES_CAPTURE("requires_capture", "Requires Capture",
-        "Payment authorized, awaiting manual capture"),
+            "Payment authorized, awaiting manual capture"),
 
     /**
      * Payment succeeded
      */
     SUCCEEDED("succeeded", "Succeeded",
-        "Payment completed successfully"),
+            "Payment completed successfully"),
 
     /**
      * Payment was canceled
      */
     CANCELED("canceled", "Canceled",
-        "Payment was canceled before completion"),
+            "Payment was canceled before completion"),
 
     /**
      * Payment failed
      */
     FAILED("failed", "Failed",
-        "Payment failed");
+            "Payment failed");
 
     private final String stripeValue;
     private final String displayName;
@@ -102,8 +105,8 @@ public enum StripePaymentIntentStatusEnum {
      */
     public boolean requiresCustomerAction() {
         return this == REQUIRES_PAYMENT_METHOD ||
-               this == REQUIRES_CONFIRMATION ||
-               this == REQUIRES_ACTION;
+                this == REQUIRES_CONFIRMATION ||
+                this == REQUIRES_ACTION;
     }
 
     /**

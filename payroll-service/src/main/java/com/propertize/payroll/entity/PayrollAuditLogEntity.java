@@ -1,6 +1,7 @@
 package com.propertize.payroll.entity;
 
 import com.propertize.payroll.entity.base.BaseEntity;
+import com.propertize.payroll.enums.PayrollAuditActionStatusEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -103,10 +104,11 @@ public class PayrollAuditLogEntity extends BaseEntity {
     private BigDecimal amount;
 
     /**
-     * Status of the action (SUCCESS, FAILURE)
+     * Outcome status of the audit action.
      */
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String actionStatus = "SUCCESS";
+    private PayrollAuditActionStatusEnum actionStatus = PayrollAuditActionStatusEnum.SUCCESS;
 
     /**
      * Error message if action failed

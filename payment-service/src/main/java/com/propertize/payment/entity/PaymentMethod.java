@@ -1,9 +1,9 @@
 package com.propertize.payment.entity;
 
 import com.propertize.payment.entity.base.OrganizationScopedEntity;
-import com.propertize.payment.enums.BankAccountTypeEnum;
+import com.propertize.commons.enums.payment.BankAccountTypeEnum;
 import com.propertize.payment.enums.CardBrandEnum;
-import com.propertize.payment.enums.PaymentMethodEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
 import jakarta.persistence.*;
 import lombok.*;
 

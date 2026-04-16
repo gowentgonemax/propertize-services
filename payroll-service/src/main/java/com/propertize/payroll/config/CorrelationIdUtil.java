@@ -1,5 +1,6 @@
 package com.propertize.payroll.config;
 
+import com.propertize.commons.constants.GatewayHeaders;
 import org.slf4j.MDC;
 
 import java.util.UUID; /**
@@ -8,7 +9,6 @@ import java.util.UUID; /**
 public class CorrelationIdUtil {
     
     private static final String CORRELATION_ID_KEY = "correlationId";
-    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
     
     private CorrelationIdUtil() {
         // Private constructor to prevent instantiation
@@ -43,10 +43,10 @@ public class CorrelationIdUtil {
     }
     
     /**
-     * Get correlation ID header name
+     * Get correlation ID header name — delegates to {@link GatewayHeaders#X_CORRELATION_ID}.
      */
     public static String getHeaderName() {
-        return CORRELATION_ID_HEADER;
+        return GatewayHeaders.X_CORRELATION_ID;
     }
     
     /**

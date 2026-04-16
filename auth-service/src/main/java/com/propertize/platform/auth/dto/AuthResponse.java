@@ -17,6 +17,8 @@ public class AuthResponse {
     private String tokenType;
     private Long expiresIn;
     private String username;
+    private String firstName;
+    private String lastName;
     private Set<String> roles;
     private String sessionId;
     private UserDetails userDetails;

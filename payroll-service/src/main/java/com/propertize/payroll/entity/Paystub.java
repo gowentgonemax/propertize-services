@@ -4,6 +4,7 @@ import com.propertize.payroll.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ import java.util.List;
 })
 @Getter
 @Setter
+@BatchSize(size = 25)
 public class Paystub extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -124,12 +126,15 @@ public class Paystub extends BaseEntity {
     @Column(name = "ytd_medicare_tax", precision = 15, scale = 2)
     private BigDecimal ytdMedicareTax = BigDecimal.ZERO;
 
+    @BatchSize(size = 25)
     @OneToMany(mappedBy = "paystub", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaystubEarning> earnings = new ArrayList<>();
 
+    @BatchSize(size = 25)
     @OneToMany(mappedBy = "paystub", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaystubDeduction> deductions = new ArrayList<>();
 
+    @BatchSize(size = 25)
     @OneToMany(mappedBy = "paystub", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PaystubTax> taxes = new ArrayList<>();
 

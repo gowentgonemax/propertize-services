@@ -1,7 +1,10 @@
 package com.propertize.payroll.entity.embedded;
 
+import com.propertize.commons.enums.payment.BankAccountTypeEnum;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,8 +29,9 @@ public class BankingInfo {
     @Column(name = "bank_account_number", length = 30)
     private String accountNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "bank_account_type", length = 20)
-    private String accountType; // CHECKING, SAVINGS
+    private BankAccountTypeEnum accountType;
 
     @Column(name = "bank_account_holder_name")
     private String accountHolderName;

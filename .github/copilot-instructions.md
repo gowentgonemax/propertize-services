@@ -1,5 +1,10 @@
 # Propertize Services — Project Conventions
 
+> **All AI assistants MUST read `CLAUDE.md` (repo root) before generating any code.**
+> It contains mandatory rules covering reasoning-first coding, naming conventions, banned patterns,
+> testing standards, and architecture constraints.
+> Quick reference: `cat /CLAUDE.md` or open `propertize-Services/CLAUDE.md`.
+
 ## Architecture Overview
 
 Propertize is a property-management platform built as a microservices monorepo. All services share a single Docker Compose stack and a single PostgreSQL database (`propertize_db`).

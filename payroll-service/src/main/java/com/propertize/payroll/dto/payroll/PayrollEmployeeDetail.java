@@ -1,5 +1,9 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.commons.enums.employee.PayTypeEnum;
+
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -14,8 +18,8 @@ import java.util.List;
 public class PayrollEmployeeDetail {
     private Long employeeId;
     private String employeeName;
-    private String employmentType; // FULL_TIME, PART_TIME, CONTRACT
-    private String payType; // SALARY, HOURLY, COMMISSION
+    private EmploymentTypeEnum employmentType; // FULL_TIME, PART_TIME, CONTRACT
+    private PayTypeEnum payType; // SALARY, HOURLY, COMMISSION
     private BigDecimal regularHours;
     private BigDecimal overtimeHours;
     private BigDecimal regularRate;

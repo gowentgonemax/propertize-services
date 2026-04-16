@@ -1,5 +1,6 @@
 package com.propertize.payment.config;
 
+import com.propertize.commons.constants.GatewayHeaders;
 import lombok.Getter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +23,7 @@ public class SecurityContext {
     public static String getCurrentUserId() {
         HttpServletRequest request = getCurrentRequest();
         if (request != null) {
-            String userId = request.getHeader("X-User-Id");
+            String userId = request.getHeader(GatewayHeaders.X_USER_ID);
             if (userId != null && !userId.isBlank())
                 return userId;
         }
@@ -37,7 +38,7 @@ public class SecurityContext {
     public static String getCurrentOrganizationId() {
         HttpServletRequest request = getCurrentRequest();
         if (request != null) {
-            return request.getHeader("X-Organization-Id");
+            return request.getHeader(GatewayHeaders.X_ORGANIZATION_ID);
         }
         return null;
     }
@@ -45,7 +46,7 @@ public class SecurityContext {
     public static String getCurrentUserEmail() {
         HttpServletRequest request = getCurrentRequest();
         if (request != null) {
-            return request.getHeader("X-User-Email");
+            return request.getHeader(GatewayHeaders.X_USER_EMAIL);
         }
         return null;
     }
@@ -53,7 +54,7 @@ public class SecurityContext {
     public static String getCurrentUserRole() {
         HttpServletRequest request = getCurrentRequest();
         if (request != null) {
-            return request.getHeader("X-User-Role");
+            return request.getHeader(GatewayHeaders.X_PRIMARY_ROLE);
         }
         return null;
     }

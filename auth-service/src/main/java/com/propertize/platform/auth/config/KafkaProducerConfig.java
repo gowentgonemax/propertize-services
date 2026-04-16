@@ -30,9 +30,17 @@ public class KafkaProducerConfig {
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        // Reliability: all replicas must ack; idempotent producer prevents duplicates
         config.put(ProducerConfig.ACKS_CONFIG, "all");
         config.put(ProducerConfig.RETRIES_CONFIG, 3);
         config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        // Throughput: batch up to 64 KB, wait up to 5 ms to fill batch
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 65536); // 64 KB
+        config.put(ProducerConfig.LINGER_MS_CONFIG, 5);
+        // Compression: lz4 is fastest with good ratio for JSON payloads
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "lz4");
+        // Buffer memory for in-flight batches
+        config.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432); // 32 MB
         config.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
         return new DefaultKafkaProducerFactory<>(config);
     }

@@ -1,5 +1,6 @@
 package com.propertize.payroll.entity;
 
+import com.propertize.commons.enums.common.FormStatusEnum;
 import com.propertize.payroll.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,9 +13,9 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "w2_forms", indexes = {
-    @Index(name = "idx_w2_employee", columnList = "employee_id"),
-    @Index(name = "idx_w2_year", columnList = "taxYear"),
-    @Index(name = "idx_w2_client", columnList = "client_id")
+        @Index(name = "idx_w2_employee", columnList = "employee_id"),
+        @Index(name = "idx_w2_year", columnList = "taxYear"),
+        @Index(name = "idx_w2_client", columnList = "client_id")
 })
 @Getter
 @Setter
@@ -133,8 +134,9 @@ public class W2FormEntity extends BaseEntity {
     /**
      * Form status
      */
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String formStatus = "DRAFT";
+    private FormStatusEnum formStatus = FormStatusEnum.DRAFT;
 
     /**
      * Date form was finalized

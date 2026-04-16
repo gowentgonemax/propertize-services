@@ -1,5 +1,9 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.TaxTypeEnum;
+
+import com.propertize.payroll.enums.FilingStatusEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -11,9 +15,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TaxDetail {
-    private String taxType; // FEDERAL, STATE, LOCAL, FICA_SS, FICA_MEDICARE
+    private TaxTypeEnum taxType;
     private String jurisdiction;
-    private String filingStatus;
+    private FilingStatusEnum filingStatus;
     private Integer allowances;
     private BigDecimal taxableWages;
     private BigDecimal amount;

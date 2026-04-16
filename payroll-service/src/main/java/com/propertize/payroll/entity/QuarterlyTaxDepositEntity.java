@@ -1,5 +1,6 @@
 package com.propertize.payroll.entity;
 
+import com.propertize.commons.enums.common.FormStatusEnum;
 import com.propertize.payroll.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,8 +13,8 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "quarterly_tax_deposits", indexes = {
-    @Index(name = "idx_941_client", columnList = "client_id"),
-    @Index(name = "idx_941_year_quarter", columnList = "taxYear, quarter")
+        @Index(name = "idx_941_client", columnList = "client_id"),
+        @Index(name = "idx_941_year_quarter", columnList = "taxYear, quarter")
 })
 @Getter
 @Setter
@@ -128,8 +129,9 @@ public class QuarterlyTaxDepositEntity extends BaseEntity {
     /**
      * Form status (DRAFT, READY, FILED)
      */
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private String formStatus = "DRAFT";
+    private FormStatusEnum formStatus = FormStatusEnum.DRAFT;
 
     /**
      * Date form was filed

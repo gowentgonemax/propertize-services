@@ -1,5 +1,7 @@
 package com.propertize.payroll.dto.payroll;
 
+import com.propertize.payroll.enums.EnrollmentStatusEnum;
+
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -43,7 +45,7 @@ public class BenefitsEnrollmentDTO {
 
     private Boolean isPreTax;
 
-    private String status; // PENDING, ACTIVE, TERMINATED
+    private EnrollmentStatusEnum status;
 
     private String dependentsCovered; // JSON string with dependent information
 

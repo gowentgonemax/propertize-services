@@ -15,13 +15,23 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Two-level cache: Caffeine L1 (in-process, fast) falls through to Redis L2
- * (distributed, shared).
- * Caffeine handles hot-path reads; Redis keeps all instances consistent after
- * Kafka sync events.
+ * Two-level cache for payroll-service:
+ * - L1: Caffeine (in-process, hot path reads)
+ * - L2: Redis (distributed, shared across instances)
+ *
+ * Cache regions and TTLs:
+ * - paystubs: Paystub lookups per employee (L1: 5 min | L2: 10 min)
+ * - paystubsYtd: YTD aggregation per employee (L1: 1 hr | L2: 24 hr — only
+ * recomputed nightly)
+ * - payrollRuns: Payroll run lookups (L1: 5 min | L2: 10 min)
+ * - timesheets: Timesheet reads (L1: 5 min | L2: 10 min)
+ * - departments: Department data (L1: 15 min | L2: 30 min)
+ * - benefits: Benefit plan data (L1: 15 min | L2: 30 min)
  */
 @Configuration
 @EnableCaching
@@ -33,6 +43,9 @@ public class CacheConfig {
         manager.setCaffeine(Caffeine.newBuilder()
                 .maximumSize(500)
                 .expireAfterWrite(5, TimeUnit.MINUTES));
+        manager.setCacheNames(java.util.List.of(
+                "paystubs", "paystubsYtd", "payrollRuns",
+                "timesheets", "departments", "benefits"));
         return manager;
     }
 
@@ -42,10 +55,20 @@ public class CacheConfig {
                 .entryTtl(Duration.ofHours(1))
                 .serializeValuesWith(
                         RedisSerializationContext.SerializationPair
-                                .fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                                .fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                .disableCachingNullValues();
+
+        Map<String, RedisCacheConfiguration> perCache = new HashMap<>();
+        perCache.put("paystubs", defaults.entryTtl(Duration.ofMinutes(10)));
+        perCache.put("paystubsYtd", defaults.entryTtl(Duration.ofHours(24)));
+        perCache.put("payrollRuns", defaults.entryTtl(Duration.ofMinutes(10)));
+        perCache.put("timesheets", defaults.entryTtl(Duration.ofMinutes(10)));
+        perCache.put("departments", defaults.entryTtl(Duration.ofMinutes(30)));
+        perCache.put("benefits", defaults.entryTtl(Duration.ofMinutes(30)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaults)
+                .withInitialCacheConfigurations(perCache)
                 .build();
     }
 

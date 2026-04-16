@@ -1,8 +1,8 @@
 package com.propertize.payment.dto.payment.request;
 
-import com.propertize.payment.enums.PaymentCategoryEnum;
-import com.propertize.payment.enums.PaymentContextEnum;
-import com.propertize.payment.enums.PaymentStatusEnum;
+import com.propertize.commons.enums.payment.PaymentCategoryEnum;
+import com.propertize.commons.enums.payment.PaymentContextEnum;
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
 import lombok.Data;
 
 import java.math.BigDecimal;

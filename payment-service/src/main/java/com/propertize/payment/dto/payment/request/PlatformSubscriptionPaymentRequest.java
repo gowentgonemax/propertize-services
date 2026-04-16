@@ -1,5 +1,7 @@
 package com.propertize.payment.dto.payment.request;
 
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
+
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,7 +12,7 @@ public class PlatformSubscriptionPaymentRequest {
     private String organizationId;
     private String subscriptionPlanId;
     private BigDecimal amount;
-    private String paymentMethod;
+    private PaymentMethodEnum paymentMethod;
     private String stripeCustomerId;
     private LocalDate billingPeriodStart;
     private LocalDate billingPeriodEnd;

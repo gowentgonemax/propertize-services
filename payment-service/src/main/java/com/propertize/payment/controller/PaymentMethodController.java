@@ -1,12 +1,12 @@
 package com.propertize.payment.controller;
 
 import com.propertize.payment.config.ApiVersion;
-import com.propertize.payment.dto.common.ApiResponse;
+import com.propertize.commons.dto.ApiResponse;
 import com.propertize.payment.dto.payment.request.CreateACHPaymentMethodRequest;
 import com.propertize.payment.dto.payment.request.CreateStripePaymentMethodRequest;
 import com.propertize.payment.entity.PaymentMethod;
 import com.propertize.payment.service.PaymentMethodService;
-import com.propertize.payment.util.ResponseHandler;
+import com.propertize.commons.dto.ResponseHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

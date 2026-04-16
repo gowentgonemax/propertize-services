@@ -20,83 +20,84 @@ import java.util.UUID;
 @Repository
 public interface TimesheetRepository extends JpaRepository<TimesheetEntity, UUID> {
 
-    /**
-     * Find all timesheets for a specific employee with pagination.
-     */
-    Page<TimesheetEntity> findByEmployeeId(String employeeId, Pageable pageable);
+        /**
+         * Find all timesheets for a specific employee with pagination.
+         */
+        Page<TimesheetEntity> findByEmployeeId(String employeeId, Pageable pageable);
 
-    /**
-     * Find all timesheets for a specific employee.
-     */
-    List<TimesheetEntity> findByEmployeeId(String employeeId);
+        /**
+         * Find all timesheets for a specific employee.
+         */
+        List<TimesheetEntity> findByEmployeeId(String employeeId);
 
-    /**
-     * Find timesheet by employee ID and pay period ID.
-     */
-    Optional<TimesheetEntity> findByEmployeeIdAndPayPeriodId(String employeeId, UUID payPeriodId);
+        /**
+         * Find timesheet by employee ID and pay period ID.
+         */
+        Optional<TimesheetEntity> findByEmployeeIdAndPayPeriodId(String employeeId, UUID payPeriodId);
 
-    /**
-     * Find timesheets by status.
-     */
-    List<TimesheetEntity> findByStatus(TimesheetStatusEnum status);
+        /**
+         * Find timesheets by status.
+         */
+        List<TimesheetEntity> findByStatus(TimesheetStatusEnum status);
 
-    /**
-     * Find timesheets by employee and status.
-     */
-    List<TimesheetEntity> findByEmployeeIdAndStatus(String employeeId, TimesheetStatusEnum status);
+        /**
+         * Find timesheets by employee and status.
+         */
+        List<TimesheetEntity> findByEmployeeIdAndStatus(String employeeId, TimesheetStatusEnum status);
 
-    /**
-     * Find timesheet by employee ID and week containing a specific date.
-     */
-    @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId = :employeeId " +
-            "AND :date BETWEEN t.weekPeriod.startDate AND t.weekPeriod.endDate")
-    Optional<TimesheetEntity> findByEmployeeIdAndDateWithin(
-            @Param("employeeId") String employeeId,
-            @Param("date") LocalDate date);
+        /**
+         * Find timesheet by employee ID and week containing a specific date.
+         */
+        @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId = :employeeId " +
+                        "AND :date BETWEEN t.weekPeriod.startDate AND t.weekPeriod.endDate")
+        Optional<TimesheetEntity> findByEmployeeIdAndDateWithin(
+                        @Param("employeeId") String employeeId,
+                        @Param("date") LocalDate date);
 
-    /**
-     * Find pending approval timesheets for a list of employee IDs (for managers).
-     */
-    @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId IN :employeeIds AND t.status = :status")
-    List<TimesheetEntity> findByEmployeeIdInAndStatus(
-            @Param("employeeIds") List<String> employeeIds,
-            @Param("status") TimesheetStatusEnum status);
+        /**
+         * Find pending approval timesheets for a list of employee IDs (for managers).
+         */
+        @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId IN :employeeIds AND t.status = :status")
+        List<TimesheetEntity> findByEmployeeIdInAndStatus(
+                        @Param("employeeIds") List<String> employeeIds,
+                        @Param("status") TimesheetStatusEnum status);
 
-    /**
-     * Find timesheets by pay period.
-     */
-    List<TimesheetEntity> findByPayPeriodId(UUID payPeriodId);
+        /**
+         * Find timesheets by pay period.
+         */
+        List<TimesheetEntity> findByPayPeriodId(UUID payPeriodId);
 
-    /**
-     * Count timesheets by status for an employee.
-     */
-    Long countByEmployeeIdAndStatus(String employeeId, TimesheetStatusEnum status);
+        /**
+         * Count timesheets by status for an employee.
+         */
+        Long countByEmployeeIdAndStatus(String employeeId, TimesheetStatusEnum status);
 
-    /**
-     * Find timesheets within a date range.
-     */
-    @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId = :employeeId " +
-            "AND t.weekPeriod.startDate >= :startDate AND t.weekPeriod.endDate <= :endDate")
-    List<TimesheetEntity> findByEmployeeIdAndDateRange(
-            @Param("employeeId") String employeeId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+        /**
+         * Find timesheets within a date range.
+         */
+        @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId = :employeeId " +
+                        "AND t.weekPeriod.startDate >= :startDate AND t.weekPeriod.endDate <= :endDate")
+        List<TimesheetEntity> findByEmployeeIdAndDateRange(
+                        @Param("employeeId") String employeeId,
+                        @Param("startDate") LocalDate startDate,
+                        @Param("endDate") LocalDate endDate);
 
-    /**
-     * Find all submitted timesheets pending approval for a client.
-     */
-    @Query("SELECT t FROM TimesheetEntity t " +
-            "JOIN t.payPeriod pp " +
-            "WHERE pp.client.id = :clientId AND t.status = 'SUBMITTED'")
-    List<TimesheetEntity> findPendingApprovalsForClient(@Param("clientId") UUID clientId);
+        /**
+         * Batch retrieval: timesheets for multiple employees within a date range.
+         * Avoids N+1 per-employee queries for payroll period summaries.
+         */
+        @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId IN :employeeIds " +
+                        "AND t.weekPeriod.startDate >= :startDate AND t.weekPeriod.endDate <= :endDate")
+        List<TimesheetEntity> findByEmployeeIdInAndDateRange(
+                        @Param("employeeIds") List<String> employeeIds,
+                        @Param("startDate") LocalDate startDate,
+                        @Param("endDate") LocalDate endDate);
 
-    /**
-     * Find timesheets by multiple employee IDs within a date range.
-     */
-    @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId IN :employeeIds " +
-            "AND t.weekPeriod.startDate >= :startDate AND t.weekPeriod.endDate <= :endDate")
-    List<TimesheetEntity> findByEmployeeIdInAndDateRange(
-            @Param("employeeIds") List<String> employeeIds,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+        /**
+         * Find all submitted timesheets pending approval for a client.
+         */
+        @Query("SELECT t FROM TimesheetEntity t " +
+                        "JOIN t.payPeriod pp " +
+                        "WHERE pp.client.id = :clientId AND t.status = 'SUBMITTED'")
+        List<TimesheetEntity> findPendingApprovalsForClient(@Param("clientId") UUID clientId);
 }

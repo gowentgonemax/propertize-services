@@ -1,5 +1,6 @@
 package com.propertize.platform.employecraft.service;
 
+import com.propertize.commons.constants.GatewayHeaders;
 import com.propertize.platform.employecraft.context.OrganizationContext;
 import com.propertize.platform.employecraft.client.PropertizeFeignClient;
 import com.propertize.platform.employecraft.dto.*;
@@ -14,9 +15,9 @@ import com.propertize.platform.employecraft.entity.Position;
 import com.propertize.platform.employecraft.entity.embedded.Address;
 import com.propertize.platform.employecraft.entity.embedded.Compensation;
 import com.propertize.platform.employecraft.entity.embedded.EmergencyContact;
-import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
-import com.propertize.platform.employecraft.enums.PayFrequencyEnum;
-import com.propertize.platform.employecraft.enums.PayTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayTypeEnum;
 import com.propertize.platform.employecraft.event.EmployeeEvent;
 import com.propertize.platform.employecraft.event.EmployeeEventPublisher;
 import com.propertize.platform.employecraft.exception.EmployeeNotFoundException;
@@ -28,6 +29,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -78,6 +82,7 @@ public class EmployeeService {
         return employees.map(this::toResponse);
     }
 
+    @Cacheable(value = "employees", key = "#employeeId")
     @Transactional(readOnly = true)
     public EmployeeResponse getEmployee(UUID employeeId) {
         UUID organizationId = OrganizationContext.getOrganizationId();
@@ -116,12 +121,12 @@ public class EmployeeService {
     @Transactional(readOnly = true)
     public java.util.Optional<EmployeeResponse> getMyEmployeeProfile() {
         try {
-            jakarta.servlet.http.HttpServletRequest req =
-                    ((org.springframework.web.context.request.ServletRequestAttributes)
-                            org.springframework.web.context.request.RequestContextHolder.getRequestAttributes())
-                            .getRequest();
-            String userIdStr = req.getHeader("X-User-Id");
-            if (userIdStr == null || userIdStr.isBlank()) return java.util.Optional.empty();
+            jakarta.servlet.http.HttpServletRequest req = ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder
+                    .getRequestAttributes())
+                    .getRequest();
+            String userIdStr = req.getHeader(GatewayHeaders.X_USER_ID);
+            if (userIdStr == null || userIdStr.isBlank())
+                return java.util.Optional.empty();
             Long userId = Long.parseLong(userIdStr);
             UUID organizationId = OrganizationContext.getOrganizationId();
             Optional<Employee> employee = organizationId != null
@@ -203,7 +208,8 @@ public class EmployeeService {
             Long userId = createUserInPropertize(request, organizationId);
             employee.setUserId(userId);
         } else if (request.getUserId() != null) {
-            // Link to an existing auth-service user (e.g., org owner provisioned by OnboardingService)
+            // Link to an existing auth-service user (e.g., org owner provisioned by
+            // OnboardingService)
             employee.setUserId(request.getUserId());
         }
 
@@ -214,6 +220,10 @@ public class EmployeeService {
         return toResponse(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "employees", key = "#employeeId"),
+            @CacheEvict(value = "employeesByOrg", allEntries = true)
+    })
     @Transactional
     public EmployeeResponse activateEmployee(UUID employeeId) {
         UUID organizationId = OrganizationContext.requireOrganizationId();
@@ -257,6 +267,10 @@ public class EmployeeService {
                 .toList();
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "employees", key = "#employeeId"),
+            @CacheEvict(value = "employeesByOrg", allEntries = true)
+    })
     @Transactional
     public EmployeeResponse terminateEmployee(UUID employeeId, String reason) {
         UUID organizationId = OrganizationContext.requireOrganizationId();
@@ -348,10 +362,9 @@ public class EmployeeService {
             return null;
         }
         return Compensation.builder()
-                .payType(request.getPayType() != null ? PayTypeEnum.valueOf(request.getPayType()) : null)
+                .payType(request.getPayType())
                 .payRate(request.getPayRate())
-                .payFrequency(
-                        request.getPayFrequency() != null ? PayFrequencyEnum.valueOf(request.getPayFrequency()) : null)
+                .payFrequency(request.getPayFrequency())
                 .bankName(request.getBankName())
                 .bankAccountNumber(request.getBankAccountNumber())
                 .bankRoutingNumber(request.getBankRoutingNumber())
@@ -449,17 +462,17 @@ public class EmployeeService {
                 .firstName(employee.getFirstName())
                 .lastName(employee.getLastName())
                 .email(employee.getEmail())
-                .status(employee.getStatus().name())
-                .employmentType(employee.getEmploymentType().name())
+                .status(employee.getStatus())
+                .employmentType(employee.getEmploymentType())
                 .hireDate(employee.getHireDate())
                 .terminationDate(employee.getTerminationDate())
                 .updatedAt(employee.getUpdatedAt());
 
         if (employee.getCompensation() != null) {
             Compensation comp = employee.getCompensation();
-            b.payType(comp.getPayType() != null ? comp.getPayType().name() : null)
+            b.payType(comp.getPayType())
                     .payRate(comp.getPayRate())
-                    .payFrequency(comp.getPayFrequency() != null ? comp.getPayFrequency().name() : null);
+                    .payFrequency(comp.getPayFrequency());
         }
 
         return b.build();

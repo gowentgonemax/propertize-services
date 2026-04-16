@@ -20,7 +20,7 @@ public class ClientController {
     private final ClientService clientService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
     public ResponseEntity<Page<Client>> getAllClients(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int limit,
@@ -32,26 +32,26 @@ public class ClientController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','PAYROLL_MANAGER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OVERSIGHT','PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN','ACCOUNTANT','CFO','HR_MANAGER')")
     public ResponseEntity<Client> getClientById(@PathVariable UUID id) {
         return ResponseEntity.ok(clientService.getClientById(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN')")
     public ResponseEntity<Client> createClient(@Valid @RequestBody Client client) {
         Client created = clientService.createClient(client);
         return ResponseEntity.created(URI.create("/clients/" + created.getId())).body(created);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER','ORGANIZATION_ADMIN')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER','ORGANIZATION_ADMIN')")
     public ResponseEntity<Client> updateClient(@PathVariable UUID id, @Valid @RequestBody Client client) {
         return ResponseEntity.ok(clientService.updateClient(id, client));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('PLATFORM_ADMIN','ORGANIZATION_OWNER')")
+    @PreAuthorize("hasAnyRole('PLATFORM_OPERATIONS','ORGANIZATION_OWNER')")
     public ResponseEntity<Void> deleteClient(@PathVariable UUID id) {
         clientService.deleteClient(id);
         return ResponseEntity.noContent().build();
