@@ -95,6 +95,7 @@ class AuthControllerTest {
         u.setLastName("Doe");
         u.setOrganizationId("org-1");
         u.setOrganizationCode("ORG01");
+        u.setOrganizationType("PROPERTY_MANAGEMENT");
         u.setRoles(Collections.emptySet());
         return u;
     }
@@ -162,7 +163,7 @@ class AuthControllerTest {
             User u = buildUser("jdoe");
             when(userRepository.findByUsernameWithRoles("jdoe")).thenReturn(Optional.of(u));
             when(jwtTokenProvider.generateAccessTokenWithPermissions(
-                    anyString(), any(), anyString(), anyString(), any(), anyString()))
+                    anyString(), any(), anyString(), anyString(), any(), anyString(), anyString(), anyString()))
                     .thenReturn("access-token-xyz");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("refresh-token-xyz");
             UserSessionInfo si = UserSessionInfo.builder()
@@ -187,7 +188,7 @@ class AuthControllerTest {
             when(authenticationManager.authenticate(any())).thenReturn(authentication);
             when(userRepository.findByUsernameWithRoles("jdoe")).thenReturn(Optional.of(emailUser));
             when(jwtTokenProvider.generateAccessTokenWithPermissions(
-                    anyString(), any(), anyString(), anyString(), any(), anyString()))
+                    anyString(), any(), anyString(), anyString(), any(), anyString(), anyString(), anyString()))
                     .thenReturn("tok");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("rtok");
             when(sessionService.createSession(any(), any(), any(), any()))

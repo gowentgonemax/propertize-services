@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.propertize.payment.dto.payment.request.CreateACHPaymentMethodRequest;
 import com.propertize.payment.dto.payment.request.CreateStripePaymentMethodRequest;
 import com.propertize.payment.entity.PaymentMethod;
-import com.propertize.payment.enums.BankAccountTypeEnum;
-import com.propertize.payment.enums.PaymentMethodEnum;
+import com.propertize.payment.exception.GlobalExceptionHandler;
+import org.springframework.context.annotation.Import;
+import com.propertize.commons.enums.payment.BankAccountTypeEnum;
+import com.propertize.commons.enums.payment.PaymentMethodEnum;
 import com.propertize.payment.exception.ResourceNotFoundException;
 import com.propertize.payment.service.PaymentMethodService;
 import org.junit.jupiter.api.*;
@@ -30,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityFilterAutoConfiguration.class,
         UserDetailsServiceAutoConfiguration.class
 })
+@Import(GlobalExceptionHandler.class)
 @DisplayName("PaymentMethodController Tests")
 class PaymentMethodControllerTest {
 

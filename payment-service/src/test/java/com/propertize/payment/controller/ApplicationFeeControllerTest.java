@@ -5,9 +5,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.propertize.payment.dto.payment.request.ApplicationFeeProcessPaymentRequest;
 import com.propertize.payment.dto.payment.request.ApplicationFeeRequest;
 import com.propertize.payment.entity.ApplicationFee;
-import com.propertize.payment.enums.PaymentStatusEnum;
+import com.propertize.commons.enums.payment.PaymentStatusEnum;
 import com.propertize.commons.exception.BadRequestException;
 import com.propertize.payment.exception.ResourceNotFoundException;
+import com.propertize.payment.exception.GlobalExceptionHandler;
+import org.springframework.context.annotation.Import;
 import com.propertize.payment.service.ApplicationFeeService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityFilterAutoConfiguration.class,
         UserDetailsServiceAutoConfiguration.class
 })
+@Import(GlobalExceptionHandler.class)
 @DisplayName("ApplicationFeeController Tests")
 class ApplicationFeeControllerTest {
 

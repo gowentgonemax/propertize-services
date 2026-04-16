@@ -6,7 +6,7 @@ import com.propertize.payroll.dto.compensation.request.CompensationUpdateRequest
 import com.propertize.payroll.dto.compensation.response.CompensationHistoryResponse;
 import com.propertize.payroll.dto.compensation.response.CompensationResponse;
 import com.propertize.payroll.enums.CompensationTypeEnum;
-import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.commons.enums.employee.PayFrequencyEnum;
 import com.propertize.payroll.service.CompensationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,7 +117,7 @@ class CompensationControllerTest {
         void getCompensationHistory_returnsList() throws Exception {
                 CompensationHistoryResponse history = CompensationHistoryResponse.builder()
                                 .id(compId)
-                                .compensationType(CompensationTypeEnum.HOURLY_WAGE.name())
+                                .compensationType(CompensationTypeEnum.HOURLY_WAGE)
                                 .build();
                 when(compensationService.getCompensationHistory(employeeId)).thenReturn(List.of(history));
 

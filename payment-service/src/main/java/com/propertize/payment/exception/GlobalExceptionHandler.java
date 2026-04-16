@@ -10,13 +10,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Payment-service exception handler.
  * Delegates all standard exception handling to the shared
  * {@link PropertizeGlobalExceptionHandler} from propertize-commons.
- * Add any payment-service-specific handlers here.
  */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class GlobalExceptionHandler extends PropertizeGlobalExceptionHandler {
-    // All handlers (ResourceNotFoundException, BadRequestException,
-    // MethodArgumentNotValidException, etc.) are inherited from PropertizeGlobalExceptionHandler.
-    // Add payment-specific @ExceptionHandler methods here if needed.
+    // Payment ResourceNotFoundException extends commons ResourceNotFoundException,
+    // so it is handled automatically by the inherited handleNotFound method.
 }

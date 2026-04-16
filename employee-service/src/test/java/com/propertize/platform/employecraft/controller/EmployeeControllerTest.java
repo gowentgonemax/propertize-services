@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.propertize.platform.employecraft.dto.employee.request.EmployeeCreateRequest;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeePayrollSummary;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeeResponse;
-import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
-import com.propertize.platform.employecraft.enums.EmploymentTypeEnum;
+import com.propertize.commons.enums.employee.EmployeeStatusEnum;
+import com.propertize.commons.enums.employee.EmploymentTypeEnum;
 import com.propertize.commons.enums.employee.PayTypeEnum;
+import com.propertize.platform.employecraft.service.DepartmentService;
 import com.propertize.platform.employecraft.service.EmployeeService;
+import com.propertize.platform.employecraft.service.PositionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +51,12 @@ class EmployeeControllerTest {
 
         @MockBean
         private EmployeeService employeeService;
+
+        @MockBean
+        private DepartmentService departmentService;
+
+        @MockBean
+        private PositionService positionService;
 
         private UUID employeeId;
         private EmployeeResponse employeeResponse;
@@ -173,7 +181,7 @@ class EmployeeControllerTest {
                                 .employeeNumber("EMP-20230115-0001")
                                 .firstName("John")
                                 .lastName("Doe")
-                                .payType(PayTypeEnum.SALARY.name())
+                                .payType(PayTypeEnum.SALARY)
                                 .payRate(new BigDecimal("75000.00"))
                                 .build();
 

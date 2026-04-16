@@ -7,7 +7,9 @@ import com.propertize.payment.dto.promo.PromoCodeValidateRequest;
 import com.propertize.payment.dto.promo.PromoCodeValidateResponse;
 import com.propertize.payment.entity.PromoCode;
 import com.propertize.payment.enums.DiscountTypeEnum;
+import com.propertize.payment.exception.GlobalExceptionHandler;
 import com.propertize.payment.exception.ResourceNotFoundException;
+import org.springframework.context.annotation.Import;
 import com.propertize.payment.service.PromoCodeService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityFilterAutoConfiguration.class,
         UserDetailsServiceAutoConfiguration.class
 })
+@Import(GlobalExceptionHandler.class)
 @DisplayName("PromoCodeController Tests")
 class PromoCodeControllerTest {
 
