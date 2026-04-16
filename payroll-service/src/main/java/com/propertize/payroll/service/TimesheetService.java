@@ -121,4 +121,14 @@ public class TimesheetService {
 
         return builder.build();
     }
+
+    public List<TimesheetResponse> getTimesheetsByDateRange(String employeeId, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        return timesheetRepository.findByEmployeeIdAndDateRange(employeeId, startDate, endDate)
+                .stream().map(this::mapToResponse).toList();
+    }
+
+    public List<TimesheetResponse> getTimesheetsByEmployeesAndDateRange(List<String> employeeIds, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        return timesheetRepository.findByEmployeeIdInAndDateRange(employeeIds, startDate, endDate)
+                .stream().map(this::mapToResponse).toList();
+    }
 }

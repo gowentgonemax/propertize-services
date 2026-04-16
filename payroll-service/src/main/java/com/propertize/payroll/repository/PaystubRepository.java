@@ -45,4 +45,11 @@ public interface PaystubRepository extends JpaRepository<Paystub, UUID> {
         @Param("employeeId") String employeeId,
         @Param("startDate") LocalDate startDate,
         @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT p FROM Paystub p WHERE p.employeeId = :employeeId AND p.payDate BETWEEN :startDate AND :endDate AND p.id <> :excludeId")
+    List<Paystub> findByEmployeeIdAndPayDateBetweenExcluding(
+        @Param("employeeId") String employeeId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("excludeId") UUID excludeId);
 }

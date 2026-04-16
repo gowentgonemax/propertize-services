@@ -222,6 +222,30 @@ public class PaystubService {
         return summary;
     }
 
+    /**
+     * Get YTD summary for an employee, optionally excluding one paystub by ID.
+     */
+    public YtdSummary getYtdSummary(String employeeId, Integer year, UUID excludeId) {
+        if (excludeId == null) {
+            return getYtdSummary(employeeId, year);
+        }
+        LocalDate startOfYear = LocalDate.of(year, 1, 1);
+        LocalDate endOfYear = LocalDate.of(year, 12, 31);
+        List<Paystub> paystubs = paystubRepository.findByEmployeeIdAndPayDateBetweenExcluding(
+                employeeId, startOfYear, endOfYear, excludeId);
+        YtdSummary summary = new YtdSummary();
+        summary.setEmployeeId(employeeId);
+        summary.setYear(year);
+        summary.setPaystubCount(paystubs.size());
+        paystubs.forEach(p -> {
+            summary.setGrossEarnings(summary.getGrossEarnings() == null ? p.getGrossPay()
+                    : summary.getGrossEarnings().add(p.getGrossPay() == null ? BigDecimal.ZERO : p.getGrossPay()));
+            summary.setNetPay(summary.getNetPay() == null ? p.getNetPay()
+                    : summary.getNetPay().add(p.getNetPay() == null ? BigDecimal.ZERO : p.getNetPay()));
+        });
+        return summary;
+    }
+
     // ==================== PDF Generation ====================
 
     /**

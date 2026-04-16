@@ -89,4 +89,14 @@ public interface TimesheetRepository extends JpaRepository<TimesheetEntity, UUID
             "JOIN t.payPeriod pp " +
             "WHERE pp.client.id = :clientId AND t.status = 'SUBMITTED'")
     List<TimesheetEntity> findPendingApprovalsForClient(@Param("clientId") UUID clientId);
+
+    /**
+     * Find timesheets by multiple employee IDs within a date range.
+     */
+    @Query("SELECT t FROM TimesheetEntity t WHERE t.employeeId IN :employeeIds " +
+            "AND t.weekPeriod.startDate >= :startDate AND t.weekPeriod.endDate <= :endDate")
+    List<TimesheetEntity> findByEmployeeIdInAndDateRange(
+            @Param("employeeIds") List<String> employeeIds,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

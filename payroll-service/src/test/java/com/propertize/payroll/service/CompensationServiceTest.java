@@ -8,7 +8,7 @@ import com.propertize.payroll.entity.CompensationEntity;
 import com.propertize.payroll.entity.EmployeeEntity;
 import com.propertize.payroll.enums.CompensationStatusEnum;
 import com.propertize.payroll.enums.CompensationTypeEnum;
-import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.payroll.enums.PayFrequencyEnum;
 import com.propertize.payroll.exception.ResourceNotFoundException;
 import com.propertize.payroll.exception.ValidationException;
 import com.propertize.payroll.repository.CompensationRepository;

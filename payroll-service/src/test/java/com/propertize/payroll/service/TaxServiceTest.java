@@ -1,6 +1,6 @@
 package com.propertize.payroll.service;
 
-import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.payroll.enums.PayFrequencyEnum;
 import com.propertize.commons.enums.payment.PaymentMethodEnum;
 import com.propertize.payroll.entity.EmployeeEntity;
 import com.propertize.payroll.entity.PayrollTaxDepositEntity;
@@ -78,7 +78,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(gross)
                                 .ytdGross(ytd)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .workState(state)
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();
@@ -362,7 +362,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(new BigDecimal("1000"))
                                 .ytdGross(null)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .workState("CA")
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();
@@ -423,7 +423,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(new BigDecimal("2000"))
                                 .ytdGross(null)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .workState("CA")
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();
@@ -468,7 +468,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(new BigDecimal("3000"))
                                 .ytdGross(BigDecimal.ZERO)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .workState(null)
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();
@@ -484,7 +484,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(new BigDecimal("3000"))
                                 .ytdGross(BigDecimal.ZERO)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .workState("  ")
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();
@@ -537,7 +537,7 @@ class TaxServiceTest {
                                 .employeeId(employeeId)
                                 .grossPay(new BigDecimal("500"))
                                 .ytdGross(null)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .workState("CA")
                                 .payDate(LocalDate.of(2026, 1, 15))
                                 .build();
@@ -623,11 +623,11 @@ class TaxServiceTest {
                 when(payrollTaxDepositRepository.save(deposit)).thenReturn(deposit);
 
                 PayrollTaxDepositEntity result = taxService.recordTaxDepositPayment(
-                                depositId, paidDate, "REF-001", PaymentMethodEnum.ACH);
+                                depositId, paidDate, "REF-001", PaymentMethodEnum.ACH.name());
 
                 assertThat(result.getPaidDate()).isEqualTo(paidDate);
                 assertThat(result.getPaymentReference()).isEqualTo("REF-001");
-                assertThat(result.getPaymentMethod()).isEqualTo(PaymentMethodEnum.ACH);
+                assertThat(result.getPaymentMethod()).isEqualTo(PaymentMethodEnum.ACH.name());
                 verify(payrollTaxDepositRepository).save(deposit);
         }
 
@@ -636,7 +636,7 @@ class TaxServiceTest {
                 when(payrollTaxDepositRepository.findById(depositId)).thenReturn(Optional.empty());
 
                 assertThatThrownBy(() -> taxService.recordTaxDepositPayment(
-                                depositId, LocalDate.now(), "REF-001", PaymentMethodEnum.ACH))
+                                depositId, LocalDate.now(), "REF-001", PaymentMethodEnum.ACH.name()))
                                 .isInstanceOf(EntityNotFoundException.class)
                                 .hasMessageContaining("Tax deposit not found");
         }

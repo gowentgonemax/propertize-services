@@ -56,7 +56,7 @@ class CompensationControllerTest {
                 compensationResponse = CompensationResponse.builder()
                                 .id(compId)
                                 .employeeId(employeeId)
-                                .compensationType(CompensationTypeEnum.HOURLY_WAGE.name())
+                                .compensationType(CompensationTypeEnum.HOURLY_WAGE)
                                 .payFrequency(PayFrequencyEnum.BI_WEEKLY)
                                 .hourlyRate(new BigDecimal("25.00"))
                                 .build();
@@ -66,7 +66,7 @@ class CompensationControllerTest {
         void createCompensation_returns201() throws Exception {
                 CompensationCreateRequest request = CompensationCreateRequest.builder()
                                 .employeeId(employeeId)
-                                .compensationType(CompensationTypeEnum.HOURLY_WAGE.name())
+                                .compensationType(CompensationTypeEnum.HOURLY_WAGE)
                                 .payFrequency(PayFrequencyEnum.BI_WEEKLY)
                                 .hourlyRate(new BigDecimal("25.00"))
                                 .effectiveDate(LocalDate.now().plusMonths(1))
