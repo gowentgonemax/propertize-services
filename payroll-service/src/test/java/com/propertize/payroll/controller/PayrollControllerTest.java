@@ -2,7 +2,7 @@ package com.propertize.payroll.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.propertize.payroll.entity.PayrollRun;
-import com.propertize.commons.enums.employee.PayrollStatusEnum;
+import com.propertize.payroll.enums.PayrollStatusEnum;
 import com.propertize.payroll.service.PayrollService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

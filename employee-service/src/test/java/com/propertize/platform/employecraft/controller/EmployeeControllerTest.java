@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.propertize.platform.employecraft.dto.employee.request.EmployeeCreateRequest;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeePayrollSummary;
 import com.propertize.platform.employecraft.dto.employee.response.EmployeeResponse;
-import com.propertize.commons.enums.employee.EmployeeStatusEnum;
-import com.propertize.commons.enums.employee.EmploymentTypeEnum;
+import com.propertize.platform.employecraft.enums.EmployeeStatusEnum;
+import com.propertize.platform.employecraft.enums.EmploymentTypeEnum;
 import com.propertize.commons.enums.employee.PayTypeEnum;
 import com.propertize.platform.employecraft.service.EmployeeService;
 import org.junit.jupiter.api.BeforeEach;
@@ -173,7 +173,7 @@ class EmployeeControllerTest {
                                 .employeeNumber("EMP-20230115-0001")
                                 .firstName("John")
                                 .lastName("Doe")
-                                .payType(PayTypeEnum.SALARY)
+                                .payType(PayTypeEnum.SALARY.name())
                                 .payRate(new BigDecimal("75000.00"))
                                 .build();
 

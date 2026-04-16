@@ -7,7 +7,7 @@ import com.propertize.payment.dto.promo.PromoCodeValidateRequest;
 import com.propertize.payment.dto.promo.PromoCodeValidateResponse;
 import com.propertize.payment.entity.PromoCode;
 import com.propertize.payment.enums.DiscountTypeEnum;
-import com.propertize.commons.exception.ResourceNotFoundException;
+import com.propertize.payment.exception.ResourceNotFoundException;
 import com.propertize.payment.service.PromoCodeService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;

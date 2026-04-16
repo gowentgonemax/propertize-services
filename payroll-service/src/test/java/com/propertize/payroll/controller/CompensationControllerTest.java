@@ -6,7 +6,7 @@ import com.propertize.payroll.dto.compensation.request.CompensationUpdateRequest
 import com.propertize.payroll.dto.compensation.response.CompensationHistoryResponse;
 import com.propertize.payroll.dto.compensation.response.CompensationResponse;
 import com.propertize.payroll.enums.CompensationTypeEnum;
-import com.propertize.commons.enums.employee.PayFrequencyEnum;
+import com.propertize.payroll.enums.PayFrequencyEnum;
 import com.propertize.payroll.service.CompensationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,7 +56,7 @@ class CompensationControllerTest {
                 compensationResponse = CompensationResponse.builder()
                                 .id(compId)
                                 .employeeId(employeeId)
-                                .compensationType(CompensationTypeEnum.HOURLY_WAGE)
+                                .compensationType(CompensationTypeEnum.HOURLY_WAGE.name())
                                 .payFrequency(PayFrequencyEnum.BI_WEEKLY)
                                 .hourlyRate(new BigDecimal("25.00"))
                                 .build();
@@ -66,7 +66,7 @@ class CompensationControllerTest {
         void createCompensation_returns201() throws Exception {
                 CompensationCreateRequest request = CompensationCreateRequest.builder()
                                 .employeeId(employeeId)
-                                .compensationType(CompensationTypeEnum.HOURLY_WAGE)
+                                .compensationType(CompensationTypeEnum.HOURLY_WAGE.name())
                                 .payFrequency(PayFrequencyEnum.BI_WEEKLY)
                                 .hourlyRate(new BigDecimal("25.00"))
                                 .effectiveDate(LocalDate.now().plusMonths(1))
@@ -117,7 +117,7 @@ class CompensationControllerTest {
         void getCompensationHistory_returnsList() throws Exception {
                 CompensationHistoryResponse history = CompensationHistoryResponse.builder()
                                 .id(compId)
-                                .compensationType(CompensationTypeEnum.HOURLY_WAGE)
+                                .compensationType(CompensationTypeEnum.HOURLY_WAGE.name())
                                 .build();
                 when(compensationService.getCompensationHistory(employeeId)).thenReturn(List.of(history));
 

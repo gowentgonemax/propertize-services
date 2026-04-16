@@ -96,8 +96,7 @@ class EmployeeServiceTest {
         Page<Employee> page = new PageImpl<>(List.of(emp));
         when(employeeRepository.findByOrganizationId(eq(orgId), any(Pageable.class))).thenReturn(page);
 
-        Page<EmployeeResponse> result = employeeService.getAllEmployees(Pageable.unpaged());
-
+        Page<EmployeeResponse> result = employeeService.getAllEmployees(orgId, Pageable.unpaged());
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).getEmail()).isEqualTo("jane.doe@example.com");
     }
@@ -107,7 +106,7 @@ class EmployeeServiceTest {
         when(employeeRepository.findByOrganizationId(eq(orgId), any(Pageable.class)))
                 .thenReturn(Page.empty());
 
-        Page<EmployeeResponse> result = employeeService.getAllEmployees(Pageable.unpaged());
+        Page<EmployeeResponse> result = employeeService.getAllEmployees(orgId, Pageable.unpaged());
 
         assertThat(result.getTotalElements()).isZero();
     }

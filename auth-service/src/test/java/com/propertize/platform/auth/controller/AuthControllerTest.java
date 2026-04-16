@@ -162,7 +162,7 @@ class AuthControllerTest {
             User u = buildUser("jdoe");
             when(userRepository.findByUsernameWithRoles("jdoe")).thenReturn(Optional.of(u));
             when(jwtTokenProvider.generateAccessTokenWithPermissions(
-                    anyString(), any(), anyString(), anyString(), any(), any(), anyString(), anyString()))
+                    anyString(), any(), anyString(), anyString(), any(), anyString()))
                     .thenReturn("access-token-xyz");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("refresh-token-xyz");
             UserSessionInfo si = UserSessionInfo.builder()
@@ -187,7 +187,7 @@ class AuthControllerTest {
             when(authenticationManager.authenticate(any())).thenReturn(authentication);
             when(userRepository.findByUsernameWithRoles("jdoe")).thenReturn(Optional.of(emailUser));
             when(jwtTokenProvider.generateAccessTokenWithPermissions(
-                    anyString(), any(), anyString(), anyString(), any(), any(), anyString(), anyString()))
+                    anyString(), any(), anyString(), anyString(), any(), anyString()))
                     .thenReturn("tok");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("rtok");
             when(sessionService.createSession(any(), any(), any(), any()))

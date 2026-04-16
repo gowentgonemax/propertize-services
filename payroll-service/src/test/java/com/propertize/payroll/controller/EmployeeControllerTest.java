@@ -1,9 +1,9 @@
 package com.propertize.payroll.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.propertize.commons.enums.employee.EmploymentTypeEnum;
-import com.propertize.commons.enums.employee.PayFrequencyEnum;
-import com.propertize.commons.enums.employee.PayTypeEnum;
+import com.propertize.payroll.enums.EmploymentTypeEnum;
+import com.propertize.payroll.enums.PayFrequencyEnum;
+import com.propertize.payroll.enums.PayTypeEnum;
 import com.propertize.payroll.dto.employee.CreateEmployeeRequest;
 import com.propertize.payroll.dto.employee.EmployeeDTO;
 import com.propertize.payroll.dto.employee.UpdateEmployeeRequest;
@@ -97,9 +97,9 @@ class EmployeeControllerTest {
                                 .firstName("John")
                                 .lastName("Doe")
                                 .hireDate(LocalDate.of(2026, 1, 1))
-                                .payType(PayTypeEnum.HOURLY)
-                                .employmentType(EmploymentTypeEnum.FULL_TIME)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payType(PayTypeEnum.HOURLY.name())
+                                .employmentType(EmploymentTypeEnum.FULL_TIME.name())
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .build();
                 when(employeeService.createEmployee(any(CreateEmployeeRequest.class))).thenReturn(employeeDTO);
 
@@ -118,9 +118,9 @@ class EmployeeControllerTest {
                                 .firstName("Jane")
                                 .lastName("Smith")
                                 .hireDate(LocalDate.of(2026, 1, 1))
-                                .payType(PayTypeEnum.HOURLY)
-                                .employmentType(EmploymentTypeEnum.FULL_TIME)
-                                .payFrequency(PayFrequencyEnum.BI_WEEKLY)
+                                .payType(PayTypeEnum.HOURLY.name())
+                                .employmentType(EmploymentTypeEnum.FULL_TIME.name())
+                                .payFrequency(PayFrequencyEnum.BI_WEEKLY.name())
                                 .build();
                 when(employeeService.createEmployee(any(CreateEmployeeRequest.class))).thenReturn(employeeDTO);
 
