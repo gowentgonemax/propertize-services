@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-21-alpine AS build
+FROM maven:3.9-eclipse-temurin-25-alpine AS build
 WORKDIR /app
 
 # Install propertize-commons to local Maven repo
@@ -10,7 +10,7 @@ COPY payment-service/pom.xml .
 COPY payment-service/src ./src
 RUN mvn package -q
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 RUN addgroup -S propertize && adduser -S propertize -G propertize
 COPY --from=build /app/target/*.jar app.jar

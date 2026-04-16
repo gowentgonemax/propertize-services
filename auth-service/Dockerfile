@@ -4,7 +4,7 @@
 # ============================================================
 
 # ---- Build Stage ----
-FROM maven:3.9-eclipse-temurin-21-alpine AS build
+FROM maven:3.9-eclipse-temurin-25-alpine AS build
 WORKDIR /app
 
 # Install propertize-commons to local Maven repo
@@ -16,7 +16,7 @@ COPY auth-service/src ./src
 RUN mvn package -DskipTests -q
 
 # ---- Runtime Stage ----
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S propertize && adduser -S propertize -G propertize

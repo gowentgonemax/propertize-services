@@ -15,7 +15,7 @@
 	<description>Employee Management Microservice - HR, Payroll, Attendance</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 		<spring-cloud.version>2025.0.0</spring-cloud.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
 		<lombok.version>1.18.42</lombok.version>
