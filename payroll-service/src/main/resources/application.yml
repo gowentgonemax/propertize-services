@@ -10,8 +10,6 @@ spring:
     store-type: none
   jackson:
     default-property-inclusion: non_null
-    serialization:
-      write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
       accept-single-value-as-array: true

@@ -204,7 +204,7 @@ public class EmployeeService {
         }
 
         // Create user in Propertize if system access needed
-        if (request.isCreateSystemAccess()) {
+        if (Boolean.TRUE.equals(request.getCreateSystemAccess())) {
             Long userId = createUserInPropertize(request, organizationId);
             employee.setUserId(userId);
         } else if (request.getUserId() != null) {

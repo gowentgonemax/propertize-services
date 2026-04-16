@@ -78,7 +78,7 @@ public class EmployeeCreateRequest {
     private String emergencyContactEmail;
 
     // System Access
-    private boolean createSystemAccess;
+    private Boolean createSystemAccess;
     private Set<String> systemRoles;
     private String tempPassword;
 
