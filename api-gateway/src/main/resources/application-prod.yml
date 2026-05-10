@@ -18,6 +18,9 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
+            # Set ALLOWED_ORIGINS to the exact frontend origin.
+            # No-DNS bootstrap example:
+            # ALLOWED_ORIGINS=http://frontend-alb-123456.us-east-1.elb.amazonaws.com
             allowedOrigins: ${ALLOWED_ORIGINS}
             allowedMethods:
               - GET

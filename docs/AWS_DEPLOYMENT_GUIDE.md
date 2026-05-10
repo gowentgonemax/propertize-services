@@ -260,3 +260,37 @@ aws ecs update-service \
 5. Switch DNS to AWS ALB
 6. Monitor for 30-60 minutes
 7. Remove freeze and declare live
+
+## 18. Production Without DNS (Immediate Bootstrap)
+
+You can run production before owning DNS by using AWS ALB DNS names directly.
+
+Important constraints:
+1. Use HTTP ALB listeners first (port 80) because ACM public certs cannot be issued for `*.elb.amazonaws.com`.
+2. When DNS is ready, move to HTTPS + ACM + Route53 and then update URLs.
+
+Suggested temporary URL mapping:
+1. Frontend URL: `http://<frontend-alb-dns>`
+2. Gateway URL: `http://<api-gateway-alb-dns>`
+
+Required env values for this no-DNS phase:
+
+Frontend (`propertize-front-end`):
+```env
+NEXT_PUBLIC_API_URL=http://<api-gateway-alb-dns>
+API_URL=http://api-gateway:8080
+NEXTAUTH_URL=http://<frontend-alb-dns>
+NEXTAUTH_URL_INTERNAL=http://127.0.0.1:3000
+AUTH_URL=http://<frontend-alb-dns>
+AUTH_TRUST_HOST=true
+```
+
+API Gateway:
+```env
+ALLOWED_ORIGINS=http://<frontend-alb-dns>
+```
+
+Notes:
+1. Keep service-to-service traffic private inside VPC/security groups.
+2. Only frontend and gateway ALBs should be public.
+3. Once DNS is available, replace ALB DNS values with your domain values and enable HTTPS redirect.
