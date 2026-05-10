@@ -1,34 +1,93 @@
 # ============================================================================
-# Employecraft Service - PROD Environment
+# Employee Service - PRODUCTION Environment
 # ============================================================================
 
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8083}
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 10000
+    accept-count: 100
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 2048
 
 spring:
+  application:
+    name: employee-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  threads:
+    virtual:
+      enabled: true
+
   # Database Configuration
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME:propertize_db}?stringtype=unspecified
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 50
-      minimum-idle: 20
+      maximum-pool-size: ${DB_POOL_SIZE:50}
+      minimum-idle: ${DB_MIN_IDLE:20}
       connection-timeout: 20000
+      idle-timeout: 600000
+      max-lifetime: 1200000
+      pool-name: EmployeeHikariPool-Prod
+      auto-commit: false
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
 
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: validate
+    open-in-view: false
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: false
+        jdbc:
+          batch_size: 100
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        type:
+          preferred_uuid_jdbc_type: UUID
 
-# JWT Configuration
-jwt:
-  secret: ${JWT_SECRET}
-  expiration-ms: ${JWT_EXPIRATION:900000}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 20
+          min-idle: 10
+        shutdown-timeout: 100ms
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=2000,expireAfterWrite=3600s
 
 # Eureka Client
 eureka:
@@ -36,31 +95,34 @@ eureka:
     enabled: true
     service-url:
       defaultZone: ${EUREKA_URL}
+    registry-fetch-interval-seconds: 30
   instance:
-    hostname: ${HOSTNAME:employecraft}
+    hostname: ${HOSTNAME:employee-service}
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
     metadata-map:
       environment: prod
       region: ${AWS_REGION:us-east-1}
 
-# Propertize Integration
+# JWT Configuration
+jwt:
+  rsa:
+    public-key-path: ${JWT_PUBLIC_KEY_PATH}
+
+# Inter-service URLs
+auth-service:
+  url: ${AUTH_SERVICE_URL:http://auth-service:8081}
+
 propertize:
   api:
-    url: ${PROPERTIZE_URL}
-    timeout:
-      connect: 3000
-      read: 8000
-
-# Wagecraft Integration
-wagecraft:
-  api:
-    url: ${WAGECRAFT_URL}
+    url: ${PROPERTIZE_URL:http://propertize:8082}
 
 # Logging
 logging:
   level:
     root: WARN
-    com.employecraft: INFO
+    com.propertize.employee: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] [%X{correlationId}] %-5level %logger{36} - %msg%n"
 
@@ -73,3 +135,10 @@ management:
   endpoint:
     health:
       show-details: never
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true

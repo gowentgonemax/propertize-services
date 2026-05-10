@@ -88,6 +88,7 @@ rbac:
           "PAYMENT_LIST",
           "PAYMENT_PROCESS",
           "PAYMENT_RECONCILE",
+          "PAYMENT_REFUND",
         ]
 
     MAINTENANCE_MANAGE:
@@ -226,6 +227,56 @@ rbac:
           "RENTAL_APPLICATION_APPROVE",
           "RENTAL_APPLICATION_REJECT",
           "RENTAL_APPLICATION_REVIEW",
+        ]
+
+    ASSET_MANAGE:
+      includes:
+        [
+          "ASSET_CREATE",
+          "ASSET_READ",
+          "ASSET_UPDATE",
+          "ASSET_DELETE",
+          "ASSET_LIST",
+        ]
+
+    INSPECTION_MANAGE:
+      includes:
+        [
+          "INSPECTION_CREATE",
+          "INSPECTION_READ",
+          "INSPECTION_UPDATE",
+          "INSPECTION_DELETE",
+          "INSPECTION_LIST",
+        ]
+
+    UTILITY_MANAGE:
+      includes:
+        [
+          "UTILITY_CREATE",
+          "UTILITY_READ",
+          "UTILITY_UPDATE",
+          "UTILITY_DELETE",
+          "UTILITY_LIST",
+        ]
+
+    APPROVAL_MANAGE:
+      includes:
+        [
+          "APPROVAL_CREATE",
+          "APPROVAL_READ",
+          "APPROVAL_UPDATE",
+          "APPROVAL_DELETE",
+          "APPROVAL_LIST",
+        ]
+
+    SCHEDULE_MANAGE:
+      includes:
+        [
+          "SCHEDULE_CREATE",
+          "SCHEDULE_READ",
+          "SCHEDULE_UPDATE",
+          "SCHEDULE_DELETE",
+          "SCHEDULE_LIST",
         ]
 
     # ADMIN_ACCESS is a super-bundle used only by EMERGENCY_ACCESS and
@@ -726,6 +777,22 @@ rbac:
         - "RENTAL_APPLICATION_REJECT"
         - "RENTAL_APPLICATION_REVIEW"
         - "RENTAL_APPLICATION_UPDATE"
+        - "RENTAL_APPLICATION_DELETE"
+
+        # === Asset Management (Full) ===
+        - "ASSET_MANAGE"
+
+        # === Inspection Management (Full) ===
+        - "INSPECTION_MANAGE"
+
+        # === Utility Management (Full) ===
+        - "UTILITY_MANAGE"
+
+        # === Approval Workflow (Full) ===
+        - "APPROVAL_MANAGE"
+
+        # === Schedule Events (Full) ===
+        - "SCHEDULE_MANAGE"
 
       explicitDenials:
         - "ORGANIZATION_CREATE"
@@ -782,6 +849,7 @@ rbac:
         - "RENTAL_APPLICATION_REJECT"
         - "RENTAL_APPLICATION_REVIEW"
         - "RENTAL_APPLICATION_UPDATE"
+        - "RENTAL_APPLICATION_DELETE"
 
       explicitDenials:
         - "ORGANIZATION_DELETE"

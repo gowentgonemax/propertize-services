@@ -4,6 +4,7 @@ import com.propertize.payment.dto.promo.*;
 import com.propertize.payment.entity.PromoCode;
 import com.propertize.payment.entity.PromoCodeUsage;
 import com.propertize.payment.enums.DiscountTypeEnum;
+import com.propertize.payment.enums.PromoCodeTypeEnum;
 import com.propertize.commons.exception.BadRequestException;
 import com.propertize.commons.exception.ResourceNotFoundException;
 import com.propertize.payment.repository.PromoCodeRepository;
@@ -61,6 +62,8 @@ public class PromoCodeService {
         promoCode.setCurrentUses(0);
         promoCode.setExpiresAt(request.getExpiresAt());
         promoCode.setActive(request.isActive());
+        promoCode.setPromoCodeType(
+                request.getPromoCodeType() != null ? request.getPromoCodeType() : PromoCodeTypeEnum.GENERAL);
         return promoCodeRepository.save(promoCode);
     }
 
@@ -81,6 +84,8 @@ public class PromoCodeService {
             promoCode.setMaxUses(request.getMaxUses());
         if (request.getExpiresAt() != null)
             promoCode.setExpiresAt(request.getExpiresAt());
+        if (request.getPromoCodeType() != null)
+            promoCode.setPromoCodeType(request.getPromoCodeType());
         promoCode.setActive(request.isActive());
         return promoCodeRepository.save(promoCode);
     }

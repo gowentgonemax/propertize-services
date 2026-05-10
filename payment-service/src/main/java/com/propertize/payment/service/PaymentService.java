@@ -2,6 +2,7 @@ package com.propertize.payment.service;
 
 import com.propertize.payment.config.PaymentConfigProperties;
 import com.propertize.payment.dto.payment.request.*;
+import com.propertize.payment.dto.payment.response.PaymentStatisticsResponse;
 import com.propertize.payment.dto.payment.response.StripePaymentIntentResponse;
 import com.propertize.payment.entity.Payment;
 import com.propertize.payment.entity.TransactionHistory;
@@ -13,6 +14,7 @@ import com.propertize.payment.enums.StripePaymentIntentStatusEnum;
 import com.propertize.commons.exception.BadRequestException;
 import com.propertize.commons.exception.ResourceNotFoundException;
 import com.propertize.payment.repository.PaymentRepository;
+import com.propertize.payment.repository.projection.PaymentStatisticsProjection;
 import com.propertize.payment.repository.TransactionHistoryRepository;
 import com.propertize.payment.service.payment.StripePaymentService;
 import com.propertize.payment.util.PaginationValidator;
@@ -26,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +45,11 @@ public class PaymentService {
 
     // ──────────────────────── CRUD ────────────────────────
 
-    public Page<Payment> getAllPayments(String organizationId, int page, int size) {
+    public Page<Payment> getAllPayments(String organizationId, String tenantId, int page, int size) {
         Pageable pageable = PaginationValidator.createPageable(page, size, "createdAt", "desc");
+        if (tenantId != null && !tenantId.isBlank()) {
+            return paymentRepository.findByOrganizationIdAndTenantId(organizationId, tenantId, pageable);
+        }
         return paymentRepository.findByOrganizationId(organizationId, pageable);
     }
 
@@ -214,5 +221,92 @@ public class PaymentService {
         txn.setPaymentGateway(PaymentGatewayEnum.STRIPE);
         txn.setTransactionDate(LocalDateTime.now());
         transactionHistoryRepository.save(txn);
+    }
+
+    // ──────────────────────── Statistics ─────────────────────────────────────
+
+    /**
+     * Returns aggregated payment statistics for an organisation, with optional
+     * date-range, tenant, and lease filters.
+     *
+     * @param organizationId required
+     * @param startDate      optional — ISO date string (yyyy-MM-dd)
+     * @param endDate        optional — ISO date string (yyyy-MM-dd)
+     * @param tenantId       optional
+     * @param leaseId        optional
+     */
+    public PaymentStatisticsResponse getPaymentStatistics(
+            String organizationId,
+            String startDate,
+            String endDate,
+            String tenantId,
+            String leaseId) {
+
+        PaymentStatisticsProjection proj = paymentRepository.computeStatistics(
+                organizationId, startDate, endDate, tenantId, leaseId);
+
+        Map<String, Long> byMethod = buildBreakdown(
+                paymentRepository.countByMethod(organizationId, startDate, endDate, tenantId, leaseId));
+
+        Map<String, Long> byCategory = buildBreakdown(
+                paymentRepository.countByCategory(organizationId, startDate, endDate, tenantId, leaseId));
+
+        return PaymentStatisticsResponse.from(proj, byMethod, byCategory);
+    }
+
+    // ──────────────────────── Due-Soon ───────────────────────────────────────
+
+    /**
+     * Returns pending/scheduled payments due within the next {@code days} days.
+     *
+     * @param organizationId required
+     * @param days           look-ahead window in days (default 3)
+     */
+    public List<Payment> getPaymentsDueSoon(String organizationId, int days) {
+        LocalDate today = LocalDate.now();
+        LocalDate maxDate = today.plusDays(days);
+        return paymentRepository.findPaymentsDueSoon(organizationId, today, maxDate);
+    }
+
+    // ──────────────────────── Failed-Retry ───────────────────────────────────
+
+    /**
+     * Returns failed payments for the given organisation that are eligible for
+     * a retry attempt.
+     *
+     * @param organizationId required
+     */
+    public List<Payment> getFailedPaymentsForRetry(String organizationId) {
+        return paymentRepository.findFailedPaymentsForRetryByOrg(organizationId);
+    }
+
+    // ──────────────────────── Recurring-Due ──────────────────────────────────
+
+    /**
+     * Returns recurring payments (type = RECURRING_FEE) whose due date is on
+     * or before the supplied date.
+     *
+     * @param organizationId required
+     * @param dueDate        reference date; defaults to today when null
+     */
+    public List<Payment> getRecurringPaymentsDue(String organizationId, LocalDate dueDate) {
+        LocalDate effectiveDate = dueDate != null ? dueDate : LocalDate.now();
+        return paymentRepository.findRecurringPaymentsDue(organizationId, effectiveDate);
+    }
+
+    // ──────────────────────── Private helpers ────────────────────────────────
+
+    /**
+     * Converts native {@code Object[]} rows (col-0 = label, col-1 = count)
+     * into an insertion-ordered map.
+     */
+    private Map<String, Long> buildBreakdown(List<Object[]> rows) {
+        Map<String, Long> result = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            String key = row[0] != null ? row[0].toString() : "UNKNOWN";
+            long cnt = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            result.put(key, cnt);
+        }
+        return result;
     }
 }

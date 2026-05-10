@@ -3,19 +3,22 @@ package com.propertize.payment.service.payment;
 import com.propertize.payment.config.StripeConfig;
 import com.propertize.payment.dto.payment.request.*;
 import com.propertize.payment.dto.payment.response.*;
+import com.propertize.payment.util.SanitizedErrorHandler;
 import com.stripe.exception.StripeException;
 import com.stripe.model.*;
 import com.stripe.param.*;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class StripePaymentService {
+
+    private static final Logger log = LoggerFactory.getLogger(StripePaymentService.class);
 
     private final StripeConfig stripeConfig;
 
@@ -41,8 +44,7 @@ public class StripePaymentService {
             PaymentIntent intent = PaymentIntent.create(params.build());
             return mapToResponse(intent);
         } catch (StripeException e) {
-            log.error("Failed to create Stripe PaymentIntent: {}", e.getMessage());
-            throw new RuntimeException("Stripe payment intent creation failed: " + e.getMessage(), e);
+            throw SanitizedErrorHandler.handleStripeException(e, "create payment intent");
         }
     }
 

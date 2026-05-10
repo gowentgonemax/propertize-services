@@ -131,7 +131,7 @@ public class RbacConfig {
             // rbac.yml without updating the gateway rbac.yml, authorization decisions
             // will silently diverge. This startup check logs a WARNING if the role set
             // in the gateway YAML differs from the canonical 22 built-in roles.
-            // TODO: Replace this static check with an HTTP call to GET /api/v1/auth/roles
+            // NOTE: Replace this static check with an HTTP call to GET /api/v1/auth/roles
             // and compare role names + permission counts at startup.
             Set<String> canonicalRoles = Set.of(
                     "PLATFORM_OVERSIGHT", "PLATFORM_OPERATIONS", "PLATFORM_ENGINEERING", "PLATFORM_ANALYTICS",

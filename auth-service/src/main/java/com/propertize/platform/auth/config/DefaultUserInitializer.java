@@ -1,7 +1,7 @@
 package com.propertize.platform.auth.config;
 
+import com.propertize.commons.enums.UserRoleEnum;
 import com.propertize.platform.auth.entity.User;
-import com.propertize.enums.UserRoleEnum;
 import com.propertize.platform.auth.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,14 +15,14 @@ import java.util.Set;
 
 /**
  * Default User Initializer
- * 
- * Creates a single admin user on application startup if it doesn't exist.
- * This ensures there's always at least one admin user available for system
- * access.
- * 
- * Override the default password via ADMIN_DEFAULT_PASSWORD environment
+ *
+ * Ensures the platform oversight account exists on every application startup.
+ * The legacy admin account is removed so only the new superadmin credential is
+ * maintained going forward.
+ *
+ * Override the default password via SUPERADMIN_DEFAULT_PASSWORD environment
  * variable.
- * 
+ *
  * @author Propertize Platform
  * @since February 2026
  */
@@ -30,42 +30,54 @@ import java.util.Set;
 @Slf4j
 public class DefaultUserInitializer implements ApplicationRunner {
 
+    private static final String SUPERADMIN_USERNAME = "superadmin";
+    private static final String SUPERADMIN_EMAIL = "superadmin@propertize.com";
+    private static final String LEGACY_ADMIN_USERNAME = "admin";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final String adminDefaultPassword;
+    private final String superadminDefaultPassword;
 
     public DefaultUserInitializer(UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            @Value("${admin.default-password:#{T(java.util.UUID).randomUUID().toString()}}") String adminDefaultPassword) {
+            @Value("${superadmin.default-password:#{T(java.util.UUID).randomUUID().toString()}}") String superadminDefaultPassword) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.adminDefaultPassword = adminDefaultPassword;
+        this.superadminDefaultPassword = superadminDefaultPassword;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        log.info("🔧 Initializing default admin user...");
+        log.info("🔧 Initializing default superadmin user...");
 
         try {
-            // Create single admin user
+            removeLegacyAdminUser();
             createDefaultUser(
-                    "admin",
-                    "admin@propertize.com",
-                    adminDefaultPassword,
+                    SUPERADMIN_USERNAME,
+                    SUPERADMIN_EMAIL,
+                    superadminDefaultPassword,
+                    "Super",
                     "Admin",
-                    "User",
                     Set.of(UserRoleEnum.PLATFORM_OVERSIGHT));
 
-            log.info("✅ Default admin user initialization completed successfully");
+            log.info("✅ Default superadmin user initialization completed successfully");
         } catch (Exception e) {
-            log.error("❌ Failed to initialize default admin user", e);
+            log.error("❌ Failed to initialize default superadmin user", e);
         }
+    }
+
+    private void removeLegacyAdminUser() {
+        userRepository.findByUsernameIgnoreCase(LEGACY_ADMIN_USERNAME)
+                .ifPresent(user -> {
+                    userRepository.delete(user);
+                    log.info("🧹 Removed legacy admin user '{}'", LEGACY_ADMIN_USERNAME);
+                });
     }
 
     /**
      * Create a default user if it doesn't already exist
-     * 
+     *
      * @param username  The username
      * @param email     The email address
      * @param password  The plaintext password (will be encoded)

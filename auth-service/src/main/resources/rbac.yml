@@ -88,6 +88,7 @@ rbac:
           "PAYMENT_LIST",
           "PAYMENT_PROCESS",
           "PAYMENT_RECONCILE",
+          "PAYMENT_REFUND",
         ]
 
     MAINTENANCE_MANAGE:
@@ -226,6 +227,56 @@ rbac:
           "RENTAL_APPLICATION_APPROVE",
           "RENTAL_APPLICATION_REJECT",
           "RENTAL_APPLICATION_REVIEW",
+        ]
+
+    ASSET_MANAGE:
+      includes:
+        [
+          "ASSET_CREATE",
+          "ASSET_READ",
+          "ASSET_UPDATE",
+          "ASSET_DELETE",
+          "ASSET_LIST",
+        ]
+
+    INSPECTION_MANAGE:
+      includes:
+        [
+          "INSPECTION_CREATE",
+          "INSPECTION_READ",
+          "INSPECTION_UPDATE",
+          "INSPECTION_DELETE",
+          "INSPECTION_LIST",
+        ]
+
+    UTILITY_MANAGE:
+      includes:
+        [
+          "UTILITY_CREATE",
+          "UTILITY_READ",
+          "UTILITY_UPDATE",
+          "UTILITY_DELETE",
+          "UTILITY_LIST",
+        ]
+
+    APPROVAL_MANAGE:
+      includes:
+        [
+          "APPROVAL_CREATE",
+          "APPROVAL_READ",
+          "APPROVAL_UPDATE",
+          "APPROVAL_DELETE",
+          "APPROVAL_LIST",
+        ]
+
+    SCHEDULE_MANAGE:
+      includes:
+        [
+          "SCHEDULE_CREATE",
+          "SCHEDULE_READ",
+          "SCHEDULE_UPDATE",
+          "SCHEDULE_DELETE",
+          "SCHEDULE_LIST",
         ]
 
     # ADMIN_ACCESS is a super-bundle used only by EMERGENCY_ACCESS and
@@ -438,6 +489,15 @@ rbac:
         # === Assets (READ-ONLY) ===
         - "ASSET_READ"
         - "ASSET_LIST"
+
+        # === Milestones (READ-ONLY) ===
+        - "MILESTONE_READ"
+        - "MILESTONE_LIST"
+
+        # === Promo Codes (MANAGE — platform oversight can issue and monitor promo codes) ===
+        - "PROMO_CODE_READ"
+        - "PROMO_CODE_LIST"
+        - "PROMO_CODE_MANAGE"
 
       explicitDenials:
         - "ORGANIZATION_CREATE"
@@ -727,6 +787,22 @@ rbac:
         - "RENTAL_APPLICATION_REJECT"
         - "RENTAL_APPLICATION_REVIEW"
         - "RENTAL_APPLICATION_UPDATE"
+        - "RENTAL_APPLICATION_DELETE"
+
+        # === Asset Management (Full) ===
+        - "ASSET_MANAGE"
+
+        # === Inspection Management (Full) ===
+        - "INSPECTION_MANAGE"
+
+        # === Utility Management (Full) ===
+        - "UTILITY_MANAGE"
+
+        # === Approval Workflow (Full) ===
+        - "APPROVAL_MANAGE"
+
+        # === Schedule Events (Full) ===
+        - "SCHEDULE_MANAGE"
 
       explicitDenials:
         - "ORGANIZATION_CREATE"
@@ -783,6 +859,7 @@ rbac:
         - "RENTAL_APPLICATION_REJECT"
         - "RENTAL_APPLICATION_REVIEW"
         - "RENTAL_APPLICATION_UPDATE"
+        - "RENTAL_APPLICATION_DELETE"
 
       explicitDenials:
         - "ORGANIZATION_DELETE"
@@ -848,6 +925,8 @@ rbac:
         - "DOCUMENT_DOWNLOAD"
         - "DASHBOARD_VIEW"
         - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
         # === Rental Applications (Specialist handles signed/reviewed leases) ===
         - "RENTAL_APPLICATION_READ"
@@ -871,6 +950,7 @@ rbac:
         - "INVOICE_READ"
         - "DASHBOARD_READ_LEASING_DASHBOARD"
         - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
         - "NOTIFICATION_SEND"
         - "DOCUMENT_READ"
         - "DOCUMENT_UPLOAD"
@@ -901,6 +981,9 @@ rbac:
         - "DASHBOARD_READ_FINANCIAL_DASHBOARD"
         - "AUDIT_LOG_READ"
         - "AUDIT_LOG_EXPORT"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     MAINTENANCE_SUPERVISOR:
       description: "Maintenance operations supervisor"
@@ -921,6 +1004,8 @@ rbac:
         - "DOCUMENT_READ"
         - "DOCUMENT_UPLOAD"
         - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     TENANT_COORDINATOR:
       description: "Tenant relations and communication"
@@ -939,14 +1024,8 @@ rbac:
         - "MAINTENANCE_READ"
         - "MAINTENANCE_CREATE"
         - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
         - "NOTIFICATION_SEND"
-        - "DASHBOARD_VIEW"
-        - "CONTACT_MANAGE"
-        - "DOCUMENT_READ"
-
-    # ==========================================================================
-    # TEAM ROLES
-    # ==========================================================================
 
     TEAM_LEAD:
       description: "Team or department lead"
@@ -967,6 +1046,9 @@ rbac:
         - "EMPLOYEE_LIST"
         - "REPORT_READ"
         - "DASHBOARD_READ_MANAGER"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     INSPECTOR:
       description: "Property inspection specialist"
@@ -984,6 +1066,9 @@ rbac:
         - "DASHBOARD_VIEW"
         - "TASK_READ"
         - "TASK_LIST"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     # ==========================================================================
     # OPERATIONAL ROLES
@@ -999,6 +1084,9 @@ rbac:
         - "MAINTENANCE_UPDATE"
         - "MAINTENANCE_COMPLETE"
         - "PROPERTY_READ"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     TEAM_MEMBER:
       description: "General team member"
@@ -1013,6 +1101,9 @@ rbac:
         - "MAINTENANCE_READ"
         - "MAINTENANCE_LIST"
         - "DASHBOARD_VIEW"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     # ==========================================================================
     # EXTERNAL ROLES
@@ -1028,6 +1119,9 @@ rbac:
         - "MAINTENANCE_UPDATE"
         - "INVOICE_CREATE"
         - "INVOICE_READ"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     TENANT:
       description: "Tenant self-service portal"
@@ -1050,6 +1144,8 @@ rbac:
         - "DOCUMENT_UPLOAD"
         - "DOCUMENT_DOWNLOAD"
         - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
         - "DASHBOARD_VIEW"
         - "DASHBOARD_PORTAL"
 
@@ -1064,6 +1160,9 @@ rbac:
         - "LEASE_READ"
         - "DOCUMENT_UPLOAD"
         - "DOCUMENT_READ"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
 
     # ==========================================================================
     # ORG-TYPE-SPECIFIC ROLES
@@ -1096,6 +1195,8 @@ rbac:
         - "DASHBOARD_VIEW"
         - "DOCUMENT_MANAGE"
         - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
         - "VENDOR_MANAGE"
         - "TASK_MANAGE"
         - "MILESTONE_MANAGE"
@@ -1135,6 +1236,9 @@ rbac:
         - "DASHBOARD_VIEW"
         - "DASHBOARD_READ"
         - "DOCUMENT_READ"
+        - "NOTIFICATION_READ"
+        - "NOTIFICATION_LIST"
+        - "NOTIFICATION_SEND"
       explicitDenials:
         - "EMPLOYEE_MANAGE"
         - "PAYROLL_MANAGE"

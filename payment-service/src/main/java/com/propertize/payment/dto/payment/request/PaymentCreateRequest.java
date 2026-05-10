@@ -40,6 +40,8 @@ public class PaymentCreateRequest {
     private String subscriptionPlanId;
     private Long ownerId;
     private String ownerUsername;
+
+    @NotNull(message = "Organization ID is required")
     private String organizationId;
 
     private LocalDate billingPeriodStart;

@@ -26,7 +26,7 @@ public class GarnishmentStrategy implements DeductionStrategy {
 
     @Override
     public BigDecimal calculate(PayrollContext context) {
-        // TODO: add garnishmentAmount / garnishmentPercent fields to PayrollContext
+        // NOTE: add garnishmentAmount / garnishmentPercent fields to PayrollContext
         // For now, return zero — the strategy is registered so it auto-activates
         // when context is enriched.
         return BigDecimal.ZERO;

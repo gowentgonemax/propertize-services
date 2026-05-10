@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -57,7 +58,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
-        final String identifier = request.getUsername();
+        // Normalize identifier to lowercase to prevent case-sensitive enumeration
+        final String identifier = request.getUsername().toLowerCase(Locale.ROOT).trim();
         final String ipAddress = HttpRequestUtil.getClientIpAddress(httpRequest);
 
         log.info("Login attempt for identifier: {} from IP: {}", identifier, ipAddress);
@@ -92,14 +94,18 @@ public class AuthController {
             // Reset failed attempts on successful login
             rateLimitService.resetFailedAttempts(username);
 
-            // Extract roles
+            // Extract roles — filter to ROLE_-prefixed authorities only.
+            // Spring Security 6.3+ adds internal authorities (e.g. FACTOR_PASSWORD for
+            // password-based MFA factor tracking) that are NOT user roles and must be
+            // excluded.
             Set<String> roles = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
-                    .map(auth -> auth.startsWith("ROLE_") ? auth.substring(5) : auth)
+                    .filter(auth -> auth.startsWith("ROLE_"))
+                    .map(auth -> auth.substring(5))
                     .collect(Collectors.toSet());
 
             // Load user with organization info
-            var userOpt = userRepository.findByUsernameWithRoles(username);
+            var userOpt = userRepository.findByUsernameIgnoreCaseWithRoles(username);
             if (userOpt.isEmpty()) {
                 throw new BadCredentialsException("User not found");
             }
@@ -205,21 +211,18 @@ public class AuthController {
             log.warn("❌ Login failed for: {} (bad credentials)", username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (DisabledException e) {
+            // Return same 401 without body to prevent account-existence enumeration
             log.warn("❌ Login failed for: {} (account disabled)", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(AuthResponse.builder().build());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (LockedException e) {
             log.warn("❌ Login failed for: {} (account locked)", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(AuthResponse.builder().build());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (AccountExpiredException e) {
             log.warn("❌ Login failed for: {} (account expired)", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(AuthResponse.builder().build());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (CredentialsExpiredException e) {
             log.warn("❌ Login failed for: {} (credentials expired)", username);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(AuthResponse.builder().build());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -242,14 +245,14 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            var userOpt = userRepository.findByUsernameWithRoles(username);
+            var userOpt = userRepository.findByUsernameIgnoreCaseWithRoles(username);
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
             User user = userOpt.get();
             Set<String> roles = (user.getRoles() != null ? user.getRoles()
-                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                    : java.util.Collections.<com.propertize.commons.enums.UserRoleEnum>emptySet()).stream()
                     .map(role -> role.name())
                     .collect(Collectors.toSet());
 
@@ -454,7 +457,7 @@ public class AuthController {
                         "success", false));
             }
 
-            var userOpt = userRepository.findByUsername(username);
+            var userOpt = userRepository.findByUsernameIgnoreCase(username);
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                         "message", "User not found",
@@ -521,7 +524,7 @@ public class AuthController {
         log.debug("GET /api/v1/auth/me — resolving profile for user: {}", username);
 
         try {
-            var userOpt = userRepository.findByUsernameWithRoles(username);
+            var userOpt = userRepository.findByUsernameIgnoreCaseWithRoles(username);
             if (userOpt.isEmpty()) {
                 log.warn("Profile requested for unknown user: {}", username);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -530,7 +533,7 @@ public class AuthController {
 
             User user = userOpt.get();
             Set<String> roles = (user.getRoles() != null ? user.getRoles()
-                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                    : java.util.Collections.<com.propertize.commons.enums.UserRoleEnum>emptySet()).stream()
                     .map(Enum::name)
                     .collect(Collectors.toSet());
 
@@ -579,7 +582,7 @@ public class AuthController {
         }
 
         try {
-            var userOpt = userRepository.findByUsernameWithRoles(username);
+            var userOpt = userRepository.findByUsernameIgnoreCaseWithRoles(username);
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("message", "User not found", "success", false));
@@ -610,7 +613,7 @@ public class AuthController {
 
             // Return updated profile
             Set<String> roles = (user.getRoles() != null ? user.getRoles()
-                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                    : java.util.Collections.<com.propertize.commons.enums.UserRoleEnum>emptySet()).stream()
                     .map(Enum::name).collect(Collectors.toSet());
             Map<String, Object> profile = new HashMap<>();
             profile.put("id", user.getId());
@@ -650,7 +653,7 @@ public class AuthController {
             }
 
             String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
-            Optional<User> userOpt = userRepository.findByUsernameWithRoles(username);
+            Optional<User> userOpt = userRepository.findByUsernameIgnoreCaseWithRoles(username);
             if (userOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
@@ -667,7 +670,7 @@ public class AuthController {
             }
 
             Set<String> roles = (user.getRoles() != null ? user.getRoles()
-                    : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                    : java.util.Collections.<com.propertize.commons.enums.UserRoleEnum>emptySet()).stream()
                     .map(Enum::name)
                     .collect(Collectors.toSet());
 

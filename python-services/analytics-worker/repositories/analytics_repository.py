@@ -8,6 +8,18 @@ class AnalyticsRepository(BaseRepository):
 
     def ensure_summary_table(self):
         self.execute("""
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id BIGSERIAL PRIMARY KEY,
+                event_name VARCHAR(255) NOT NULL,
+                event_type VARCHAR(100),
+                event_data JSONB,
+                source_service VARCHAR(100),
+                organization_id VARCHAR(255),
+                aggregated BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_analytics_events_created
+                ON analytics_events (created_at DESC);
             CREATE TABLE IF NOT EXISTS analytics_summary (
                 id SERIAL PRIMARY KEY,
                 hour_bucket TIMESTAMPTZ NOT NULL,

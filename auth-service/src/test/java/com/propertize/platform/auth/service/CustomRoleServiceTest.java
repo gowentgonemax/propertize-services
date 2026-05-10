@@ -1,6 +1,6 @@
 package com.propertize.platform.auth.service;
 
-import com.propertize.enums.UserRoleEnum;
+import com.propertize.commons.enums.UserRoleEnum;
 import com.propertize.platform.auth.config.RbacConfig;
 import com.propertize.platform.auth.dto.CustomRoleRequest;
 import com.propertize.platform.auth.entity.CustomRole;

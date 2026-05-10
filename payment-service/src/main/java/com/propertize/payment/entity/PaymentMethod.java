@@ -112,4 +112,40 @@ public class PaymentMethod extends OrganizationScopedEntity {
 
     @Column(name = "last_used_at")
     private LocalDateTime lastUsedAt;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getStripePaymentMethodId() {
+        return stripePaymentMethodId;
+    }
+
+    public void setStripePaymentMethodId(String stripePaymentMethodId) {
+        this.stripePaymentMethodId = stripePaymentMethodId;
+    }
+
+    public CardBrandEnum getCardBrand() {
+        return cardBrand;
+    }
+
+    public String getLastFour() {
+        return lastFour;
+    }
+
+    public Integer getExpMonth() {
+        return expMonth;
+    }
+
+    public Integer getExpYear() {
+        return expYear;
+    }
+
+    public String getCardholderName() {
+        return cardholderName;
+    }
 }

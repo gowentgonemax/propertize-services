@@ -40,8 +40,12 @@ public class SessionManagementService {
             HttpSession session = request.getSession(true);
 
             String username = authentication.getName();
+            // Only store ROLE_-prefixed authorities in the session.
+            // Spring Security 6.3+ appends internal authorities like FACTOR_PASSWORD
+            // (password-factor tracking for passkey/MFA flows) that are not user roles.
             List<String> roles = authentication.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
+                    .filter(auth -> auth.startsWith("ROLE_"))
                     .collect(Collectors.toList());
 
             UserSessionInfo sessionInfo = UserSessionInfo.builder()

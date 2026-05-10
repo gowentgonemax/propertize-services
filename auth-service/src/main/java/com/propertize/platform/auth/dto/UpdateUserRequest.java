@@ -1,6 +1,6 @@
 package com.propertize.platform.auth.dto;
 
-import com.propertize.enums.UserRoleEnum;
+import com.propertize.commons.enums.UserRoleEnum;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

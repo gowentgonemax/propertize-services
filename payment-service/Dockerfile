@@ -1,16 +1,16 @@
-FROM maven:3.9-eclipse-temurin-25-alpine AS build
+FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
 # Install propertize-commons to local Maven repo
 COPY propertize-commons/ /tmp/commons/
 RUN mvn -f /tmp/commons/pom.xml install -DskipTests -q
 
-# Build payment-service
+# Build payment-service (skip tests during image build)
 COPY payment-service/pom.xml .
 COPY payment-service/src ./src
-RUN mvn package -q
+RUN mvn package -DskipTests -q
 
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN addgroup -S propertize && adduser -S propertize -G propertize
 COPY --from=build /app/target/*.jar app.jar

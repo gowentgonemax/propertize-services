@@ -34,9 +34,9 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: false
+    open-in-view: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
 
   # Flyway Configuration
@@ -45,6 +45,22 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
+
+  # Mail / SMTP — local dev points at Mailpit (localhost:1025); test-connection=false prevents startup failure
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+  mail-from-email: ${MAIL_FROM_EMAIL:noreply@propertize.com}
+  mail-from-name: ${MAIL_FROM_NAME:Propertize Team}
 
   # Kafka Configuration
   kafka:
@@ -213,6 +229,8 @@ logging:
     root: INFO
     com.propertize.platform.auth: DEBUG
     org.springframework.security: WARN
+    # Suppress "UserDetailsService beans will not be used" — by design (custom AuthenticationProvider)
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-no-correlation-id}] %-5level %logger{36} - %msg%n"
 
@@ -247,6 +265,11 @@ tracing:
   enabled: ${TRACING_ENABLED:false}
   otlp:
     endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+
+# Default superadmin user password for local development
+# Override via SUPERADMIN_DEFAULT_PASSWORD environment variable in production
+superadmin:
+  default-password: ${SUPERADMIN_DEFAULT_PASSWORD:password}
 
 springdoc:
   api-docs:

@@ -6,6 +6,11 @@ spring:
     url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:propertize_db}?stringtype=unspecified
     username: ${POSTGRES_USER:dbuser}
     password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      # Override application.yml 'update' — Hibernate 6.6+ has a bug reading PostgreSQL
+      # expression indexes during schema migration. 'validate' skips index comparison.
+      ddl-auto: validate
 
 eureka:
   client:
@@ -15,3 +20,41 @@ eureka:
 logging:
   level:
     com.propertize.payment: INFO
+
+# Data Retention Configuration — PCI-DSS & GDPR Compliance
+data-retention:
+  enabled: true
+  payment-days: 1095 # 3 years per PCI-DSS retention requirement
+  soft-delete-cleanup-days: 30 # Delete soft-deleted records after 30 days
+  schedule-cron: "0 2 * * * UTC" # Daily at 2 AM UTC
+
+# Resilience4j Rate Limiting Configuration
+resilience4j:
+  ratelimiter:
+    instances:
+      payment-operations:
+        registerHealthIndicator: true
+        limitForPeriod: 10
+        limitRefreshPeriod: 1m
+        timeoutDuration: 1s
+      general-payment:
+        registerHealthIndicator: true
+        limitForPeriod: 30
+        limitRefreshPeriod: 1m
+        timeoutDuration: 1s
+      gdpr-operations:
+        registerHealthIndicator: true
+        limitForPeriod: 5
+        limitRefreshPeriod: 1m
+        timeoutDuration: 1s
+
+# Actuator for Prometheus metrics (webhook validation tracking)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true

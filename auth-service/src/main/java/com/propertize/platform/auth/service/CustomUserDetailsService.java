@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         log.debug("Loading user details for: {}", username);
 
-        User user = userRepository.findByUsernameWithRoles(username)
+        User user = userRepository.findByUsernameIgnoreCaseWithRoles(username)
                 .or(() -> userRepository.findByEmailWithRoles(username))
                 .orElseThrow(() -> {
                     log.warn("User not found: {}", username);
@@ -39,7 +39,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 });
 
         Collection<GrantedAuthority> authorities = (user.getRoles() != null ? user.getRoles()
-                : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                : java.util.Collections.<com.propertize.commons.enums.UserRoleEnum>emptySet()).stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
                 .collect(Collectors.toSet());
 

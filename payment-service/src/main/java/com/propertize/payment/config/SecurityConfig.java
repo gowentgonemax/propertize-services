@@ -23,28 +23,37 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final GatewayAuthFilter gatewayAuthFilter;
+        private final GatewayAuthFilter gatewayAuthFilter;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Stripe webhooks come from Stripe's servers — no JWT
-                        .requestMatchers("/api/v1/webhooks/stripe/**").permitAll()
-                        // Org onboarding fees are called before the org is fully created
-                        .requestMatchers("/api/v1/organization-application-fees/initiate").permitAll()
-                        .requestMatchers("/api/v1/organization-application-fees/*/complete").permitAll()
-                        // Health check
-                        .requestMatchers("/actuator/health").permitAll()
-                        // Swagger / OpenAPI
-                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**",
-                                "/v3/api-docs.yaml")
-                        .permitAll()
-                        // All other requests must come through gateway (which already validated JWT)
-                        .anyRequest().authenticated())
-                .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
-    }
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(AbstractHttpConfigurer::disable)
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                // Stripe webhooks come from Stripe's servers — no JWT
+                                                .requestMatchers("/api/v1/webhooks/stripe/**").permitAll()
+                                                // Org onboarding fees are called before the org is fully created
+                                                .requestMatchers("/api/v1/organization-application-fees/initiate")
+                                                .permitAll()
+                                                .requestMatchers("/api/v1/organization-application-fees/*/complete")
+                                                .permitAll()
+                                                // Public rental application form needs promo validation and fee info
+                                                // without auth
+                                                .requestMatchers("/api/v1/promo-codes/validate").permitAll()
+                                                .requestMatchers("/api/v1/application-fees/**").permitAll()
+                                                // Health check
+                                                .requestMatchers("/actuator/health").permitAll()
+                                                // Swagger / OpenAPI
+                                                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs",
+                                                                "/v3/api-docs/**",
+                                                                "/v3/api-docs.yaml")
+                                                .permitAll()
+                                                // All other requests must come through gateway (which already validated
+                                                // JWT)
+                                                .anyRequest().authenticated())
+                                .addFilterBefore(gatewayAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                return http.build();
+        }
 }

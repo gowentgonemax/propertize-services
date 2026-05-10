@@ -118,4 +118,100 @@ public class ApplicationFee extends OrganizationScopedEntity {
 
     @Column(name = "notes", length = 1000)
     private String notes;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getRentalApplicationId() {
+        return rentalApplicationId;
+    }
+
+    public void setRentalApplicationId(String rentalApplicationId) {
+        this.rentalApplicationId = rentalApplicationId;
+    }
+
+    public BigDecimal getFeeAmount() {
+        return feeAmount;
+    }
+
+    public void setFeeAmount(BigDecimal feeAmount) {
+        this.feeAmount = feeAmount;
+    }
+
+    public PaymentStatusEnum getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(PaymentStatusEnum paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getApplicantEmail() {
+        return applicantEmail;
+    }
+
+    public void setApplicantEmail(String applicantEmail) {
+        this.applicantEmail = applicantEmail;
+    }
+
+    public String getStripePaymentIntentId() {
+        return stripePaymentIntentId;
+    }
+
+    public void setStripePaymentIntentId(String stripePaymentIntentId) {
+        this.stripePaymentIntentId = stripePaymentIntentId;
+    }
+
+    public String getStripeClientSecret() {
+        return stripeClientSecret;
+    }
+
+    public void setStripeClientSecret(String stripeClientSecret) {
+        this.stripeClientSecret = stripeClientSecret;
+    }
+
+    public OffsetDateTime getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(OffsetDateTime dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public String getPromoCodeUsed() {
+        return promoCodeUsed;
+    }
+
+    public void setPromoCodeUsed(String promoCodeUsed) {
+        this.promoCodeUsed = promoCodeUsed;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public BigDecimal getFinalAmount() {
+        return finalAmount;
+    }
+
+    public void setFinalAmount(BigDecimal finalAmount) {
+        this.finalAmount = finalAmount;
+    }
+
+    public java.time.LocalDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(java.time.LocalDateTime paidAt) {
+        this.paidAt = paidAt;
+    }
 }

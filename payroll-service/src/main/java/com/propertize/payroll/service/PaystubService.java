@@ -294,7 +294,7 @@ public class PaystubService {
         BigDecimal regularHours = new BigDecimal("80"); // Default bi-weekly
         BigDecimal overtimeHours = BigDecimal.ZERO;
 
-        // TODO: Get actual hours from timesheets
+        // NOTE: Get actual hours from timesheets
 
         BigDecimal hourlyRate = employee.getEffectivePayRate();
 

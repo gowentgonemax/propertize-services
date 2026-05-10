@@ -23,7 +23,7 @@ public class EmployeeEventPublisher {
      */
     public static final String TOPIC = KafkaTopics.EMPLOYEE_EVENTS;
 
-    private final KafkaTemplate<String, EmployeeEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void publish(Employee employee, EmployeeEvent.EventType eventType) {
         EmployeeEvent.EmployeeEventBuilder builder = EmployeeEvent.builder()

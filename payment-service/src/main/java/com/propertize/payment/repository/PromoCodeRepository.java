@@ -20,4 +20,6 @@ public interface PromoCodeRepository extends JpaRepository<PromoCode, String> {
     Page<PromoCode> findByOrganizationId(String orgId, Pageable pageable);
 
     boolean existsByCodeIgnoreCase(String code);
+
+    boolean existsByCodeIgnoreCaseAndOrganizationId(String code, String organizationId);
 }

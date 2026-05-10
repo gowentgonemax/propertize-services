@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -28,19 +29,23 @@ public class UserManagementService {
     public UserInfoResponse createUser(CreateUserRequest request) {
         log.info("Creating user: {}", request.getUsername());
 
+        // Normalize: lowercase email and trim username
+        String normalizedUsername = request.getUsername().toLowerCase(Locale.ROOT).trim();
+        String normalizedEmail = request.getEmail().toLowerCase(Locale.ROOT).trim();
+
         // Check if user already exists
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("Username already exists: " + request.getUsername());
+        if (userRepository.findByUsernameIgnoreCase(normalizedUsername).isPresent()) {
+            throw new IllegalArgumentException("Username already exists: " + normalizedUsername);
         }
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+            throw new IllegalArgumentException("Email already exists: " + normalizedEmail);
         }
 
         // Create new user
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .username(normalizedUsername)
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -70,13 +75,15 @@ public class UserManagementService {
 
         // Update fields if provided
         if (request.getEmail() != null) {
+            // Normalize email to lowercase
+            String normalizedEmail = request.getEmail().toLowerCase(Locale.ROOT).trim();
             // Check email uniqueness
-            userRepository.findByEmail(request.getEmail()).ifPresent(existing -> {
+            userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
                 if (!existing.getId().equals(userId)) {
-                    throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+                    throw new IllegalArgumentException("Email already exists: " + normalizedEmail);
                 }
             });
-            user.setEmail(request.getEmail());
+            user.setEmail(normalizedEmail);
         }
 
         if (request.getFirstName() != null) {
@@ -117,7 +124,7 @@ public class UserManagementService {
     }
 
     public UserInfoResponse getUserByUsername(String username) {
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findByUsernameIgnoreCase(username)
                 .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
         return mapToUserInfoResponse(user);

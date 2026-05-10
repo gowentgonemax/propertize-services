@@ -27,6 +27,7 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthEmailService authEmailService;
 
     @Value("${app.frontend.url:http://localhost:3000}")
     private String frontendUrl;
@@ -52,9 +53,9 @@ public class PasswordResetService {
 
             tokenRepository.save(resetToken);
 
-            // TODO: Send email via email service
             String resetLink = frontendUrl + resetPasswordPath + "?token=" + token;
-            log.info("Password reset link generated for user: {}", email);
+            authEmailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+            log.info("Password reset link sent to user: {}", email);
         });
 
         if (userOpt.isEmpty()) {

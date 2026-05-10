@@ -145,7 +145,7 @@ class UserManagementServiceTest {
         @DisplayName("Should use provided roles set")
         void testRolesPersisted() {
             CreateUserRequest req = validRequest();
-            req.setRoles(Set.of(com.propertize.enums.UserRoleEnum.ORGANIZATION_ADMIN));
+            req.setRoles(Set.of(com.propertize.commons.enums.UserRoleEnum.ORGANIZATION_ADMIN));
 
             userManagementService.createUser(req);
 

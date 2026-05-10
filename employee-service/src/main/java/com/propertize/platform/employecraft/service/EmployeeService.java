@@ -27,6 +27,7 @@ import com.propertize.platform.employecraft.repository.EmployeeRepository;
 import com.propertize.platform.employecraft.repository.PositionRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -341,7 +342,8 @@ public class EmployeeService {
     }
 
     private String generateTempPassword() {
-        return "Temp" + UUID.randomUUID().toString().substring(0, 8) + "!";
+        // return "Temp" + UUID.randomUUID().toString().substring(0, 8) + "!";
+        return "tempPassword";
     }
 
     private Address buildAddress(EmployeeCreateRequest request) {

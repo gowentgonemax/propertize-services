@@ -10,6 +10,9 @@ from services.screening_service import ScreeningService
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
+# Suppress transient Kafka coordinator heartbeat WARNs on startup (self-healing)
+logging.getLogger("kafka").setLevel(logging.ERROR)
+logging.getLogger("kafka.coordinator").setLevel(logging.ERROR)
 
 service = ScreeningService()
 

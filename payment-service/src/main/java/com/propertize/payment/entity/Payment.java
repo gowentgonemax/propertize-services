@@ -157,4 +157,36 @@ public class Payment extends OrganizationScopedEntity {
 
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public PaymentStatusEnum getStatus() {
+        return status;
+    }
+
+    public void setStatus(PaymentStatusEnum status) {
+        this.status = status;
+    }
+
+    public String getStripePaymentIntentId() {
+        return stripePaymentIntentId;
+    }
+
+    public void setStripePaymentIntentId(String stripePaymentIntentId) {
+        this.stripePaymentIntentId = stripePaymentIntentId;
+    }
 }

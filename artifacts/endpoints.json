@@ -1,0 +1,2587 @@
+{
+  "_comment": "Propertize Services \u2014 Comprehensive API Endpoint Configuration",
+  "_instructions": [
+    "Run: python3 api_validator.py --endpoints endpoints.json",
+    "Override vars: python3 api_validator.py --var ORG_ID=<your-org-id>",
+    "Env vars: AUTH_USERNAME, AUTH_PASSWORD, ORGANIZATION_ID, BASE_URL"
+  ],
+  "config": {
+    "base_url": "{{BASE_URL:http://localhost:8080}}",
+    "timeout": 30,
+    "retries": 2,
+    "retry_delay": 1.5,
+    "fail_fast": false
+  },
+  "auth": {
+    "type": "bearer",
+    "login": {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "body": {
+        "username": "{{AUTH_USERNAME:admin}}",
+        "password": "{{AUTH_PASSWORD:Admin@123}}"
+      },
+      "token_path": "accessToken"
+    }
+  },
+  "variables": {
+    "ORG_ID": "b9677953-9f32-4f5b-99d9-9825f6461046",
+    "ORGANIZATION_ID": "b9677953-9f32-4f5b-99d9-9825f6461046"
+  },
+  "endpoints": [
+    {
+      "name": "Auth \u2014 Me (current user)",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 List all roles",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/roles",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 List all permissions",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/permissions",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 List custom roles",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/custom-roles",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 RBAC config",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/rbac-config",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 List audit logs",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/audit-logs",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 List IP rules",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/ip-rules",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 Token introspect",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/token/introspect",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Auth \u2014 Refresh token",
+      "section": "Auth Service",
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "body": {},
+      "expected_status": [
+        200,
+        400,
+        401
+      ],
+      "tags": [
+        "auth",
+        "write"
+      ]
+    },
+    {
+      "name": "Auth \u2014 List delegations",
+      "section": "Auth Service",
+      "method": "GET",
+      "path": "/api/v1/auth/delegations",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "auth",
+        "read"
+      ]
+    },
+    {
+      "name": "Property \u2014 List all",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "PROPERTY_ID": "data.0.id"
+      },
+      "tags": [
+        "property",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Property \u2014 Create",
+      "section": "Properties",
+      "method": "POST",
+      "path": "/api/v1/properties",
+      "body": {
+        "propertyName": "Validator Test {{RUN_ID}}",
+        "type": "HOUSE",
+        "address": {
+          "street": "123 Test Street",
+          "city": "Austin",
+          "state": "Texas",
+          "zipCode": "78701"
+        },
+        "bedrooms": 2,
+        "bathrooms": 1.0,
+        "monthlyRent": 1500.0
+      },
+      "expected_status": [
+        200,
+        201
+      ],
+      "extract": {
+        "PROPERTY_ID": "id"
+      },
+      "tags": [
+        "property",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Property \u2014 Get by ID",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties/{{PROPERTY_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "property",
+        "read"
+      ]
+    },
+    {
+      "name": "Property \u2014 Update",
+      "section": "Properties",
+      "method": "PUT",
+      "path": "/api/v1/properties/{{PROPERTY_ID}}",
+      "body": {
+        "propertyName": "Validator Test {{RUN_ID}} (updated)",
+        "type": "HOUSE",
+        "address": {
+          "street": "123 Test Street",
+          "city": "Austin",
+          "state": "Texas",
+          "zipCode": "78701"
+        },
+        "bedrooms": 3,
+        "bathrooms": 1.0,
+        "monthlyRent": 1600.0
+      },
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "property",
+        "write",
+        "update"
+      ]
+    },
+    {
+      "name": "Property \u2014 Statistics",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "property",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Property \u2014 List by status (AVAILABLE)",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "property",
+        "read"
+      ],
+      "params": {
+        "status": "AVAILABLE"
+      }
+    },
+    {
+      "name": "Property \u2014 List by type (RESIDENTIAL)",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "property",
+        "read"
+      ]
+    },
+    {
+      "name": "Property \u2014 Paginated list",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties",
+      "params": {
+        "page": 0,
+        "size": 5
+      },
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "property",
+        "read"
+      ]
+    },
+    {
+      "name": "Property \u2014 Available for rent",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties/public/available",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "property",
+        "read",
+        "public"
+      ]
+    },
+    {
+      "name": "Property \u2014 By organization",
+      "section": "Properties",
+      "method": "GET",
+      "path": "/api/v1/properties/organization/{{ORG_ID}}",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "property",
+        "read"
+      ]
+    },
+    {
+      "name": "Tenant \u2014 List all",
+      "section": "Tenants",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "TENANT_ID": "data.0.basicInfo.id"
+      },
+      "tags": [
+        "tenant",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Tenant \u2014 Create",
+      "section": "Tenants",
+      "method": "POST",
+      "path": "/api/v1/tenants",
+      "body": {
+        "firstName": "Validator",
+        "lastName": "Tenant{{RUN_ID}}",
+        "email": "tenant-{{RUN_ID}}@validator.test",
+        "phoneNumber": "+15125550199",
+        "dateOfBirth": "1990-03-15",
+        "organizationId": "{{ORG_ID}}"
+      },
+      "expected_status": [
+        200,
+        201,
+        500
+      ],
+      "extract": {
+        "TENANT_ID": "data.id"
+      },
+      "tags": [
+        "tenant",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Tenant \u2014 Get by ID",
+      "section": "Tenants",
+      "method": "GET",
+      "path": "/api/v1/tenants/{{TENANT_ID}}",
+      "expected_status": [
+        200,
+        404,
+        500
+      ],
+      "tags": [
+        "tenant",
+        "read"
+      ]
+    },
+    {
+      "name": "Tenant \u2014 Statistics",
+      "section": "Tenants",
+      "method": "GET",
+      "path": "/api/v1/tenants/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "tenant",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Tenant \u2014 By organization",
+      "section": "Tenants",
+      "method": "GET",
+      "path": "/api/v1/tenants",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "tenant",
+        "read"
+      ]
+    },
+    {
+      "name": "Tenant \u2014 Profile (me)",
+      "section": "Tenants",
+      "method": "GET",
+      "path": "/api/v1/tenants/me",
+      "expected_status": [
+        200,
+        403,
+        404,
+        500
+      ],
+      "tags": [
+        "tenant",
+        "read"
+      ]
+    },
+    {
+      "name": "Tenant Profile \u2014 Get by tenant ID",
+      "section": "Tenants",
+      "method": "GET",
+      "path": "/api/v1/tenant-profile/{{TENANT_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "tenant",
+        "read"
+      ]
+    },
+    {
+      "name": "Lease \u2014 List all",
+      "section": "Leases",
+      "method": "GET",
+      "path": "/api/v1/leases",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "LEASE_ID": "data.0.id"
+      },
+      "tags": [
+        "lease",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Lease \u2014 Get by ID",
+      "section": "Leases",
+      "method": "GET",
+      "path": "/api/v1/leases/{{LEASE_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "lease",
+        "read"
+      ]
+    },
+    {
+      "name": "Lease \u2014 Active leases",
+      "section": "Leases",
+      "method": "GET",
+      "path": "/api/v1/leases",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "lease",
+        "read"
+      ],
+      "params": {
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "name": "Lease \u2014 Expiring soon",
+      "section": "Leases",
+      "method": "GET",
+      "path": "/api/v1/leases",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "lease",
+        "read"
+      ]
+    },
+    {
+      "name": "Lease \u2014 Statistics",
+      "section": "Leases",
+      "method": "GET",
+      "path": "/api/v1/leases/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "lease",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Lease \u2014 By organization",
+      "section": "Leases",
+      "method": "GET",
+      "path": "/api/v1/leases",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "lease",
+        "read"
+      ]
+    },
+    {
+      "name": "Organization \u2014 My organization",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/organizations/my",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "MY_ORG_ID": "data.id"
+      },
+      "tags": [
+        "org",
+        "read"
+      ]
+    },
+    {
+      "name": "Organization \u2014 Get by ID",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/organizations/{{ORG_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "org",
+        "read"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 List all organizations",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "read"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 Statistics",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations/statistics",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "stats"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 Applications list",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations/applications",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "read"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 Pending applications",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations/applications/pending",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "read"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 Pending application count",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations/applications/pending-count",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "stats"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 My assignments",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations/applications/my-assignments",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "read"
+      ]
+    },
+    {
+      "name": "Admin Org \u2014 Application stats",
+      "section": "Organizations",
+      "method": "GET",
+      "path": "/api/v1/admin/organizations/applications/stats",
+      "expected_status": [
+        200,
+        403
+      ],
+      "tags": [
+        "org",
+        "admin",
+        "stats"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 List all",
+      "section": "Maintenance",
+      "method": "GET",
+      "path": "/api/v1/maintenance",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "MAINT_ID": "data.0.id"
+      },
+      "tags": [
+        "maintenance",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Create",
+      "section": "Maintenance",
+      "method": "POST",
+      "path": "/api/v1/maintenance",
+      "body": {
+        "title": "Validator Test Maintenance {{RUN_ID}}",
+        "description": "Automated validator test request",
+        "priority": "Low",
+        "category": "PLUMBING",
+        "propertyId": "{{PROPERTY_ID}}",
+        "organizationId": "{{ORG_ID}}"
+      },
+      "expected_status": [
+        200,
+        201
+      ],
+      "extract": {
+        "MAINT_ID": "id"
+      },
+      "tags": [
+        "maintenance",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Get by ID",
+      "section": "Maintenance",
+      "method": "GET",
+      "path": "/api/v1/maintenance/{{MAINT_ID}}",
+      "expected_status": [
+        200,
+        404,
+        500
+      ],
+      "tags": [
+        "maintenance",
+        "read"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Open requests",
+      "section": "Maintenance",
+      "method": "GET",
+      "path": "/api/v1/maintenance/open",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "maintenance",
+        "read"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Statistics",
+      "section": "Maintenance",
+      "method": "GET",
+      "path": "/api/v1/maintenance/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "maintenance",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Add note",
+      "section": "Maintenance",
+      "method": "POST",
+      "path": "/api/v1/maintenance/{{MAINT_ID}}/notes",
+      "body": {
+        "note": "Validator test note {{RUN_ID}}"
+      },
+      "expected_status": [
+        200,
+        201,
+        404
+      ],
+      "tags": [
+        "maintenance",
+        "write"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Get notes",
+      "section": "Maintenance",
+      "method": "GET",
+      "path": "/api/v1/maintenance/{{MAINT_ID}}/notes",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "maintenance",
+        "read"
+      ]
+    },
+    {
+      "name": "Maintenance \u2014 Recent notes",
+      "section": "Maintenance",
+      "method": "GET",
+      "path": "/api/v1/maintenance/notes/recent",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "maintenance",
+        "read"
+      ]
+    },
+    {
+      "name": "Vendor \u2014 List all",
+      "section": "Vendors",
+      "method": "GET",
+      "path": "/api/v1/vendors",
+      "expected_status": [
+        200,
+        500
+      ],
+      "extract": {
+        "VENDOR_ID": "content.0.id"
+      },
+      "tags": [
+        "vendor",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Vendor \u2014 Create",
+      "section": "Vendors",
+      "method": "POST",
+      "path": "/api/v1/vendors",
+      "body": {
+        "name": "Validator Vendor {{RUN_ID}}",
+        "contactName": "Test Contact",
+        "email": "vendor-{{RUN_ID}}@validator.test",
+        "phone": "+15125550188",
+        "serviceType": "PLUMBING",
+        "zipCode": "78701",
+        "city": "Austin",
+        "state": "TX",
+        "organizationId": "{{ORG_ID}}"
+      },
+      "expected_status": [
+        200,
+        201
+      ],
+      "extract": {
+        "VENDOR_ID": "id"
+      },
+      "tags": [
+        "vendor",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Vendor \u2014 Get by ID",
+      "section": "Vendors",
+      "method": "GET",
+      "path": "/api/v1/vendors/{{VENDOR_ID}}",
+      "expected_status": [
+        200,
+        404,
+        500
+      ],
+      "tags": [
+        "vendor",
+        "read"
+      ]
+    },
+    {
+      "name": "Vendor \u2014 Search",
+      "section": "Vendors",
+      "method": "GET",
+      "path": "/api/v1/vendors/search",
+      "params": {
+        "query": "Validator"
+      },
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "vendor",
+        "read",
+        "search"
+      ]
+    },
+    {
+      "name": "Invoice \u2014 List all",
+      "section": "Invoices",
+      "method": "GET",
+      "path": "/api/v1/invoices",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "INVOICE_ID": "data.0.id"
+      },
+      "tags": [
+        "invoice",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Invoice \u2014 Create",
+      "section": "Invoices",
+      "method": "POST",
+      "path": "/api/v1/invoices",
+      "body": {
+        "description": "Validator Invoice {{RUN_ID}}",
+        "amount": 500.0,
+        "dueDate": "2025-12-31",
+        "tenantId": "{{TENANT_ID}}",
+        "leaseId": "{{LEASE_ID}}",
+        "organizationId": "{{ORG_ID}}"
+      },
+      "expected_status": [
+        200,
+        201,
+        400
+      ],
+      "extract": {
+        "INVOICE_ID": "data.id"
+      },
+      "tags": [
+        "invoice",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Invoice \u2014 Get by ID",
+      "section": "Invoices",
+      "method": "GET",
+      "path": "/api/v1/invoices/{{INVOICE_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "invoice",
+        "read"
+      ]
+    },
+    {
+      "name": "Invoice \u2014 Overdue list",
+      "section": "Invoices",
+      "method": "GET",
+      "path": "/api/v1/invoices/overdue",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "invoice",
+        "read"
+      ]
+    },
+    {
+      "name": "Invoice \u2014 Statistics",
+      "section": "Invoices",
+      "method": "GET",
+      "path": "/api/v1/invoices/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "invoice",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Expense \u2014 List all",
+      "section": "Expenses",
+      "method": "GET",
+      "path": "/api/v1/expenses",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "EXPENSE_ID": "data.0.id"
+      },
+      "tags": [
+        "expense",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Expense \u2014 Create",
+      "section": "Expenses",
+      "method": "POST",
+      "path": "/api/v1/expenses",
+      "body": {
+        "title": "Validator Expense {{RUN_ID}}",
+        "description": "Automated test expense",
+        "amount": 150.0,
+        "category": "MAINTENANCE",
+        "expenseDate": "2025-01-15",
+        "propertyId": "{{PROPERTY_ID}}",
+        "organizationId": "{{ORG_ID}}",
+        "paid": false
+      },
+      "expected_status": [
+        200,
+        201,
+        500
+      ],
+      "extract": {
+        "EXPENSE_ID": "id"
+      },
+      "tags": [
+        "expense",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Expense \u2014 Get by ID",
+      "section": "Expenses",
+      "method": "GET",
+      "path": "/api/v1/expenses/{{EXPENSE_ID}}",
+      "expected_status": [
+        200,
+        404,
+        500
+      ],
+      "tags": [
+        "expense",
+        "read"
+      ]
+    },
+    {
+      "name": "Expense \u2014 Summary",
+      "section": "Expenses",
+      "method": "GET",
+      "path": "/api/v1/expenses/summary",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "expense",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 List all",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "APP_ID": "data.0.id"
+      },
+      "tags": [
+        "rental-app",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Submit new application",
+      "section": "Rental Applications",
+      "method": "POST",
+      "path": "/api/v1/rental-applications/submit",
+      "body": {
+        "propertyId": "{{PROPERTY_ID}}",
+        "organizationId": "{{ORG_ID}}",
+        "firstName": "ValidatorApp",
+        "lastName": "Test{{RUN_ID}}",
+        "email": "app-{{RUN_ID}}@validator.test",
+        "dateOfBirth": "1992-06-20",
+        "currentAddress": {
+          "street": "123 Validator St",
+          "city": "Austin",
+          "state": "Texas",
+          "zipCode": "78701"
+        },
+        "employmentStatus": "EMPLOYED",
+        "monthlyIncome": 4500.0,
+        "employer": "Validator Corp",
+        "leaseTerm": 12,
+        "phone": "+15125550177",
+        "desiredMoveInDate": "2026-09-01"
+      },
+      "expected_status": [
+        200,
+        201
+      ],
+      "extract": {
+        "APP_ID": "data.id",
+        "TRACKING_ID": "data.trackingId"
+      },
+      "tags": [
+        "rental-app",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Get by ID",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications/{{APP_ID}}",
+      "expected_status": [
+        200,
+        404,
+        500
+      ],
+      "tags": [
+        "rental-app",
+        "read"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Track by tracking ID",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications/track/{{TRACKING_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "rental-app",
+        "read",
+        "public"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Stats",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications/stats",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "rental-app",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 By status (SUBMITTED)",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications/status/SUBMITTED",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "rental-app",
+        "read"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Background check status",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications/{{APP_ID}}/background-check",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "rental-app",
+        "read"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Can approve check",
+      "section": "Rental Applications",
+      "method": "GET",
+      "path": "/api/v1/rental-applications/{{APP_ID}}/background-check/can-approve",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "rental-app",
+        "read"
+      ]
+    },
+    {
+      "name": "Rental App \u2014 Reject",
+      "section": "Rental Applications",
+      "method": "POST",
+      "path": "/api/v1/rental-applications/{{APP_ID}}/reject",
+      "body": {
+        "reason": "Automated validator rejection for test {{RUN_ID}}"
+      },
+      "expected_status": [
+        200,
+        400,
+        404,
+        409
+      ],
+      "tags": [
+        "rental-app",
+        "write",
+        "action"
+      ]
+    },
+    {
+      "name": "Screening \u2014 Submit application",
+      "section": "Tenant Screening",
+      "method": "POST",
+      "path": "/api/v1/screening/applications",
+      "body": {
+        "tenantId": "{{TENANT_ID}}",
+        "propertyId": "{{PROPERTY_ID}}"
+      },
+      "expected_status": [
+        200,
+        201,
+        400,
+        404
+      ],
+      "extract": {
+        "SCREEN_APP_ID": "data.id"
+      },
+      "tags": [
+        "screening",
+        "write"
+      ]
+    },
+    {
+      "name": "Screening \u2014 Credit check",
+      "section": "Tenant Screening",
+      "method": "GET",
+      "path": "/api/v1/screening/tenants/{{TENANT_ID}}/credit-check",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "screening",
+        "read"
+      ]
+    },
+    {
+      "name": "Screening \u2014 Criminal check",
+      "section": "Tenant Screening",
+      "method": "GET",
+      "path": "/api/v1/screening/tenants/{{TENANT_ID}}/criminal-check",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "screening",
+        "read"
+      ]
+    },
+    {
+      "name": "Screening \u2014 Comprehensive report",
+      "section": "Tenant Screening",
+      "method": "GET",
+      "path": "/api/v1/screening/tenants/{{TENANT_ID}}/comprehensive",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "screening",
+        "read"
+      ]
+    },
+    {
+      "name": "Screening \u2014 Can proceed",
+      "section": "Tenant Screening",
+      "method": "GET",
+      "path": "/api/v1/screening/tenants/{{TENANT_ID}}/can-proceed",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "screening",
+        "read"
+      ]
+    },
+    {
+      "name": "Message \u2014 Inbox",
+      "section": "Messages",
+      "method": "GET",
+      "path": "/api/v1/messages/inbox",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "message",
+        "read"
+      ]
+    },
+    {
+      "name": "Message \u2014 Sent",
+      "section": "Messages",
+      "method": "GET",
+      "path": "/api/v1/messages/sent",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "message",
+        "read"
+      ]
+    },
+    {
+      "name": "Message \u2014 Unread count",
+      "section": "Messages",
+      "method": "GET",
+      "path": "/api/v1/messages/unread/count",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "message",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Message \u2014 Send",
+      "section": "Messages",
+      "method": "POST",
+      "path": "/api/v1/messages",
+      "body": {
+        "subject": "Validator Test {{RUN_ID}}",
+        "body": "This is an automated validator message",
+        "recipientId": "{{ORG_ID}}",
+        "category": "GENERAL"
+      },
+      "expected_status": [
+        200,
+        201,
+        400
+      ],
+      "extract": {
+        "MSG_ID": "data.id"
+      },
+      "tags": [
+        "message",
+        "write"
+      ]
+    },
+    {
+      "name": "Message \u2014 Statistics",
+      "section": "Messages",
+      "method": "GET",
+      "path": "/api/v1/messages/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "message",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Message \u2014 Recipients",
+      "section": "Messages",
+      "method": "GET",
+      "path": "/api/v1/messages/recipients",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "message",
+        "read"
+      ]
+    },
+    {
+      "name": "Document \u2014 List all",
+      "section": "Documents",
+      "method": "GET",
+      "path": "/api/v1/documents",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "document",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Document \u2014 By entity type (PROPERTY)",
+      "section": "Documents",
+      "method": "GET",
+      "path": "/api/v1/documents/entity/PROPERTY/{{PROPERTY_ID}}",
+      "expected_status": [
+        200,
+        404,
+        500
+      ],
+      "tags": [
+        "document",
+        "read"
+      ]
+    },
+    {
+      "name": "Document \u2014 Search",
+      "section": "Documents",
+      "method": "GET",
+      "path": "/api/v1/documents/search",
+      "params": {
+        "query": "test"
+      },
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "document",
+        "read",
+        "search"
+      ]
+    },
+    {
+      "name": "Notification \u2014 List all",
+      "section": "Notifications",
+      "method": "GET",
+      "path": "/api/v1/notifications",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "notification",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Notification \u2014 By tenant",
+      "section": "Notifications",
+      "method": "GET",
+      "path": "/api/v1/notifications/tenant/{{TENANT_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "notification",
+        "read"
+      ]
+    },
+    {
+      "name": "Report \u2014 Dashboard",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/dashboard",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ]
+    },
+    {
+      "name": "Report \u2014 Available reports",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/available",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ]
+    },
+    {
+      "name": "Report \u2014 Financial",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/financial",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ],
+      "params": {
+        "startDate": "2024-01-01",
+        "endDate": "2024-12-31"
+      }
+    },
+    {
+      "name": "Report \u2014 Delinquency",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/delinquency",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ]
+    },
+    {
+      "name": "Report \u2014 Occupancy",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/occupancy",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ]
+    },
+    {
+      "name": "Report \u2014 Rent roll",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/rent-roll",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ]
+    },
+    {
+      "name": "Report \u2014 Maintenance",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/maintenance",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "report",
+        "read"
+      ],
+      "params": {
+        "startDate": "2024-01-01",
+        "endDate": "2024-12-31"
+      }
+    },
+    {
+      "name": "Report \u2014 Vendor performance",
+      "section": "Reports",
+      "method": "GET",
+      "path": "/api/v1/reports/vendor-performance",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "report",
+        "read"
+      ],
+      "params": {
+        "startDate": "2024-01-01",
+        "endDate": "2024-12-31"
+      }
+    },
+    {
+      "name": "Search \u2014 Global search",
+      "section": "Search",
+      "method": "GET",
+      "path": "/api/v1/search",
+      "params": {
+        "q": "test"
+      },
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "search",
+        "read"
+      ]
+    },
+    {
+      "name": "Search \u2014 Properties",
+      "section": "Search",
+      "method": "POST",
+      "path": "/api/v1/search/properties",
+      "body": {
+        "query": "test",
+        "page": 0,
+        "size": 10
+      },
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "search",
+        "read",
+        "property"
+      ]
+    },
+    {
+      "name": "Search \u2014 Tenants",
+      "section": "Search",
+      "method": "POST",
+      "path": "/api/v1/search/tenants",
+      "body": {
+        "query": "test",
+        "page": 0,
+        "size": 10
+      },
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "search",
+        "read",
+        "tenant"
+      ]
+    },
+    {
+      "name": "Asset \u2014 List all",
+      "section": "Assets",
+      "method": "GET",
+      "path": "/api/v1/assets",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "ASSET_ID": "data.0.id"
+      },
+      "tags": [
+        "asset",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Asset \u2014 Create",
+      "section": "Assets",
+      "method": "POST",
+      "path": "/api/v1/assets",
+      "body": {
+        "name": "Validator Asset {{RUN_ID}}",
+        "type": "APPLIANCE",
+        "serialNumber": "SN-{{RUN_ID}}",
+        "purchaseDate": "2024-01-01T00:00:00",
+        "purchasePrice": 500.0,
+        "propertyId": "{{PROPERTY_ID}}"
+      },
+      "expected_status": [
+        200,
+        201,
+        400,
+        409
+      ],
+      "extract": {
+        "ASSET_ID": "data.id"
+      },
+      "tags": [
+        "asset",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Asset \u2014 Get by ID",
+      "section": "Assets",
+      "method": "GET",
+      "path": "/api/v1/assets/{{ASSET_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "asset",
+        "read"
+      ]
+    },
+    {
+      "name": "Utility \u2014 List all",
+      "section": "Utilities",
+      "method": "GET",
+      "path": "/api/v1/utilities",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "UTILITY_ID": "data.0.id"
+      },
+      "tags": [
+        "utility",
+        "read",
+        "list"
+      ],
+      "params": {
+        "page": 1
+      }
+    },
+    {
+      "name": "Utility \u2014 Create",
+      "section": "Utilities",
+      "method": "POST",
+      "path": "/api/v1/utilities",
+      "body": {
+        "propertyId": "{{PROPERTY_ID}}",
+        "type": "ELECTRICITY",
+        "provider": "Validator Power Co",
+        "accountNumber": "ACC-{{RUN_ID}}",
+        "monthlyAmount": 120.0
+      },
+      "expected_status": [
+        200,
+        201,
+        400,
+        409
+      ],
+      "extract": {
+        "UTILITY_ID": "data.id"
+      },
+      "tags": [
+        "utility",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Utility \u2014 Get by ID",
+      "section": "Utilities",
+      "method": "GET",
+      "path": "/api/v1/utilities/{{UTILITY_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "utility",
+        "read"
+      ]
+    },
+    {
+      "name": "Analytics \u2014 Summary",
+      "section": "Analytics",
+      "method": "GET",
+      "path": "/api/v1/analytics/summary",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "analytics",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Analytics \u2014 Track event",
+      "section": "Analytics",
+      "method": "POST",
+      "path": "/api/v1/analytics/track",
+      "body": {
+        "eventType": "VALIDATOR_TEST",
+        "entityType": "PROPERTY",
+        "entityId": "{{PROPERTY_ID}}",
+        "metadata": {
+          "runId": "{{RUN_ID}}"
+        }
+      },
+      "expected_status": [
+        200,
+        201,
+        202
+      ],
+      "tags": [
+        "analytics",
+        "write"
+      ]
+    },
+    {
+      "name": "Metrics \u2014 Dashboard",
+      "section": "Metrics",
+      "method": "GET",
+      "path": "/api/v1/metrics/dashboard",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "metrics",
+        "read"
+      ]
+    },
+    {
+      "name": "Metrics \u2014 All properties",
+      "section": "Metrics",
+      "method": "GET",
+      "path": "/api/v1/metrics/properties",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "metrics",
+        "read"
+      ]
+    },
+    {
+      "name": "Metrics \u2014 Property by ID",
+      "section": "Metrics",
+      "method": "GET",
+      "path": "/api/v1/metrics/properties/{{PROPERTY_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "metrics",
+        "read"
+      ]
+    },
+    {
+      "name": "Metrics \u2014 All leases",
+      "section": "Metrics",
+      "method": "GET",
+      "path": "/api/v1/metrics/leases",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "metrics",
+        "read"
+      ]
+    },
+    {
+      "name": "Metrics \u2014 All tenants",
+      "section": "Metrics",
+      "method": "GET",
+      "path": "/api/v1/metrics/tenants",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "metrics",
+        "read"
+      ]
+    },
+    {
+      "name": "Task \u2014 List all",
+      "section": "Tasks",
+      "method": "GET",
+      "path": "/api/v1/tasks",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "TASK_ID": "content.0.id"
+      },
+      "tags": [
+        "task",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Task \u2014 Create",
+      "section": "Tasks",
+      "method": "POST",
+      "path": "/api/v1/tasks",
+      "body": {
+        "title": "Validator Task {{RUN_ID}}",
+        "description": "Automated test task",
+        "priority": "MEDIUM",
+        "assigneeId": 1,
+        "dueDate": "2027-12-31T23:59:59Z"
+      },
+      "expected_status": [
+        200,
+        201,
+        400
+      ],
+      "extract": {
+        "TASK_ID": "id"
+      },
+      "tags": [
+        "task",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Task \u2014 Get by ID",
+      "section": "Tasks",
+      "method": "GET",
+      "path": "/api/v1/tasks/{{TASK_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "task",
+        "read"
+      ]
+    },
+    {
+      "name": "Task \u2014 My tasks",
+      "section": "Tasks",
+      "method": "GET",
+      "path": "/api/v1/tasks/my-tasks",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "task",
+        "read"
+      ]
+    },
+    {
+      "name": "Task \u2014 Overdue tasks",
+      "section": "Tasks",
+      "method": "GET",
+      "path": "/api/v1/tasks/overdue",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "task",
+        "read"
+      ]
+    },
+    {
+      "name": "Task \u2014 Statistics",
+      "section": "Tasks",
+      "method": "GET",
+      "path": "/api/v1/tasks/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "task",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Inspection \u2014 List all",
+      "section": "Inspections",
+      "method": "GET",
+      "path": "/api/v1/inspections",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "INSPECTION_ID": "data.0.id"
+      },
+      "tags": [
+        "inspection",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Inspection \u2014 Create",
+      "section": "Inspections",
+      "method": "POST",
+      "path": "/api/v1/inspections",
+      "body": {
+        "propertyId": "{{PROPERTY_ID}}",
+        "type": "Move-In",
+        "scheduledAt": "2027-12-31T10:00:00Z"
+      },
+      "expected_status": [
+        200,
+        201,
+        409
+      ],
+      "extract": {
+        "INSPECTION_ID": "id"
+      },
+      "tags": [
+        "inspection",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Inspection \u2014 Get by ID",
+      "section": "Inspections",
+      "method": "GET",
+      "path": "/api/v1/inspections/{{INSPECTION_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "inspection",
+        "read"
+      ]
+    },
+    {
+      "name": "Inspection \u2014 Upcoming",
+      "section": "Inspections",
+      "method": "GET",
+      "path": "/api/v1/inspections/upcoming",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "inspection",
+        "read"
+      ],
+      "params": {
+        "startDate": "2025-01-01T00:00:00Z",
+        "endDate": "2025-12-31T23:59:59Z"
+      }
+    },
+    {
+      "name": "Milestone \u2014 List all",
+      "section": "Milestones",
+      "method": "GET",
+      "path": "/api/v1/milestones",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "MILESTONE_ID": "content.0.id"
+      },
+      "tags": [
+        "milestone",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Milestone \u2014 Create",
+      "section": "Milestones",
+      "method": "POST",
+      "path": "/api/v1/milestones",
+      "body": {
+        "title": "Validator Milestone {{RUN_ID}}",
+        "category": "FINANCIAL",
+        "target": 10000.0,
+        "unit": "USD"
+      },
+      "expected_status": [
+        200,
+        201
+      ],
+      "extract": {
+        "MILESTONE_ID": "id"
+      },
+      "tags": [
+        "milestone",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Milestone \u2014 Get by ID",
+      "section": "Milestones",
+      "method": "GET",
+      "path": "/api/v1/milestones/{{MILESTONE_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "milestone",
+        "read"
+      ]
+    },
+    {
+      "name": "Milestone \u2014 Overdue",
+      "section": "Milestones",
+      "method": "GET",
+      "path": "/api/v1/milestones/overdue",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "milestone",
+        "read"
+      ]
+    },
+    {
+      "name": "Milestone \u2014 Statistics",
+      "section": "Milestones",
+      "method": "GET",
+      "path": "/api/v1/milestones/statistics",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "milestone",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Schedule Event \u2014 List all",
+      "section": "Schedule Events",
+      "method": "GET",
+      "path": "/api/v1/schedule-events",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "schedule",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Schedule Event \u2014 Upcoming",
+      "section": "Schedule Events",
+      "method": "GET",
+      "path": "/api/v1/schedule-events/upcoming",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "schedule",
+        "read"
+      ]
+    },
+    {
+      "name": "Schedule Event \u2014 Availability",
+      "section": "Schedule Events",
+      "method": "GET",
+      "path": "/api/v1/schedule-events/availability",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "schedule",
+        "read"
+      ]
+    },
+    {
+      "name": "Approval \u2014 Pending approvals",
+      "section": "Approvals",
+      "method": "GET",
+      "path": "/api/v1/approvals/pending",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "approval",
+        "read"
+      ]
+    },
+    {
+      "name": "Approval \u2014 My submissions",
+      "section": "Approvals",
+      "method": "GET",
+      "path": "/api/v1/approvals/my-submissions",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "approval",
+        "read"
+      ]
+    },
+    {
+      "name": "Approval \u2014 Count pending",
+      "section": "Approvals",
+      "method": "GET",
+      "path": "/api/v1/approvals/count/pending",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "approval",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Approval \u2014 Expiring soon",
+      "section": "Approvals",
+      "method": "GET",
+      "path": "/api/v1/approvals/expiring-soon",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "approval",
+        "read"
+      ]
+    },
+    {
+      "name": "Contact \u2014 List all",
+      "section": "Contacts",
+      "method": "GET",
+      "path": "/api/v1/contacts",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "CONTACT_ID": "data.0.id"
+      },
+      "tags": [
+        "contact",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Contact \u2014 Create",
+      "section": "Contacts",
+      "method": "POST",
+      "path": "/api/v1/contacts",
+      "body": {
+        "name": "Validator Contact {{RUN_ID}}",
+        "email": "contact-{{RUN_ID}}@validator.test",
+        "subject": "Validator Test Subject {{RUN_ID}}",
+        "message": "Automated validator test message {{RUN_ID}}"
+      },
+      "expected_status": [
+        200,
+        201
+      ],
+      "extract": {
+        "CONTACT_ID": "data.id"
+      },
+      "tags": [
+        "contact",
+        "write",
+        "create"
+      ]
+    },
+    {
+      "name": "Contact \u2014 Get by ID",
+      "section": "Contacts",
+      "method": "GET",
+      "path": "/api/v1/contacts/{{CONTACT_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "contact",
+        "read"
+      ]
+    },
+    {
+      "name": "Contact \u2014 Search",
+      "section": "Contacts",
+      "method": "GET",
+      "path": "/api/v1/contacts/search",
+      "params": {
+        "search": "Validator"
+      },
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "contact",
+        "read",
+        "search"
+      ]
+    },
+    {
+      "name": "Contact \u2014 Statistics",
+      "section": "Contacts",
+      "method": "GET",
+      "path": "/api/v1/contacts/statistics",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "contact",
+        "read",
+        "stats"
+      ]
+    },
+    {
+      "name": "Late Fee \u2014 Total",
+      "section": "Late Fees",
+      "method": "GET",
+      "path": "/api/v1/late-fees/total",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "late-fee",
+        "read",
+        "stats"
+      ],
+      "params": {
+        "startDate": "2024-01-01",
+        "endDate": "2024-12-31"
+      }
+    },
+    {
+      "name": "Late Fee \u2014 Overdue payments",
+      "section": "Late Fees",
+      "method": "GET",
+      "path": "/api/v1/late-fees/overdue-payments",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "late-fee",
+        "read"
+      ]
+    },
+    {
+      "name": "Late Fee \u2014 Policy by organization",
+      "section": "Late Fees",
+      "method": "GET",
+      "path": "/api/v1/late-fees/policy/organization/{{ORG_ID}}",
+      "expected_status": [
+        200,
+        404
+      ],
+      "tags": [
+        "late-fee",
+        "read"
+      ]
+    },
+    {
+      "name": "User \u2014 List all",
+      "section": "Users",
+      "method": "GET",
+      "path": "/api/v1/users",
+      "expected_status": [
+        200
+      ],
+      "extract": {
+        "USER_ID": "data.0.id"
+      },
+      "tags": [
+        "user",
+        "read",
+        "list"
+      ]
+    },
+    {
+      "name": "Health \u2014 API Gateway",
+      "section": "Health Checks",
+      "method": "GET",
+      "path": "/actuator/health",
+      "expected_status": [
+        200
+      ],
+      "tags": [
+        "health"
+      ]
+    },
+    {
+      "name": "Health \u2014 Auth Service",
+      "section": "Health Checks",
+      "method": "GET",
+      "path": "/api/v1/auth/health",
+      "expected_status": [
+        200,
+        500
+      ],
+      "tags": [
+        "health",
+        "auth"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test asset",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/assets/{{ASSET_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        403,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test contact",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/contacts/{{CONTACT_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test expense",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/expenses/{{EXPENSE_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test vendor",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/vendors/{{VENDOR_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test maintenance request",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/maintenance/{{MAINT_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test task",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/tasks/{{TASK_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test inspection",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/inspections/{{INSPECTION_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        403,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test milestone",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/milestones/{{MILESTONE_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test invoice",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/invoices/{{INVOICE_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test tenant",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/tenants/{{TENANT_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Cleanup \u2014 Delete test property",
+      "section": "Cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/properties/{{PROPERTY_ID}}",
+      "expected_status": [
+        200,
+        204,
+        400,
+        404,
+        500
+      ],
+      "tags": [
+        "cleanup",
+        "delete"
+      ]
+    },
+    {
+      "name": "Auth \u2014 Logout",
+      "section": "Auth Service",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "body": {},
+      "expected_status": [
+        200,
+        204
+      ],
+      "tags": [
+        "auth",
+        "write"
+      ]
+    }
+  ]
+}

@@ -574,7 +574,7 @@ public class CustomRoleService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
         return (user.getRoles() != null ? user.getRoles()
-                : java.util.Collections.<com.propertize.enums.UserRoleEnum>emptySet()).stream()
+                : java.util.Collections.<com.propertize.commons.enums.UserRoleEnum>emptySet()).stream()
                 .map(roleEnum -> {
                     var config = rbacService.getRoleConfig(roleEnum.name());
                     if (config != null && config.getLevel() != null) {

@@ -1,6 +1,7 @@
 package com.propertize.platform.auth.entity;
 
-import com.propertize.enums.UserRoleEnum;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.propertize.commons.enums.UserRoleEnum;
 import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,6 +44,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(name = "first_name", length = 100)

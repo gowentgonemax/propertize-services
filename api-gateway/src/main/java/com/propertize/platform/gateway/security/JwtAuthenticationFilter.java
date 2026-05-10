@@ -106,6 +106,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/v1/organizations/apply",
             "/api/v1/rental-applications/submit",
             "/api/v1/rental-applications/track/**",
+            "/api/v1/promo-codes/validate",
+            "/api/v1/application-fees/**",
             "/api/v1/gateway/**",
             "/actuator/**",
             "/swagger-ui.html",
@@ -173,116 +175,130 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // Check if token is blacklisted using JTI (JWT ID) - per Production-Ready
         // Design
         Optional<String> jtiOpt = jwtTokenProvider.getTokenId(token);
-        if (jtiOpt.isPresent() && blacklistService.isBlacklistedByJti(jtiOpt.get())) {
-            log.warn("Blacklisted token (jti={}) used for: {} {} [correlationId={}]",
-                    jtiOpt.get(), method, path, correlationId);
-            if (metrics != null) {
-                metrics.recordAuthFailure("blacklisted_token");
+
+        Mono<Boolean> jtiBlacklistCheck = jtiOpt.isPresent()
+                ? blacklistService.isBlacklistedByJti(jtiOpt.get())
+                : Mono.just(false);
+
+        return jtiBlacklistCheck.flatMap(jtiBlacklisted -> {
+            if (Boolean.TRUE.equals(jtiBlacklisted)) {
+                log.warn("Blacklisted token (jti={}) used for: {} {} [correlationId={}]",
+                        jtiOpt.get(), method, path, correlationId);
+                if (metrics != null) {
+                    metrics.recordAuthFailure("blacklisted_token");
+                }
+                return onUnauthorized(exchange, "Token has been revoked");
             }
-            return onUnauthorized(exchange, "Token has been revoked");
-        }
 
-        // Fallback: Check by token hash for backward compatibility
-        if (blacklistService.isBlacklisted(token)) {
-            log.warn("Blacklisted token used for: {} {} [correlationId={}]", method, path, correlationId);
-            if (metrics != null) {
-                metrics.recordAuthFailure("blacklisted_token");
-            }
-            return onUnauthorized(exchange, "Token has been revoked");
-        }
+            // Fallback: Check by token hash for backward compatibility
+            return blacklistService.isBlacklisted(token)
+                    .flatMap(tokenBlacklisted -> {
+                        if (Boolean.TRUE.equals(tokenBlacklisted)) {
+                            log.warn("Blacklisted token used for: {} {} [correlationId={}]", method, path,
+                                    correlationId);
+                            if (metrics != null) {
+                                metrics.recordAuthFailure("blacklisted_token");
+                            }
+                            return onUnauthorized(exchange, "Token has been revoked");
+                        }
 
-        // Reject refresh tokens used for API access
-        if (jwtTokenProvider.isRefreshToken(token)) {
-            log.warn("Refresh token used for API access: {} {} [correlationId={}]", method, path, correlationId);
-            if (metrics != null) {
-                metrics.recordAuthFailure("refresh_token_misuse");
-            }
-            return onUnauthorized(exchange, "Refresh tokens cannot be used for API access");
-        }
+                        // Reject refresh tokens used for API access
+                        if (jwtTokenProvider.isRefreshToken(token)) {
+                            log.warn("Refresh token used for API access: {} {} [correlationId={}]", method, path,
+                                    correlationId);
+                            if (metrics != null) {
+                                metrics.recordAuthFailure("refresh_token_misuse");
+                            }
+                            return onUnauthorized(exchange, "Refresh tokens cannot be used for API access");
+                        }
 
-        // Check if this is a service token
-        if (jwtTokenProvider.isServiceToken(token)) {
-            return handleServiceToken(token, exchange, chain, correlationId, method, path);
-        }
+                        // Check if this is a service token
+                        if (jwtTokenProvider.isServiceToken(token)) {
+                            return handleServiceToken(token, exchange, chain, correlationId, method, path);
+                        }
 
-        // Token is valid user access token - extract user information
-        // Per Production-Ready Design: Extract all claims for downstream services
-        String username = jwtTokenProvider.getUsername(token).orElse("unknown");
-        String email = jwtTokenProvider.getEmail(token).orElse("");
-        String organizationId = jwtTokenProvider.getOrganizationId(token).orElse("");
-        String organizationCode = jwtTokenProvider.getOrganizationCode(token).orElse("");
-        String orgType = jwtTokenProvider.getOrgType(token).orElse("");
-        String tenantId = jwtTokenProvider.getTenantId(token).orElse("");
-        String sessionId = jwtTokenProvider.getSessionId(token).orElse("");
-        String jti = jwtTokenProvider.getTokenId(token).orElse("");
-        Set<String> roles = jwtTokenProvider.getRoles(token);
-        String primaryRole = jwtTokenProvider.getPrimaryRole(token).orElse("");
-        String tokenType = jwtTokenProvider.isAccessToken(token) ? "access" : "unknown";
+                        // Token is valid user access token - extract user information
+                        // Per Production-Ready Design: Extract all claims for downstream services
+                        String username = jwtTokenProvider.getUsername(token).orElse("unknown");
+                        String email = jwtTokenProvider.getEmail(token).orElse("");
+                        String organizationId = jwtTokenProvider.getOrganizationId(token).orElse("");
+                        String organizationCode = jwtTokenProvider.getOrganizationCode(token).orElse("");
+                        String orgType = jwtTokenProvider.getOrgType(token).orElse("");
+                        String tenantId = jwtTokenProvider.getTenantId(token).orElse("");
+                        String sessionId = jwtTokenProvider.getSessionId(token).orElse("");
+                        String jti = jwtTokenProvider.getTokenId(token).orElse("");
+                        Set<String> roles = jwtTokenProvider.getRoles(token);
+                        String primaryRole = jwtTokenProvider.getPrimaryRole(token).orElse("");
+                        String tokenType = jwtTokenProvider.isAccessToken(token) ? "access" : "unknown";
 
-        // ── Permissions from Redis cache (JWT no longer embeds the full list) ───
-        // Auth-service stored permissions under perms:jti:{jti} at login/refresh time.
-        // This lookup adds ~1-2ms but keeps the JWT small (resolves HTTP 431 errors).
-        Set<String> permissions = jti.isBlank()
-                ? java.util.Collections.emptySet()
-                : permissionCacheService.getPermissions(jti);
+                        // ── Permissions from Redis cache (JWT no longer embeds the full list) ───
+                        // Auth-service stored permissions under perms:jti:{jti} at login/refresh time.
+                        // This lookup adds ~1-2ms but keeps the JWT small (resolves HTTP 431 errors).
+                        Mono<Set<String>> permissionsMono = jti.isBlank()
+                                ? Mono.just(java.util.Collections.emptySet())
+                                : permissionCacheService.getPermissions(jti);
 
-        if (permissions.isEmpty() && !jti.isBlank()) {
-            log.debug("⚠️ No cached permissions found for jti={} user={} — X-Permissions will be empty",
-                    jti, username);
-        }
+                        return permissionsMono.flatMap(permissions -> {
+                            if (permissions.isEmpty() && !jti.isBlank()) {
+                                log.debug(
+                                        "⚠️ No cached permissions found for jti={} user={} — X-Permissions will be empty",
+                                        jti, username);
+                            }
 
-        log.info("✅ Authenticated user: {} with roles: {} for {} {} [correlationId={}]",
-                username, roles, method, path, correlationId);
+                            log.info("✅ Authenticated user: {} with roles: {} for {} {} [correlationId={}]",
+                                    username, roles, method, path, correlationId);
 
-        // Record successful authentication
-        if (metrics != null) {
-            metrics.recordAuthSuccess();
-        }
+                            if (metrics != null) {
+                                metrics.recordAuthSuccess();
+                            }
 
-        // Build modified request with user context headers
-        // Per Production-Ready Design: Gateway Headers (Added by JWT Filter)
-        ServerHttpRequest.Builder requestBuilder = request.mutate()
-                .header(X_USER_ID, username)
-                .header(X_USERNAME, username)
-                .header(X_ORGANIZATION_ID, organizationId)
-                .header(X_ORGANIZATION_CODE, organizationCode)
-                .header(X_ORG_TYPE, orgType)
-                .header(X_ROLES, String.join(",", roles))
-                .header(X_PRIMARY_ROLE, primaryRole)
-                .header(X_GATEWAY_SOURCE, gatewaySourceValue)
-                .header(X_CORRELATION_ID, correlationId)
-                .header(X_TOKEN_TYPE, tokenType);
+                            // Build modified request with user context headers
+                            // Per Production-Ready Design: Gateway Headers (Added by JWT Filter)
+                            ServerHttpRequest.Builder requestBuilder = request.mutate()
+                                    .header(X_USER_ID, username)
+                                    .header(X_USERNAME, username)
+                                    .header(X_ORGANIZATION_ID, organizationId)
+                                    .header(X_ORGANIZATION_CODE, organizationCode)
+                                    .header(X_ORG_TYPE, orgType)
+                                    .header(X_ROLES, String.join(",", roles))
+                                    .header(X_PRIMARY_ROLE, primaryRole)
+                                    .header(X_GATEWAY_SOURCE, gatewaySourceValue)
+                                    .header(X_CORRELATION_ID, correlationId)
+                                    .header(X_TOKEN_TYPE, tokenType);
 
-        // Forward JWT permissions so downstream RBAC checks can use them
-        if (!permissions.isEmpty()) {
-            requestBuilder.header(X_PERMISSIONS, String.join(",", permissions));
-        }
+                            // Forward JWT permissions so downstream RBAC checks can use them
+                            if (!permissions.isEmpty()) {
+                                requestBuilder.header(X_PERMISSIONS, String.join(",", permissions));
+                            }
 
-        // Add optional headers if present
-        if (!email.isEmpty()) {
-            requestBuilder.header(X_EMAIL, email);
-        }
-        if (!tenantId.isEmpty()) {
-            requestBuilder.header(X_TENANT_ID, tenantId);
-        }
-        if (!sessionId.isEmpty()) {
-            requestBuilder.header(X_SESSION_ID, sessionId);
-        }
-        if (!jti.isEmpty()) {
-            requestBuilder.header(X_TOKEN_JTI, jti);
-        }
+                            // Add optional headers if present
+                            if (!email.isEmpty()) {
+                                requestBuilder.header(X_EMAIL, email);
+                            }
+                            if (!tenantId.isEmpty()) {
+                                requestBuilder.header(X_TENANT_ID, tenantId);
+                            }
+                            if (!sessionId.isEmpty()) {
+                                requestBuilder.header(X_SESSION_ID, sessionId);
+                            }
+                            if (!jti.isEmpty()) {
+                                requestBuilder.header(X_TOKEN_JTI, jti);
+                            }
 
-        // Sign forwarded user context so downstream services can reject spoofed headers
-        if (!hmacSecret.isBlank()) {
-            long epochMinutes = Instant.now().getEpochSecond() / 60;
-            String payload = username + ":" + String.join(",", roles) + ":" + epochMinutes;
-            requestBuilder.header("X-Gateway-Signature", computeHmacSignature(hmacSecret, payload));
-        }
+                            // Sign forwarded user context so downstream services can reject spoofed headers
+                            if (!hmacSecret.isBlank()) {
+                                long epochMinutes = Instant.now().getEpochSecond() / 60;
+                                String payload = username + ":" + String.join(",", roles) + ":" + epochMinutes;
+                                requestBuilder.header("X-Gateway-Signature", computeHmacSignature(hmacSecret, payload));
+                            }
 
-        ServerHttpRequest modifiedRequest = requestBuilder.build();
+                            ServerHttpRequest modifiedRequest = requestBuilder.build();
 
-        // Continue with modified request
-        return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                            // Continue with modified request
+                            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                        });
+                    });
+        });
     }
 
     private String extractToken(ServerHttpRequest request) {

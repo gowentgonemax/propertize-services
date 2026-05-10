@@ -88,7 +88,7 @@ class PaymentServiceTest {
             when(paymentRepository.findByOrganizationId(eq(ORG_ID), any(Pageable.class)))
                     .thenReturn(page);
 
-            Page<Payment> result = paymentService.getAllPayments(ORG_ID, 1, 20);
+            Page<Payment> result = paymentService.getAllPayments(ORG_ID, null, 1, 20);
 
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getOrganizationId()).isEqualTo(ORG_ID);
@@ -101,7 +101,7 @@ class PaymentServiceTest {
             when(paymentRepository.findByOrganizationId(eq(ORG_ID), any(Pageable.class)))
                     .thenReturn(Page.empty());
 
-            Page<Payment> result = paymentService.getAllPayments(ORG_ID, 1, 20);
+            Page<Payment> result = paymentService.getAllPayments(ORG_ID, null, 1, 20);
 
             assertThat(result.getContent()).isEmpty();
         }

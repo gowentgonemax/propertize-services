@@ -2,12 +2,10 @@ package com.propertize.payment.config;
 
 import com.stripe.Stripe;
 import jakarta.annotation.PostConstruct;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@Getter
 public class StripeConfig {
 
     @Value("${payment.stripe.api-key}")
@@ -37,5 +35,21 @@ public class StripeConfig {
 
     public boolean isLiveMode() {
         return apiKey != null && apiKey.startsWith("sk_live_");
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public String getWebhookSecret() {
+        return webhookSecret;
+    }
+
+    public String getPublishableKey() {
+        return publishableKey;
+    }
+
+    public String getCurrency() {
+        return currency;
     }
 }

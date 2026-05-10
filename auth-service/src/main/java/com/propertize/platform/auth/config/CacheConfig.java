@@ -35,43 +35,44 @@ import java.util.concurrent.TimeUnit;
 @EnableCaching
 public class CacheConfig {
 
-    @Bean
-    public CaffeineCacheManager caffeineCacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager(
-                "permissions", "userPermissions", "userMetadata", "orgMetadata", "rbacPolicy");
-        manager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(10_000)
-                .expireAfterWrite(5, TimeUnit.MINUTES));
-        return manager;
-    }
+        @Bean
+        public CaffeineCacheManager caffeineCacheManager() {
+                CaffeineCacheManager manager = new CaffeineCacheManager(
+                                "permissions", "userPermissions", "userMetadata", "orgMetadata", "rbacPolicy");
+                manager.setCaffeine(Caffeine.newBuilder()
+                                .maximumSize(10_000)
+                                .expireAfterWrite(5, TimeUnit.MINUTES)
+                                .recordStats());
+                return manager;
+        }
 
-    @Bean
-    public RedisCacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
-        RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer()))
-                .disableCachingNullValues();
+        @Bean
+        public RedisCacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
+                RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                                                .fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                                .disableCachingNullValues();
 
-        Map<String, RedisCacheConfiguration> perCache = new HashMap<>();
-        perCache.put("permissions", defaults.entryTtl(Duration.ofMinutes(15)));
-        perCache.put("userPermissions", defaults.entryTtl(Duration.ofMinutes(15)));
-        perCache.put("userMetadata", defaults.entryTtl(Duration.ofMinutes(10)));
-        perCache.put("orgMetadata", defaults.entryTtl(Duration.ofMinutes(5)));
-        perCache.put("rbacPolicy", defaults.entryTtl(Duration.ofMinutes(30)));
+                Map<String, RedisCacheConfiguration> perCache = new HashMap<>();
+                perCache.put("permissions", defaults.entryTtl(Duration.ofMinutes(15)));
+                perCache.put("userPermissions", defaults.entryTtl(Duration.ofMinutes(15)));
+                perCache.put("userMetadata", defaults.entryTtl(Duration.ofMinutes(10)));
+                perCache.put("orgMetadata", defaults.entryTtl(Duration.ofMinutes(5)));
+                perCache.put("rbacPolicy", defaults.entryTtl(Duration.ofMinutes(30)));
 
-        return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(defaults.entryTtl(Duration.ofMinutes(10)))
-                .withInitialCacheConfigurations(perCache)
-                .build();
-    }
+                return RedisCacheManager.builder(connectionFactory)
+                                .cacheDefaults(defaults.entryTtl(Duration.ofMinutes(10)))
+                                .withInitialCacheConfigurations(perCache)
+                                .build();
+        }
 
-    @Primary
-    @Bean
-    public CacheManager cacheManager(CaffeineCacheManager caffeineCacheManager,
-            RedisCacheManager redisCacheManager) {
-        CompositeCacheManager composite = new CompositeCacheManager();
-        composite.setCacheManagers(java.util.List.of(caffeineCacheManager, redisCacheManager));
-        composite.setFallbackToNoOpCache(false);
-        return composite;
-    }
+        @Primary
+        @Bean
+        public CacheManager cacheManager(CaffeineCacheManager caffeineCacheManager,
+                        RedisCacheManager redisCacheManager) {
+                CompositeCacheManager composite = new CompositeCacheManager();
+                composite.setCacheManagers(java.util.List.of(caffeineCacheManager, redisCacheManager));
+                composite.setFallbackToNoOpCache(false);
+                return composite;
+        }
 }

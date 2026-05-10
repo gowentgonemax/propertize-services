@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -18,17 +19,23 @@ import java.util.stream.Collectors;
  * {@code jti} claim as the cache key. This is the gateway-side complement to
  * the auth-service's {@code PermissionCacheService}.
  *
- * <p>Flow:</p>
+ * <p>
+ * Flow:
+ * </p>
  * <ol>
- *   <li>JWT is validated by {@link com.propertize.platform.gateway.security.JwtAuthenticationFilter}</li>
- *   <li>The {@code jti} claim is extracted from the validated token</li>
- *   <li>This service fetches {@code perms:jti:{jti}} from Redis</li>
- *   <li>The result is injected as the {@code X-Permissions} header for downstream services</li>
+ * <li>JWT is validated by
+ * {@link com.propertize.platform.gateway.security.JwtAuthenticationFilter}</li>
+ * <li>The {@code jti} claim is extracted from the validated token</li>
+ * <li>This service fetches {@code perms:jti:{jti}} from Redis</li>
+ * <li>The result is injected as the {@code X-Permissions} header for downstream
+ * services</li>
  * </ol>
  *
- * <p>On cache miss (Redis down or TTL expired), the filter will inject an empty
+ * <p>
+ * On cache miss (Redis down or TTL expired), the filter will inject an empty
  * {@code X-Permissions} header. Downstream services should treat this as
- * "no permissions available" and deny access to protected resources.</p>
+ * "no permissions available" and deny access to protected resources.
+ * </p>
  */
 @Slf4j
 @Service
@@ -41,40 +48,38 @@ public class PermissionCacheService {
     private final ReactiveRedisTemplate<String, String> redisTemplate;
 
     /**
-     * Synchronously fetch the permissions for a given JWT JTI.
-     * Blocks for at most 1 second; returns empty set on timeout or error.
+     * Reactively fetch the permissions for a given JWT JTI.
+     * Returns empty set on timeout or error.
      *
      * @param jti the JWT ID (jti claim)
-     * @return set of permission strings, or empty set on cache miss / error
+     * @return Mono of set of permission strings, or empty set on cache miss / error
      */
-    public Set<String> getPermissions(String jti) {
+    public Mono<Set<String>> getPermissions(String jti) {
         if (jti == null || jti.isBlank()) {
-            return Collections.emptySet();
+            return Mono.just(Collections.emptySet());
         }
 
-        try {
-            String value = redisTemplate.opsForValue()
-                    .get(PERM_KEY_PREFIX + jti)
-                    .block(LOOKUP_TIMEOUT);
-
-            if (value == null || value.isBlank()) {
-                log.debug("Permission cache miss for jti={}", jti);
-                return Collections.emptySet();
-            }
-
-            Set<String> permissions = Arrays.stream(value.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toSet());
-
-            log.debug("Permission cache hit: {} permissions for jti={}", permissions.size(), jti);
-            return permissions;
-
-        } catch (Exception e) {
-            log.warn("⚠️ Permission cache lookup failed for jti={}: {} — proceeding with empty permissions",
-                    jti, e.getMessage());
-            return Collections.emptySet();
-        }
+        return redisTemplate.opsForValue()
+                .get(PERM_KEY_PREFIX + jti)
+                .timeout(LOOKUP_TIMEOUT)
+                .map(value -> {
+                    if (value == null || value.isBlank()) {
+                        log.debug("Permission cache miss for jti={}", jti);
+                        return Collections.<String>emptySet();
+                    }
+                    Set<String> permissions = Arrays.stream(value.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toSet());
+                    log.debug("Permission cache hit: {} permissions for jti={}", permissions.size(), jti);
+                    return permissions;
+                })
+                .defaultIfEmpty(Collections.emptySet())
+                .onErrorResume(e -> {
+                    log.warn("⚠️ Permission cache lookup failed for jti={}: {} — proceeding with empty permissions",
+                            jti, e.getMessage());
+                    return Mono.just(Collections.emptySet());
+                });
     }
 
     /**
@@ -91,10 +96,10 @@ public class PermissionCacheService {
             redisTemplate.delete(PERM_KEY_PREFIX + jti)
                     .subscribe(
                             deleted -> log.debug("Evicted permission cache for jti={} (deleted={})", jti, deleted),
-                            error -> log.warn("Failed to evict permission cache for jti={}: {}", jti, error.getMessage()));
+                            error -> log.warn("Failed to evict permission cache for jti={}: {}", jti,
+                                    error.getMessage()));
         } catch (Exception e) {
             log.warn("⚠️ Permission cache eviction failed for jti={}: {}", jti, e.getMessage());
         }
     }
 }
-

@@ -1,6 +1,7 @@
 package com.propertize.payment.dto.promo;
 
 import com.propertize.payment.enums.DiscountTypeEnum;
+import com.propertize.payment.enums.PromoCodeTypeEnum;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ public class PromoCodeResponse {
     private String description;
     private String organizationId;
     private DiscountTypeEnum discountType;
+    private PromoCodeTypeEnum promoCodeType;
     private BigDecimal discountValue;
     private Integer maxUses;
     private Integer currentUses;

@@ -51,14 +51,13 @@ public class TokenBlacklistService {
         if (useRedis) {
             try {
                 redisTemplate.opsForValue()
-                    .set(key, "blacklisted", Duration.ofSeconds(expirationSeconds))
-                    .subscribe(
-                        success -> log.debug("Token blacklisted in Redis"),
-                        error -> {
-                            log.warn("Redis blacklist failed, using memory: {}", error.getMessage());
-                            memoryBlacklist.put(key, System.currentTimeMillis() + (expirationSeconds * 1000));
-                        }
-                    );
+                        .set(key, "blacklisted", Duration.ofSeconds(expirationSeconds))
+                        .subscribe(
+                                success -> log.debug("Token blacklisted in Redis"),
+                                error -> {
+                                    log.warn("Redis blacklist failed, using memory: {}", error.getMessage());
+                                    memoryBlacklist.put(key, System.currentTimeMillis() + (expirationSeconds * 1000));
+                                });
             } catch (Exception e) {
                 log.warn("Redis unavailable, using memory blacklist");
                 useRedis = false;
@@ -84,14 +83,14 @@ public class TokenBlacklistService {
         if (useRedis) {
             try {
                 redisTemplate.opsForValue()
-                    .set(key, "blacklisted", Duration.ofSeconds(expirationSeconds))
-                    .subscribe(
-                        success -> log.debug("Token blacklisted by JTI in Redis: {}", jti),
-                        error -> {
-                            log.warn("Redis blacklist failed, using memory: {}", error.getMessage());
-                            memoryJtiBlacklist.put(key, System.currentTimeMillis() + (expirationSeconds * 1000));
-                        }
-                    );
+                        .set(key, "blacklisted", Duration.ofSeconds(expirationSeconds))
+                        .subscribe(
+                                success -> log.debug("Token blacklisted by JTI in Redis: {}", jti),
+                                error -> {
+                                    log.warn("Redis blacklist failed, using memory: {}", error.getMessage());
+                                    memoryJtiBlacklist.put(key,
+                                            System.currentTimeMillis() + (expirationSeconds * 1000));
+                                });
             } catch (Exception e) {
                 log.warn("Redis unavailable, using memory blacklist");
                 useRedis = false;
@@ -107,26 +106,30 @@ public class TokenBlacklistService {
      * Per Production-Ready Design: Use JTI for efficient blacklist lookup
      *
      * @param jti the JWT ID (jti claim) to check
-     * @return true if blacklisted, false otherwise
+     * @return Mono of true if blacklisted, false otherwise
      */
-    public boolean isBlacklistedByJti(String jti) {
+    public Mono<Boolean> isBlacklistedByJti(String jti) {
         if (jti == null || jti.isEmpty()) {
-            return false;
+            return Mono.just(false);
         }
 
         String key = JTI_BLACKLIST_PREFIX + jti;
 
-        if (useRedis) {
-            try {
-                Boolean exists = redisTemplate.hasKey(key).block(Duration.ofSeconds(1));
-                return Boolean.TRUE.equals(exists);
-            } catch (Exception e) {
-                log.warn("Redis check failed, using memory: {}", e.getMessage());
-                useRedis = false;
-            }
+        if (!useRedis) {
+            return Mono.just(checkMemoryJti(key));
         }
 
-        // Memory fallback
+        return redisTemplate.hasKey(key)
+                .timeout(Duration.ofSeconds(1))
+                .map(exists -> Boolean.TRUE.equals(exists))
+                .onErrorResume(e -> {
+                    log.warn("Redis check failed, using memory: {}", e.getMessage());
+                    return Mono.just(checkMemoryJti(key));
+                })
+                .defaultIfEmpty(false);
+    }
+
+    private boolean checkMemoryJti(String key) {
         Long expiry = memoryJtiBlacklist.get(key);
         if (expiry != null) {
             if (System.currentTimeMillis() < expiry) {
@@ -141,29 +144,23 @@ public class TokenBlacklistService {
     /**
      * Check if token is blacklisted
      */
-    public boolean isBlacklisted(String token) {
+    public Mono<Boolean> isBlacklisted(String token) {
         String key = BLACKLIST_PREFIX + hashToken(token);
 
-        if (useRedis) {
-            try {
-                Boolean exists = redisTemplate.hasKey(key).block(Duration.ofSeconds(1));
-                return Boolean.TRUE.equals(exists);
-            } catch (Exception e) {
-                log.warn("Redis check failed, using memory: {}", e.getMessage());
-                useRedis = false;
-            }
+        if (!useRedis) {
+            Long expiry = memoryBlacklist.get(key);
+            return Mono.just(expiry != null && System.currentTimeMillis() < expiry);
         }
 
-        // Memory fallback
-        Long expiry = memoryBlacklist.get(key);
-        if (expiry != null) {
-            if (System.currentTimeMillis() < expiry) {
-                return true;
-            } else {
-                memoryBlacklist.remove(key);
-            }
-        }
-        return false;
+        return redisTemplate.hasKey(key)
+                .timeout(Duration.ofSeconds(1))
+                .map(exists -> Boolean.TRUE.equals(exists))
+                .onErrorResume(e -> {
+                    log.warn("Redis check failed, using memory: {}", e.getMessage());
+                    Long expiry = memoryBlacklist.get(key);
+                    return Mono.just(expiry != null && System.currentTimeMillis() < expiry);
+                })
+                .defaultIfEmpty(false);
     }
 
     /**
@@ -175,14 +172,13 @@ public class TokenBlacklistService {
         if (useRedis) {
             try {
                 redisTemplate.opsForValue()
-                    .set(key, username, Duration.ofSeconds(expirationSeconds))
-                    .subscribe(
-                        success -> log.debug("Refresh token stored in Redis for user: {}", username),
-                        error -> {
-                            log.warn("Redis store failed, using memory: {}", error.getMessage());
-                            memoryRefreshTokens.put(key, username);
-                        }
-                    );
+                        .set(key, username, Duration.ofSeconds(expirationSeconds))
+                        .subscribe(
+                                success -> log.debug("Refresh token stored in Redis for user: {}", username),
+                                error -> {
+                                    log.warn("Redis store failed, using memory: {}", error.getMessage());
+                                    memoryRefreshTokens.put(key, username);
+                                });
             } catch (Exception e) {
                 log.warn("Redis unavailable, using memory");
                 useRedis = false;
@@ -202,14 +198,13 @@ public class TokenBlacklistService {
         if (useRedis) {
             try {
                 redisTemplate.opsForValue()
-                    .set(key, "used", Duration.ofDays(7)) // Keep for 7 days for audit
-                    .subscribe(
-                        success -> log.debug("Refresh token marked as used"),
-                        error -> {
-                            log.warn("Redis mark failed, using memory: {}", error.getMessage());
-                            memoryUsedTokens.put(key, true);
-                        }
-                    );
+                        .set(key, "used", Duration.ofDays(7)) // Keep for 7 days for audit
+                        .subscribe(
+                                success -> log.debug("Refresh token marked as used"),
+                                error -> {
+                                    log.warn("Redis mark failed, using memory: {}", error.getMessage());
+                                    memoryUsedTokens.put(key, true);
+                                });
             } catch (Exception e) {
                 log.warn("Redis unavailable, using memory");
                 useRedis = false;
@@ -250,8 +245,8 @@ public class TokenBlacklistService {
             try {
                 redisTemplate.delete(refreshKey).subscribe();
                 redisTemplate.opsForValue()
-                    .set(usedKey, "revoked", Duration.ofDays(7))
-                    .subscribe();
+                        .set(usedKey, "revoked", Duration.ofDays(7))
+                        .subscribe();
             } catch (Exception e) {
                 log.warn("Redis revoke failed, using memory: {}", e.getMessage());
                 useRedis = false;

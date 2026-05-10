@@ -19,38 +19,51 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * Reusable HTTP request/response logging filter for all Propertize servlet-based services.
+ * Reusable HTTP request/response logging filter for all Propertize
+ * servlet-based services.
  *
- * <p>Captures every inbound request and outbound response with:</p>
+ * <p>
+ * Captures every inbound request and outbound response with:
+ * </p>
  * <ul>
- *   <li>HTTP method, URI, query string, client IP</li>
- *   <li>Correlation-ID propagated from the gateway (or generated locally)</li>
- *   <li>Authenticated user/org IDs extracted from gateway headers</li>
- *   <li>Response status code and wall-clock duration</li>
- *   <li>Response body at DEBUG level for error responses (status ≥ 400), truncated to 2 KB</li>
- *   <li>Request headers at DEBUG level — sensitive headers are masked</li>
+ * <li>HTTP method, URI, query string, client IP</li>
+ * <li>Correlation-ID propagated from the gateway (or generated locally)</li>
+ * <li>Authenticated user/org IDs extracted from gateway headers</li>
+ * <li>Response status code and wall-clock duration</li>
+ * <li>Response body at DEBUG level for error responses (status ≥ 400),
+ * truncated to 2 KB</li>
+ * <li>Request headers at DEBUG level — sensitive headers are masked</li>
  * </ul>
  *
- * <p>Sensitive headers always masked (value replaced with {@code [REDACTED]}):
- * {@code Authorization}, {@code Cookie}, {@code Set-Cookie}, {@code X-Api-Key}.</p>
+ * <p>
+ * Sensitive headers always masked (value replaced with {@code [REDACTED]}):
+ * {@code Authorization}, {@code Cookie}, {@code Set-Cookie}, {@code X-Api-Key}.
+ * </p>
  *
- * <p>Paths excluded from logging: {@code /actuator/health*}, {@code /actuator/info},
- * {@code /favicon.ico}.</p>
+ * <p>
+ * Paths excluded from logging: {@code /actuator/health*},
+ * {@code /actuator/info},
+ * {@code /favicon.ico}.
+ * </p>
  *
  * <h3>Registration in a service</h3>
- * <pre>{@code
- * @Configuration
- * public class LoggingConfig {
- *     @Bean
- *     public FilterRegistrationBean<RequestResponseLoggingFilter> requestLoggingFilter() {
- *         FilterRegistrationBean<RequestResponseLoggingFilter> bean =
- *                 new FilterRegistrationBean<>(new RequestResponseLoggingFilter("my-service"));
- *         bean.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
- *         bean.addUrlPatterns("/*");
- *         return bean;
+ * 
+ * <pre>
+ * {
+ *     &#64;code
+ *     &#64;Configuration
+ *     public class LoggingConfig {
+ *         @Bean
+ *         public FilterRegistrationBean<RequestResponseLoggingFilter> requestLoggingFilter() {
+ *             FilterRegistrationBean<RequestResponseLoggingFilter> bean = new FilterRegistrationBean<>(
+ *                     new RequestResponseLoggingFilter("my-service"));
+ *             bean.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+ *             bean.addUrlPatterns("/*");
+ *             return bean;
+ *         }
  *     }
  * }
- * }</pre>
+ * </pre>
  *
  * @see GatewayHeaders
  */
@@ -58,30 +71,29 @@ import java.util.stream.Stream;
 public class RequestResponseLoggingFilter extends OncePerRequestFilter {
 
     // ── MDC keys (aligned across all services) ───────────────────────────────
-    public static final String MDC_CORRELATION_ID  = "correlationId";
-    public static final String MDC_REQUEST_ID      = "requestId";
-    public static final String MDC_USER_ID         = "userId";
-    public static final String MDC_ORG_ID          = "orgId";
-    public static final String MDC_REQUEST_METHOD  = "requestMethod";
-    public static final String MDC_REQUEST_URI     = "requestUri";
-    public static final String MDC_CLIENT_IP       = "clientIp";
-    public static final String MDC_SERVICE_NAME    = "serviceName";
+    public static final String MDC_CORRELATION_ID = "correlationId";
+    public static final String MDC_REQUEST_ID = "requestId";
+    public static final String MDC_USER_ID = "userId";
+    public static final String MDC_ORG_ID = "orgId";
+    public static final String MDC_REQUEST_METHOD = "requestMethod";
+    public static final String MDC_REQUEST_URI = "requestUri";
+    public static final String MDC_CLIENT_IP = "clientIp";
+    public static final String MDC_SERVICE_NAME = "serviceName";
 
-    private static final int    MAX_BODY_LOG_BYTES = 2048;
-    private static final long   SLOW_REQUEST_MS    = 3_000L;
+    private static final int MAX_BODY_LOG_BYTES = 2048;
+    private static final long SLOW_REQUEST_MS = 3_000L;
 
     private static final Set<String> MASKED_HEADERS = Set.of(
-            "authorization", "cookie", "set-cookie", "x-api-key"
-    );
+            "authorization", "cookie", "set-cookie", "x-api-key");
 
     private static final Set<String> EXCLUDED_PATH_PREFIXES = Set.of(
-            "/actuator/health", "/actuator/info", "/favicon.ico"
-    );
+            "/actuator/health", "/actuator/info", "/favicon.ico");
 
     private final String serviceName;
 
     /**
-     * @param serviceName short label used in log lines (e.g. {@code "auth-service"})
+     * @param serviceName short label used in log lines (e.g.
+     *                    {@code "auth-service"})
      */
     public RequestResponseLoggingFilter(String serviceName) {
         this.serviceName = serviceName;
@@ -89,14 +101,14 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain chain) throws ServletException, IOException {
+            HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
 
-        ContentCachingRequestWrapper  wrappedReq  = new ContentCachingRequestWrapper(request, Integer.MAX_VALUE);
+        ContentCachingRequestWrapper wrappedReq = new ContentCachingRequestWrapper(request, Integer.MAX_VALUE);
         ContentCachingResponseWrapper wrappedResp = new ContentCachingResponseWrapper(response);
 
         String correlationId = resolveCorrelationId(request);
-        String requestId     = UUID.randomUUID().toString();
+        String requestId = UUID.randomUUID().toString();
 
         populateMdc(request, correlationId, requestId);
         wrappedResp.setHeader(GatewayHeaders.X_CORRELATION_ID, correlationId);
@@ -121,9 +133,9 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
     private void logIncomingRequest(ContentCachingRequestWrapper req, String correlationId) {
         StringBuilder sb = new StringBuilder(128);
         sb.append("▶ REQUEST")
-          .append(" | service=").append(serviceName)
-          .append(" | ").append(req.getMethod())
-          .append(" ").append(req.getRequestURI());
+                .append(" | service=").append(serviceName)
+                .append(" | ").append(req.getMethod())
+                .append(" ").append(req.getRequestURI());
 
         String qs = req.getQueryString();
         if (qs != null && !qs.isBlank()) {
@@ -131,7 +143,7 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
         }
 
         sb.append(" | ip=").append(extractClientIp(req))
-          .append(" | correlationId=").append(correlationId);
+                .append(" | correlationId=").append(correlationId);
 
         String userId = req.getHeader(GatewayHeaders.X_USER_ID);
         if (userId != null) {
@@ -168,21 +180,21 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
      * Logs response body at DEBUG for error responses.
      */
     private void logOutgoingResponse(ContentCachingRequestWrapper req,
-                                     ContentCachingResponseWrapper resp,
-                                     long durationMs,
-                                     String correlationId) {
-        int    status = resp.getStatus();
+            ContentCachingResponseWrapper resp,
+            long durationMs,
+            String correlationId) {
+        int status = resp.getStatus();
         String method = req.getMethod();
-        String uri    = req.getRequestURI();
+        String uri = req.getRequestURI();
 
         StringBuilder sb = new StringBuilder(128);
         sb.append("◀ RESPONSE")
-          .append(" | service=").append(serviceName)
-          .append(" | ").append(method)
-          .append(" ").append(uri)
-          .append(" | status=").append(status)
-          .append(" | duration=").append(durationMs).append("ms")
-          .append(" | correlationId=").append(correlationId);
+                .append(" | service=").append(serviceName)
+                .append(" | ").append(method)
+                .append(" ").append(uri)
+                .append(" | status=").append(status)
+                .append(" | duration=").append(durationMs).append("ms")
+                .append(" | correlationId=").append(correlationId);
 
         if (status >= 500) {
             log.error(sb.toString());
@@ -228,11 +240,11 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
 
     private void populateMdc(HttpServletRequest req, String correlationId, String requestId) {
         MDC.put(MDC_CORRELATION_ID, correlationId);
-        MDC.put(MDC_REQUEST_ID,     requestId);
+        MDC.put(MDC_REQUEST_ID, requestId);
         MDC.put(MDC_REQUEST_METHOD, req.getMethod());
-        MDC.put(MDC_REQUEST_URI,    req.getRequestURI());
-        MDC.put(MDC_CLIENT_IP,      extractClientIp(req));
-        MDC.put(MDC_SERVICE_NAME,   serviceName);
+        MDC.put(MDC_REQUEST_URI, req.getRequestURI());
+        MDC.put(MDC_CLIENT_IP, extractClientIp(req));
+        MDC.put(MDC_SERVICE_NAME, serviceName);
 
         String userId = req.getHeader(GatewayHeaders.X_USER_ID);
         if (userId != null && !userId.isBlank()) {
@@ -270,11 +282,10 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
         return Stream.of(
                 req.getHeader("X-Forwarded-For"),
                 req.getHeader("X-Real-IP"),
-                req.getRemoteAddr()
-        ).filter(ip -> ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip))
-         .findFirst()
-         .map(ip -> ip.contains(",") ? ip.split(",")[0].trim() : ip)
-         .orElse("unknown");
+                req.getRemoteAddr()).filter(ip -> ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip))
+                .findFirst()
+                .map(ip -> ip.contains(",") ? ip.split(",")[0].trim() : ip)
+                .orElse("unknown");
     }
 
     @Override
@@ -283,5 +294,3 @@ public class RequestResponseLoggingFilter extends OncePerRequestFilter {
         return EXCLUDED_PATH_PREFIXES.stream().anyMatch(uri::startsWith);
     }
 }
-
-

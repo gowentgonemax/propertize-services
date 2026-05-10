@@ -1,6 +1,6 @@
 package com.propertize.platform.auth.service;
 
-import com.propertize.enums.UserRoleEnum;
+import com.propertize.commons.enums.UserRoleEnum;
 import com.propertize.platform.auth.entity.User;
 import com.propertize.platform.auth.repository.UserRepository;
 import org.junit.jupiter.api.*;

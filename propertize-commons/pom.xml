@@ -62,6 +62,13 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- Spring Security Core — needed for UserRoleEnum GrantedAuthority support -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- JPA API — needed for AttributeConverter/Converter in RelationshipTypeEnumConverter -->
         <dependency>
             <groupId>jakarta.persistence</groupId>

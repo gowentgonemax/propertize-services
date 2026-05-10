@@ -24,12 +24,28 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
 
   kafka:
     bootstrap-servers: kafka:29092
+
+  mail:
+    host: ${SMTP_HOST:mailpit}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+  mail-from-email: ${MAIL_FROM_EMAIL:noreply@propertize.com}
+  mail-from-name: ${MAIL_FROM_NAME:Propertize Team}
 
   task:
     execution:
@@ -71,9 +87,9 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
-# Default admin user password (set via ADMIN_DEFAULT_PASSWORD env var)
-admin:
-  default-password: ${ADMIN_DEFAULT_PASSWORD:Admin@123}
+# Default superadmin password (set via SUPERADMIN_DEFAULT_PASSWORD env var)
+superadmin:
+  default-password: ${SUPERADMIN_DEFAULT_PASSWORD:password}
 
 # RSA keys — Dockerfile copies keys/ → /app/keys/
 security:

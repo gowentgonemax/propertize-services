@@ -8,8 +8,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.propertize.commons.enums.UserRoleEnum;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,11 +68,28 @@ public class JwtTokenProvider {
         Instant now = Instant.now();
         Instant expiration = now.plus(15, ChronoUnit.MINUTES);
 
-        // Derive the primary role as the first alphabetically-sorted entry
-        // (deterministic)
-        String primaryRole = roles != null && !roles.isEmpty()
-                ? roles.stream().sorted().findFirst().orElse("")
-                : "";
+        // Derive primary role: prefer standard UserRoleEnum values (sorted by
+        // privilege level desc) over custom role names. This prevents a low-priority
+        // custom role whose name sorts alphabetically before a standard role from
+        // silently overriding the user's actual primary role in the JWT claim.
+        Set<String> standardRoleNames = Arrays.stream(UserRoleEnum.values())
+                .map(Enum::name)
+                .collect(java.util.stream.Collectors.toSet());
+        String primaryRole = "";
+        if (roles != null && !roles.isEmpty()) {
+            // 1st: pick the highest-privilege standard role
+            primaryRole = Arrays.stream(UserRoleEnum.values())
+                    .sorted((a, b) -> Integer.compare(b.getLevel(), a.getLevel()))
+                    .map(Enum::name)
+                    .filter(roles::contains)
+                    .findFirst()
+                    // 2nd: fall back to any custom role (alphabetical, consistent)
+                    .orElseGet(() -> roles.stream()
+                            .filter(r -> !standardRoleNames.contains(r))
+                            .sorted()
+                            .findFirst()
+                            .orElse(""));
+        }
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", username);
@@ -149,9 +169,17 @@ public class JwtTokenProvider {
                     .build()
                     .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            log.debug("Token validation failed: {}", e.getMessage());
-            return false;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.debug("JWT token expired: {}", e.getMessage());
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            log.warn("Malformed JWT token — possible tampering: {}", e.getMessage());
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            log.warn("Invalid JWT signature — possible tampering: {}", e.getMessage());
+        } catch (io.jsonwebtoken.UnsupportedJwtException e) {
+            log.warn("Unsupported JWT token: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("JWT token claims are empty or null: {}", e.getMessage());
         }
+        return false;
     }
 }

@@ -25,6 +25,24 @@
 services:
 
   # ══════════════════════════════════════════════════════════
+  # MAIL CATCHER (Dev/Test) — Mailpit
+  # SMTP: port 1025  |  Web UI: http://localhost:8025
+  # ══════════════════════════════════════════════════════════
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: propertize-mailpit
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: true
+      MP_SMTP_AUTH_ALLOW_INSECURE: true
+    networks:
+      - propertize-net
+    restart: unless-stopped
+
+  # ══════════════════════════════════════════════════════════
   # INFRASTRUCTURE LAYER
   # ══════════════════════════════════════════════════════════
 
@@ -231,6 +249,8 @@ services:
       dockerfile: auth-service/Dockerfile
     container_name: propertize-auth-service
     depends_on:
+      mailpit:
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:
@@ -248,6 +268,16 @@ services:
       GATEWAY_SERVICE_KEY: ${GATEWAY_SERVICE_KEY:?Set GATEWAY_SERVICE_KEY in .env}
       PROPERTIZE_SERVICE_KEY: ${PROPERTIZE_SERVICE_KEY:?Set PROPERTIZE_SERVICE_KEY in .env}
       EMPLOYECRAFT_SERVICE_KEY: ${EMPLOYECRAFT_SERVICE_KEY:?Set EMPLOYECRAFT_SERVICE_KEY in .env}
+      # ── SMTP (Mailpit in dev; override in prod) ────────────────────────────
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTH: ${SMTP_AUTH:-false}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:-noreply@propertize.com}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Propertize Team}
+      SUPERADMIN_DEFAULT_PASSWORD: ${SUPERADMIN_DEFAULT_PASSWORD:-password}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
       interval: 20s
@@ -264,6 +294,8 @@ services:
       dockerfile: propertize/Dockerfile
     container_name: propertize-main-service
     depends_on:
+      mailpit:
+        condition: service_started
       postgres:
         condition: service_healthy
       mongodb:
@@ -286,6 +318,16 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       SERVICE_API_KEY: ${PROPERTIZE_SERVICE_KEY}
       AUTH_SERVICE_API_KEY: ${AUTH_SERVICE_API_KEY:-auth-service-secret-key}
+      # ── SMTP (Mailpit in dev; override with real SMTP in prod via .env) ──────
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTH: ${SMTP_AUTH:-false}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      SPRING_MAIL_FROM_EMAIL: ${MAIL_FROM_EMAIL:-noreply@propertize.com}
+      SPRING_MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Propertize Team}
+      SPRING_MAIL_ENABLED: ${MAIL_ENABLED:-true}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
       interval: 30s
@@ -410,6 +452,8 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       # Only secrets here — all infra config lives in application-docker.yml
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      # Allow Netty to load native libs on JDK 21 without a WARNING to stderr
+      JAVA_TOOL_OPTIONS: "--enable-native-access=ALL-UNNAMED"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
       interval: 20s
@@ -594,6 +638,10 @@ services:
       NODE_ENV: production
       NODE_OPTIONS: "--max-http-header-size=32768"
       HOSTNAME: "0.0.0.0"
+      # NextAuth v5 requires a stable secret — without it a random one is
+      # generated each restart, invalidating all existing session cookies.
+      AUTH_SECRET: ${AUTH_SECRET:-bpzxu2s9jkUt5PYxumQ1Ej5WuEdclM7n4c6rIZ6t4Rw=}
+      NEXTAUTH_URL: http://localhost:3000
       # Server-side URL (container-to-container) — used by Next.js API routes
       API_URL: http://api-gateway:8080
       # Browser-side URL — used by client components

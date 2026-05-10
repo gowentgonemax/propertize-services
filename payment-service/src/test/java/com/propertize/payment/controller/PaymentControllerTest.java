@@ -62,7 +62,7 @@ class PaymentControllerTest {
         @DisplayName("GET /api/v1/payments — should return paginated payments")
         void shouldGetAllPayments() throws Exception {
                 Page<Payment> page = new PageImpl<>(List.of(samplePayment));
-                when(paymentService.getAllPayments("org-001", 1, 20)).thenReturn(page);
+                when(paymentService.getAllPayments("org-001", null, 1, 20)).thenReturn(page);
 
                 mockMvc.perform(get("/api/v1/payments")
                                 .param("organizationId", "org-001")

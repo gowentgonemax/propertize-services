@@ -1,4 +1,4 @@
-package com.propertize.enums;
+package com.propertize.commons.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -11,11 +11,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Enum representing user roles with hierarchical permissions.
- * Synced with RBAC v7.0-restructured (rbac.yml)
+ * Canonical enum representing user roles with hierarchical permissions.
+ * Single source of truth — all services import from propertize-commons.
+ * Synced with RBAC v7.0-restructured (rbac.yml).
+ *
  * <p>
  * Format: ROLE_NAME("Display Name", "Description", privilege_level,
  * "AUTHORITY_STRING")
+ * </p>
+ *
+ * @since 1.0.0
  */
 public enum UserRoleEnum {
     // ============ PLATFORM LEVEL (1000-930) ============
@@ -83,39 +88,20 @@ public enum UserRoleEnum {
     EMERGENCY_ACCESS("Emergency Access", "Emergency temporary access (break-glass)", 999, "ROLE_EMERGENCY_ACCESS"),
     READ_ONLY("Read Only", "Read-only access for auditors or observers", 50, "ROLE_READ_ONLY");
 
-    /**
-     * Static maps for efficient lookups
-     */
+    /** Threshold level at or above which a role is considered platform-level. */
+    public static final int PLATFORM_LEVEL_THRESHOLD = 930;
+
     private static final Map<String, UserRoleEnum> AUTH_MAP = Collections.unmodifiableMap(Arrays.stream(values())
             .collect(Collectors.toMap(UserRoleEnum::getAuthority, r -> r)));
 
     private static final Map<String, UserRoleEnum> NAME_MAP = Collections.unmodifiableMap(Arrays.stream(values())
             .collect(Collectors.toMap(Enum::name, r -> r)));
 
-    /**
-     * -- GETTER --
-     * Get the display name of this role
-     */
     private final String displayName;
-    /**
-     * -- GETTER --
-     * Get the description of this role
-     */
     private final String description;
-    /**
-     * -- GETTER --
-     * Get the privilege level of this role
-     */
     private final int level;
-    /**
-     * -- GETTER --
-     * Get the Spring Security authority string (e.g., "ROLE_ADMIN")
-     */
     private final String authority;
 
-    /**
-     * Constructor for UserRoleEnum
-     */
     UserRoleEnum(String displayName, String description, int level, String authority) {
         this.displayName = displayName;
         this.description = description;
@@ -123,7 +109,6 @@ public enum UserRoleEnum {
         this.authority = authority;
     }
 
-    // Explicit getters to ensure availability during compilation
     public String getDisplayName() {
         return displayName;
     }
@@ -141,8 +126,11 @@ public enum UserRoleEnum {
     }
 
     /**
-     * Get role from Spring Security authority string
-     * Example: "ROLE_CLIENT_ADMIN" → CLIENT_ADMIN
+     * Looks up a role by its Spring Security authority string (e.g.
+     * "ROLE_PLATFORM_OVERSIGHT").
+     *
+     * @param authority the authority string
+     * @return the matching role, or {@code null} if not found
      */
     public static UserRoleEnum fromAuthority(String authority) {
         if (authority == null)
@@ -151,13 +139,14 @@ public enum UserRoleEnum {
     }
 
     /**
-     * Get role from role name (case-insensitive, space-tolerant)
-     * Example: "property manager" → PROPERTY_MANAGER
+     * Case-insensitive lookup by enum name (spaces converted to underscores).
+     *
+     * @param name the role name
+     * @return the matching role, or {@code null} if not found
      */
     public static UserRoleEnum fromNameIgnoreCase(String name) {
-        if (name == null || name.trim().isEmpty()) {
+        if (name == null || name.trim().isEmpty())
             return null;
-        }
         try {
             return UserRoleEnum.valueOf(name.trim().toUpperCase().replace(' ', '_'));
         } catch (IllegalArgumentException ex) {
@@ -166,60 +155,36 @@ public enum UserRoleEnum {
     }
 
     /**
-     * Minimum privilege level for platform-level roles.
-     * Roles with level >= this threshold operate across all organizations
-     * and do NOT require organization association.
-     */
-    public static final int PLATFORM_LEVEL_THRESHOLD = 930;
-
-    /**
-     * Check if role is platform level (operates across all organizations)
-     * Platform roles are determined by their privilege level (>= 930) or special
-     * cases.
-     * These roles do NOT require organization association.
-     *
-     * Current platform roles: PLATFORM_OVERSIGHT (1000), PLATFORM_OPERATIONS (970),
-     * PLATFORM_ENGINEERING (950), PLATFORM_ANALYTICS (930), APPLICANT (50 - special
-     * case)
+     * Returns {@code true} if this role is platform-level, APPLICANT, or
+     * EMERGENCY_ACCESS.
      */
     public boolean isPlatformRole() {
-        // APPLICANT is a special case - platform level despite low privilege
-        return this.level >= PLATFORM_LEVEL_THRESHOLD
-                || this == APPLICANT
-                || this == EMERGENCY_ACCESS;
+        return this.level >= PLATFORM_LEVEL_THRESHOLD || this == APPLICANT || this == EMERGENCY_ACCESS;
     }
 
-    /**
-     * Check if any role in the set is a platform-level role
-     * Utility method to check if user has platform-level access
-     * 
-     * @param roles Set of roles to check
-     * @return true if any role is a platform role
-     */
+    /** Returns {@code true} if any role in the set is a platform role. */
     public static boolean containsPlatformRole(java.util.Set<UserRoleEnum> roles) {
-        if (roles == null || roles.isEmpty()) {
+        if (roles == null || roles.isEmpty())
             return false;
-        }
         return roles.stream().anyMatch(UserRoleEnum::isPlatformRole);
     }
 
     /**
-     * Check if role is organization level
+     * Returns {@code true} if this role is organization-level (850 ≤ level < 950).
      */
     public boolean isOrganizationRole() {
         return level >= 850 && level < 950;
     }
 
-    /**
-     * Check if role has administrative privileges
-     */
+    /** Returns {@code true} if this role is administrative (level ≥ 640). */
     public boolean isAdministrative() {
         return level >= 640;
     }
 
     /**
-     * Get the RBAC template name for this role
-     * Maps enum names to RBAC v7.0 yml role profile names
+     * Maps this role to its RBAC template name in rbac.yml.
+     *
+     * @return the RBAC template name
      */
     public String getRbacTemplateName() {
         return switch (this) {
@@ -260,39 +225,32 @@ public enum UserRoleEnum {
     }
 
     /**
-     * Check if user can create roles up to specified level
+     * Determines whether a user with this role may create a role at the given
+     * privilege level.
+     *
+     * @param targetLevel the privilege level of the role to be created
+     * @return {@code true} if creation is allowed
      */
     public boolean canCreateRoleAtLevel(int targetLevel) {
-        // Platform oversight can create most roles but not emergency access
-        if (this == PLATFORM_OVERSIGHT) {
+        if (this == PLATFORM_OVERSIGHT)
             return targetLevel >= 50 && targetLevel <= 950;
-        }
-        // Platform operations can create up to platform analytics level
-        else if (this == PLATFORM_OPERATIONS) {
+        else if (this == PLATFORM_OPERATIONS)
             return targetLevel >= 50 && targetLevel <= 929;
-        }
-        // Portfolio owner can create up to their level
-        else if (this == PORTFOLIO_OWNER) {
+        else if (this == PORTFOLIO_OWNER)
             return targetLevel >= 50 && targetLevel <= 919;
-        }
-        // Organization owner can create organization-level and below
-        else if (this == ORGANIZATION_OWNER) {
+        else if (this == ORGANIZATION_OWNER)
             return targetLevel >= 50 && targetLevel <= 899;
-        }
-        // Organization admin can create operational roles
-        else if (this == ORGANIZATION_ADMIN) {
+        else if (this == ORGANIZATION_ADMIN)
             return targetLevel >= 50 && targetLevel <= 849;
-        }
         return false;
     }
 
     /**
-     * Tolerant Jackson deserialization factory. Accepts:
-     * - authority strings (ROLE_...)
-     * - plain enum names (CLIENT_ADMIN, user, Tenant, etc.)
-     * - display names ("Client Administrator")
-     * This prevents the common JSON parse errors when clients send slightly
-     * different role strings.
+     * Tolerant deserialization — accepts authority string, enum name, or display
+     * name.
+     *
+     * @param key the input string
+     * @return the matching role, or {@code null} if no match
      */
     @JsonCreator
     public static UserRoleEnum fromString(String key) {
@@ -302,29 +260,23 @@ public enum UserRoleEnum {
         if (k.isEmpty())
             return null;
 
-        // 1) Exact authority match (ROLE_...)
         UserRoleEnum byAuth = AUTH_MAP.get(k);
         if (byAuth != null)
             return byAuth;
-        // tolerate different casing, e.g., "role_user" or "Role_User"
         UserRoleEnum byAuthUpper = AUTH_MAP.get(k.toUpperCase());
         if (byAuthUpper != null)
             return byAuthUpper;
 
-        // 2) Direct name match (case-insensitive)
         UserRoleEnum byName = NAME_MAP.get(k.toUpperCase());
         if (byName != null)
             return byName;
 
-        // 3) Try direct enum name (space/dash tolerant)
         try {
             String normalized = k.toUpperCase().replace('-', '_').replace(' ', '_');
             return UserRoleEnum.valueOf(normalized);
         } catch (IllegalArgumentException ignored) {
         }
 
-        // 4) If provided as ROLE_xxx but with different casing or extra chars, strip
-        // ROLE_ and try
         String upper = k.toUpperCase();
         if (upper.startsWith("ROLE_")) {
             String candidate = upper.substring(5);
@@ -337,24 +289,20 @@ public enum UserRoleEnum {
             }
         }
 
-        // 5) Match against display name or description (case-insensitive)
         for (UserRoleEnum r : values()) {
-            if (r.displayName.equalsIgnoreCase(k) || r.description.equalsIgnoreCase(k)) {
+            if (r.displayName.equalsIgnoreCase(k) || r.description.equalsIgnoreCase(k))
                 return r;
-            }
-            // also check lowercase/trimmed forms for more tolerance
             if (r.displayName.trim().equalsIgnoreCase(k.trim()))
                 return r;
         }
 
-        // 6) No match found → return null (Jackson will set null; validation can handle
-        // required fields)
         return null;
     }
 
     /**
-     * Get all roles sorted by privilege level (highest first)
-     * Useful for displaying role hierarchy
+     * Returns all roles sorted by descending privilege level.
+     *
+     * @return sorted array of roles
      */
     public static UserRoleEnum[] byPrivilegeDesc() {
         return Arrays.stream(values())
@@ -363,29 +311,30 @@ public enum UserRoleEnum {
     }
 
     /**
-     * Convert this role to Spring Security GrantedAuthority
+     * Converts this role to a Spring Security {@link GrantedAuthority}.
+     *
+     * @return the granted authority
      */
     public GrantedAuthority toGrantedAuthority() {
         return new SimpleGrantedAuthority(authority);
     }
 
-    /**
-     * JSON serialization - return simple name instead of ROLE_ prefixed
-     */
     @JsonValue
     public String toJson() {
         return name();
     }
 
     /**
-     * Check if this role has higher privilege than another role
+     * Returns {@code true} if this role has a strictly higher privilege level than
+     * {@code other}.
      */
     public boolean hasHigherPrivilegeThan(UserRoleEnum other) {
         return this.level > other.level;
     }
 
     /**
-     * Check if this role has equal or higher privilege than another role
+     * Returns {@code true} if this role has an equal or higher privilege level than
+     * {@code other}.
      */
     public boolean hasEqualOrHigherPrivilegeThan(UserRoleEnum other) {
         return this.level >= other.level;

@@ -376,6 +376,8 @@ public class RbacAuthorizationFilter implements GlobalFilter, Ordered {
                 path.equals("/api/v1/organizations/apply") ||
                 path.equals("/api/v1/rental-applications/submit") ||
                 path.startsWith("/api/v1/rental-applications/track/") ||
+                path.equals("/api/v1/promo-codes/validate") ||
+                path.startsWith("/api/v1/application-fees/") ||
                 path.startsWith("/actuator/") ||
                 path.startsWith("/swagger-ui/") ||
                 path.startsWith("/v3/api-docs/") ||
